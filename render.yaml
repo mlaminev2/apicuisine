@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: menus-famille
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt && python create_icons.py
+    startCommand: python -m app.seed && uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    disk:
+      name: data
+      mountPath: /data
+      sizeGB: 1
+    envVars:
+      - key: HOUSEHOLD_PASSCODE
+        sync: false
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        value: sqlite:////data/menu.db
