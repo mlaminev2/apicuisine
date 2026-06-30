@@ -151,6 +151,10 @@ if web_dir.exists():
     web_dir_resolved = web_dir.resolve()
     app.mount("/static", StaticFiles(directory=str(web_dir)), name="static")
 
+    @app.get("/")
+    def serve_root():
+        return FileResponse(str(web_dir / "index.html"))
+
     @app.get("/{full_path:path}")
     def serve_spa(full_path: str):
         candidate = (web_dir / full_path).resolve()
