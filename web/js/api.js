@@ -26,9 +26,14 @@ async function request(method, path, body = null) {
 }
 
 export const api = {
-  login: (passcode, member_id) => request("POST", "/api/login", { passcode, member_id }),
+  login: (email, password) => request("POST", "/api/login", { email, password }),
+  register: (name, email, password, color, invite_code) =>
+    request("POST", "/api/register", { name, email, password, color, invite_code: invite_code || null }),
   getMembers: () => request("GET", "/api/members"),
-  createMember: (name, color) => request("POST", "/api/members", { name, color }),
+  deleteMember: (id) => request("DELETE", `/api/members/${id}`),
+  getInvite: () => request("GET", "/api/invite"),
+  createInvite: () => request("POST", "/api/invite"),
+  deleteInvite: () => request("DELETE", "/api/invite"),
 
   getDishes: (params = {}) => {
     const q = new URLSearchParams(params).toString();

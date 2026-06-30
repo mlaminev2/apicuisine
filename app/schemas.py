@@ -5,27 +5,39 @@ from pydantic import BaseModel, field_validator
 
 
 class LoginRequest(BaseModel):
-    passcode: str
-    member_id: Optional[int] = None
+    email: str
+    password: str
 
 
 class LoginResponse(BaseModel):
     token: str
     household_id: int
     household_name: str
-    member_id: Optional[int] = None
+    member_id: int
+    member_name: str
+    is_owner: bool
 
 
-class MemberCreate(BaseModel):
+class RegisterRequest(BaseModel):
     name: str
+    email: str
+    password: str
     color: str = "#4B8FA6"
+    invite_code: Optional[str] = None
 
 
 class MemberRead(BaseModel):
     id: int
     name: str
     color: str
+    email: str
+    is_owner: bool
     created_at: datetime
+
+
+class InviteRead(BaseModel):
+    invite_code: Optional[str]
+    invite_code_created_at: Optional[datetime]
 
 
 class DishCreate(BaseModel):

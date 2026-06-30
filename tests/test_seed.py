@@ -16,8 +16,7 @@ def make_session():
 
 def test_seed_counts():
     engine = make_session()
-    with patch("app.seed.engine", engine), patch("app.seed.settings") as mock_sett:
-        mock_sett.household_passcode = "famille"
+    with patch("app.seed.engine", engine):
         run_seed()
         with Session(engine) as session:
             dishes = session.exec(select(Dish)).all()
@@ -35,8 +34,7 @@ def test_seed_counts():
 
 def test_seed_idempotent():
     engine = make_session()
-    with patch("app.seed.engine", engine), patch("app.seed.settings") as mock_sett:
-        mock_sett.household_passcode = "famille"
+    with patch("app.seed.engine", engine):
         run_seed()
         run_seed()
         with Session(engine) as session:
@@ -46,8 +44,7 @@ def test_seed_idempotent():
 
 def test_seed_source_tags():
     engine = make_session()
-    with patch("app.seed.engine", engine), patch("app.seed.settings") as mock_sett:
-        mock_sett.household_passcode = "famille"
+    with patch("app.seed.engine", engine):
         run_seed()
         with Session(engine) as session:
             tartiflette = session.exec(

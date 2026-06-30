@@ -9,9 +9,13 @@ export async function renderSettings(root) {
   root.innerHTML = `<div class="page-header"><h1>Réglages</h1></div><div id="settings-body" style="padding:12px"></div>`;
   const body = document.getElementById("settings-body");
 
-  let sett, members;
+  let sett, members, invite = null;
   try {
-    [sett, members] = await Promise.all([api.getSettings(), api.getMembers()]);
+    const promises = [api.getSettings(), api.getMembers()];
+    if (state.isOwner) promises.push(api.getInvite());
+    const results = await Promise.all(promises);
+    [sett, members] = results;
+    if (state.isOwner) invite = results[2];
   } catch (err) {
     body.innerHTML = `<div class="text-muted">${err.message}</div>`;
     return;
@@ -72,31 +76,85 @@ export async function renderSettings(root) {
   for (const m of members) {
     const row = document.createElement("div");
     row.className = "settings-row";
-    row.innerHTML = `<span class="member-dot" style="background:${escapeHtml(m.color)}"></span><span style="flex:1">${escapeHtml(m.name)}</span>`;
+    row.innerHTML = `<span class="member-dot" style="background:${escapeHtml(m.color)}"></span><span style="flex:1">${escapeHtml(m.name)}</span>${m.is_owner ? '<span style="font-size:11px;color:#888">Propriétaire</span>' : ""}`;
+    if (state.isOwner && !m.is_owner) {
+      const delBtn = document.createElement("button");
+      delBtn.textContent = "🗑";
+      delBtn.title = "Retirer ce membre";
+      delBtn.style.cssText = "font-size:15px;color:#ccc;padding:0 4px;margin-left:8px";
+      delBtn.onmouseenter = () => { delBtn.style.color = "#e74c3c"; };
+      delBtn.onmouseleave = () => { delBtn.style.color = "#ccc"; };
+      delBtn.onclick = async () => {
+        if (!confirm(`Retirer ${m.name} du foyer ?`)) return;
+        try {
+          await api.deleteMember(m.id);
+          showToast(`${m.name} retiré`);
+          renderSettings(root);
+        } catch (err) { showToast(err.message, "error"); }
+      };
+      row.appendChild(delBtn);
+    }
     memberList.appendChild(row);
   }
   sec2.appendChild(memberList);
 
-  const addMemberRow = document.createElement("div");
-  addMemberRow.className = "settings-row";
-  addMemberRow.innerHTML = `
-    <input id="new-member-name" placeholder="Prénom…" style="flex:1;border:1.5px solid #ddd;border-radius:8px;padding:6px 10px;font-size:13px" />
-    <input type="color" id="new-member-color" value="#4B8FA6" style="width:36px;height:36px;border:none;cursor:pointer" />
-    <button class="btn btn-primary btn-sm" id="add-member-btn">+ Ajouter</button>`;
-  sec2.appendChild(addMemberRow);
+  // Section partage d'accès (propriétaire uniquement)
+  let sec2b = null;
+  if (state.isOwner) {
+    sec2b = document.createElement("div");
+    sec2b.className = "settings-section mt-16";
+    sec2b.innerHTML = `<h2>Partager l'accès</h2>`;
 
-  document.addEventListener("click", async (e) => {
-    if (e.target.id === "add-member-btn") {
-      const name = document.getElementById("new-member-name")?.value?.trim();
-      const color = document.getElementById("new-member-color")?.value;
-      if (!name) return;
+    const codeDisplay = document.createElement("div");
+    codeDisplay.style.cssText = "padding:10px;background:#f4f6f8;border-radius:10px;margin-bottom:12px;word-break:break-all";
+    const updateCodeDisplay = (inv) => {
+      if (inv && inv.invite_code) {
+        const link = `${location.origin}/#/inscription?code=${inv.invite_code}`;
+        codeDisplay.innerHTML = `
+          <div style="font-size:12px;color:#888;margin-bottom:4px">Code d'invitation actif</div>
+          <div style="font-size:16px;font-weight:700;letter-spacing:.08em;color:var(--accent-dark)">${escapeHtml(inv.invite_code)}</div>
+          <div style="font-size:11px;color:#aaa;margin-top:6px">Lien : <a href="${escapeHtml(link)}" style="color:var(--accent-header)">${escapeHtml(link)}</a></div>`;
+      } else {
+        codeDisplay.innerHTML = `<div style="font-size:13px;color:#aaa">Aucun code actif. Générez-en un pour inviter un membre.</div>`;
+      }
+    };
+    updateCodeDisplay(invite);
+    sec2b.appendChild(codeDisplay);
+
+    const btnRow = document.createElement("div");
+    btnRow.style.cssText = "display:flex;gap:8px";
+
+    const genBtn = document.createElement("button");
+    genBtn.className = "btn btn-primary btn-sm";
+    genBtn.textContent = invite && invite.invite_code ? "Régénérer" : "Générer un code";
+    genBtn.onclick = async () => {
       try {
-        await api.createMember(name, color);
-        showToast(`${name} ajouté`);
-        renderSettings(root);
+        const newInvite = await api.createInvite();
+        updateCodeDisplay(newInvite);
+        genBtn.textContent = "Régénérer";
+        revokeBtn.style.display = "";
+        showToast("Code généré ✓");
       } catch (err) { showToast(err.message, "error"); }
-    }
-  }, { once: true });
+    };
+
+    const revokeBtn = document.createElement("button");
+    revokeBtn.className = "btn btn-ghost btn-sm";
+    revokeBtn.textContent = "Révoquer";
+    revokeBtn.style.display = invite && invite.invite_code ? "" : "none";
+    revokeBtn.onclick = async () => {
+      if (!confirm("Révoquer le code ? Les nouvelles inscriptions seront bloquées jusqu'à génération d'un nouveau code.")) return;
+      try {
+        await api.deleteInvite();
+        updateCodeDisplay(null);
+        revokeBtn.style.display = "none";
+        genBtn.textContent = "Générer un code";
+        showToast("Code révoqué ✓");
+      } catch (err) { showToast(err.message, "error"); }
+    };
+
+    btnRow.append(genBtn, revokeBtn);
+    sec2b.appendChild(btnRow);
+  }
 
   // Déconnexion
   const sec3 = document.createElement("div");
@@ -110,7 +168,7 @@ export async function renderSettings(root) {
   };
   sec3.appendChild(logoutBtn);
 
-  body.append(sec1, sec2, sec3);
+  body.append(sec1, sec2, ...(sec2b ? [sec2b] : []), sec3);
   renderShopCategories(body);
 }
 

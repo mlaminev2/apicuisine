@@ -5,8 +5,8 @@ from sqlmodel.pool import StaticPool
 
 from app.main import app
 from app.db import get_session
-from app.models import Household, Settings
-from app.auth import hash_passcode
+from app.models import Household, Member, Settings
+from app.auth import hash_password
 
 
 @pytest.fixture(name="session")
@@ -34,19 +34,30 @@ def client_fixture(session):
 
 @pytest.fixture(name="household")
 def household_fixture(session):
-    hh = Household(name="Test Famille", passcode_hash=hash_passcode("test123"))
+    hh = Household(name="Test Famille")
     session.add(hh)
     session.commit()
     session.refresh(hh)
     sett = Settings(household_id=hh.id)
     session.add(sett)
     session.commit()
+
+    owner = Member(
+        household_id=hh.id,
+        name="Test Owner",
+        email="owner@test.local",
+        password_hash=hash_password("test123456"),
+        is_owner=True,
+    )
+    session.add(owner)
+    session.commit()
+    session.refresh(owner)
     return hh
 
 
 @pytest.fixture(name="token")
 def token_fixture(client, household):
-    res = client.post("/api/login", json={"passcode": "test123"})
+    res = client.post("/api/login", json={"email": "owner@test.local", "password": "test123456"})
     return res.json()["token"]
 
 

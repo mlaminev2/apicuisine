@@ -82,7 +82,31 @@ def _migrate():
             conn.execute(text("ALTER TABLE plan_entry ADD COLUMN entree_dish_id INTEGER REFERENCES dish(id)"))
             conn.commit()
         except Exception:
-            pass  # column already exists
+            pass
+        for col, definition in [
+            ("email", "TEXT"),
+            ("password_hash", "TEXT"),
+            ("is_owner", "BOOLEAN NOT NULL DEFAULT 0"),
+        ]:
+            try:
+                conn.execute(text(f"ALTER TABLE member ADD COLUMN {col} {definition}"))
+                conn.commit()
+            except Exception:
+                pass
+        for col, definition in [
+            ("invite_code", "TEXT"),
+            ("invite_code_created_at", "TIMESTAMP"),
+        ]:
+            try:
+                conn.execute(text(f"ALTER TABLE household ADD COLUMN {col} {definition}"))
+                conn.commit()
+            except Exception:
+                pass
+        try:
+            conn.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS ix_member_email ON member(email)"))
+            conn.commit()
+        except Exception:
+            pass
 
 
 @app.on_event("startup")

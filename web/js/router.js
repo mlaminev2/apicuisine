@@ -1,6 +1,7 @@
 import { state } from "./state.js";
 import { renderNavbar } from "./components/navbar.js";
 import { renderLogin } from "./views/login.js";
+import { renderRegister } from "./views/register.js";
 import { renderCalendar } from "./views/calendar.js";
 import { renderBase } from "./views/base.js";
 import { renderShopping } from "./views/shopping.js";
@@ -15,7 +16,7 @@ async function route() {
   const hash = location.hash || "#/calendrier";
   renderNavbar();
 
-  if (!state.isLoggedIn() && !hash.startsWith("#/login")) {
+  if (!state.isLoggedIn() && !hash.startsWith("#/login") && !hash.startsWith("#/inscription")) {
     location.hash = "#/login";
     return;
   }
@@ -24,6 +25,7 @@ async function route() {
   const params = Object.fromEntries(new URLSearchParams(queryStr || ""));
 
   if (hash.startsWith("#/login")) { await renderLogin(root); return; }
+  if (hash.startsWith("#/inscription")) { await renderRegister(root); return; }
   if (hash.startsWith("#/calendrier")) { await renderCalendar(root); return; }
   if (hash.startsWith("#/base")) { await renderBase(root); return; }
   if (hash.startsWith("#/courses")) { await renderShopping(root, params); return; }

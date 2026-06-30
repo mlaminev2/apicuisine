@@ -2,7 +2,6 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    household_passcode: str = "famille"
     database_url: str = "sqlite:///./data/menu.db"
     port: int = 8000
     secret_key: str = "dev-secret-key-change-in-production"

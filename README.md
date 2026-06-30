@@ -12,7 +12,7 @@ docker compose up
 
 L'application est disponible sur **http://localhost:8000**
 
-Code par défaut : `famille` (modifiable dans `.env`)
+Créez votre compte sur `http://localhost:8000/#/inscription` — la première inscription devient automatiquement propriétaire du foyer.
 
 ### Sans Docker
 
@@ -32,7 +32,6 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000
 ## Configuration (.env)
 
 ```
-HOUSEHOLD_PASSCODE=famille       # code partagé du foyer
 DATABASE_URL=sqlite:///./data/menu.db
 PORT=8000
 SECRET_KEY=changez-en-production
@@ -54,7 +53,7 @@ ruff check . && ruff format .   # lint + formatage
 3. Build command : `pip install -r requirements.txt && python create_icons.py`
 4. Start command : `python -m app.seed && uvicorn app.main:app --host 0.0.0.0 --port $PORT`
 5. Ajoutez un **Disk** (volume persistant) monté sur `/data`
-6. Variables d'environnement : `HOUSEHOLD_PASSCODE`, `SECRET_KEY`, `DATABASE_URL=sqlite:////data/menu.db`
+6. Variables d'environnement : `SECRET_KEY`, `DATABASE_URL=sqlite:////data/menu.db`
 
 ### Railway / Fly.io
 

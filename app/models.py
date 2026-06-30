@@ -7,7 +7,9 @@ class Household(SQLModel, table=True):
     __tablename__ = "household"
     id: Optional[int] = Field(default=None, primary_key=True)
     name: str
-    passcode_hash: str
+    passcode_hash: Optional[str] = Field(default=None)
+    invite_code: Optional[str] = Field(default=None)
+    invite_code_created_at: Optional[datetime] = Field(default=None)
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 
@@ -17,6 +19,9 @@ class Member(SQLModel, table=True):
     household_id: int = Field(foreign_key="household.id")
     name: str
     color: str = Field(default="#4B8FA6")
+    email: Optional[str] = Field(default=None, unique=True, index=True)
+    password_hash: Optional[str] = Field(default=None)
+    is_owner: bool = Field(default=False)
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 

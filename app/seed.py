@@ -2,8 +2,6 @@ import re
 from sqlmodel import Session, select
 from app.db import engine, create_db_and_tables
 from app.models import Household, Settings, Dish
-from app.auth import hash_passcode
-from app.config import settings
 
 KNOWN_TAGS = {"MC", "deglaze", "insta", "BMK", "khantoche"}
 
@@ -125,10 +123,7 @@ def run_seed() -> None:
     with Session(engine) as session:
         household = session.exec(select(Household)).first()
         if not household:
-            household = Household(
-                name="Ma Famille",
-                passcode_hash=hash_passcode(settings.household_passcode),
-            )
+            household = Household(name="Ma Famille")
             session.add(household)
             session.commit()
             session.refresh(household)

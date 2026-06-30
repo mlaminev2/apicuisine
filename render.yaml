@@ -10,8 +10,6 @@ services:
       mountPath: /data
       sizeGB: 1
     envVars:
-      - key: HOUSEHOLD_PASSCODE
-        sync: false
       - key: SECRET_KEY
         generateValue: true
       - key: DATABASE_URL
