@@ -9,6 +9,16 @@ export async function renderSettings(root) {
   root.innerHTML = `<div class="page-header"><h1>Réglages</h1></div><div id="settings-body" style="padding:12px"></div>`;
   const body = document.getElementById("settings-body");
 
+  // Bouton déconnexion rendu immédiatement — toujours visible même si l'API échoue
+  const secLogout = document.createElement("div");
+  secLogout.className = "settings-section";
+  const logoutBtn = document.createElement("button");
+  logoutBtn.className = "btn btn-danger btn-full";
+  logoutBtn.textContent = "Se déconnecter";
+  logoutBtn.onclick = () => { state.clearAuth(); location.hash = "#/login"; };
+  secLogout.appendChild(logoutBtn);
+  body.appendChild(secLogout);
+
   let sett, members, invite = null;
   try {
     const promises = [api.getSettings(), api.getMembers()];
@@ -17,7 +27,7 @@ export async function renderSettings(root) {
     [sett, members] = results;
     if (state.isOwner) invite = results[2];
   } catch (err) {
-    body.innerHTML = `<div class="text-muted">${err.message}</div>`;
+    body.insertAdjacentHTML("afterbegin", `<div class="text-muted" style="margin-bottom:16px">${err.message}</div>`);
     return;
   }
 
@@ -156,19 +166,7 @@ export async function renderSettings(root) {
     sec2b.appendChild(btnRow);
   }
 
-  // Déconnexion
-  const sec3 = document.createElement("div");
-  sec3.className = "settings-section mt-16";
-  const logoutBtn = document.createElement("button");
-  logoutBtn.className = "btn btn-danger btn-full";
-  logoutBtn.textContent = "Se déconnecter";
-  logoutBtn.onclick = () => {
-    state.clearAuth();
-    location.hash = "#/login";
-  };
-  sec3.appendChild(logoutBtn);
-
-  body.append(sec1, sec2, ...(sec2b ? [sec2b] : []), sec3);
+  body.append(sec1, sec2, ...(sec2b ? [sec2b] : []));
   renderShopCategories(body);
 }
 

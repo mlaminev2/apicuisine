@@ -22,4 +22,11 @@ export function renderNavbar() {
     btn.onclick = () => { location.hash = tab.hash; };
     nav.appendChild(btn);
   }
+
+  const logoutBtn = document.createElement("button");
+  logoutBtn.className = "nav-tab nav-logout";
+  logoutBtn.title = "Se déconnecter";
+  logoutBtn.innerHTML = `<span class="icon">🚪</span><span>Quitter</span>`;
+  logoutBtn.onclick = () => { state.clearAuth(); location.hash = "#/login"; };
+  nav.appendChild(logoutBtn);
 }

@@ -46,6 +46,8 @@ a { color: inherit; text-decoration: none; }
 }
 .nav-tab .icon { font-size: 20px; line-height: 1; }
 .nav-tab.active { color: var(--accent-dark); font-weight: 600; }
+.nav-tab.nav-logout { flex: 0 0 52px; color: #c0392b; opacity: .7; }
+.nav-tab.nav-logout:hover { opacity: 1; }
 
 /* ── Header ── */
 .page-header {
