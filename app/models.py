@@ -26,6 +26,8 @@ class Member(SQLModel, table=True):
     email: Optional[str] = Field(default=None, unique=True, index=True)
     password_hash: Optional[str] = Field(default=None)
     is_owner: bool = Field(default=False)
+    oauth_provider: Optional[str] = Field(default=None)   # "google" | "apple"
+    oauth_sub: Optional[str] = Field(default=None)        # identifiant unique chez le provider
     created_at: datetime = Field(default_factory=_utcnow)
 
 

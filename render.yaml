@@ -14,3 +14,15 @@ services:
         generateValue: true
       - key: DATABASE_URL
         value: sqlite:////data/menu.db
+      - key: GOOGLE_CLIENT_ID
+        value: ""
+      - key: GOOGLE_CLIENT_SECRET
+        value: ""
+      - key: APPLE_CLIENT_ID
+        value: ""
+      - key: APPLE_TEAM_ID
+        value: ""
+      - key: APPLE_KEY_ID
+        value: ""
+      - key: APPLE_PRIVATE_KEY
+        value: ""

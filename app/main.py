@@ -24,6 +24,7 @@ from app.routers import (
     settings,
     import_url,
     categories,
+    oauth,
 )
 
 app = FastAPI(title="Menus Famille", version="1.0.0")
@@ -64,6 +65,7 @@ app.include_router(tracking.router)
 app.include_router(settings.router)
 app.include_router(import_url.router)
 app.include_router(categories.router)
+app.include_router(oauth.router)
 
 
 @app.get("/api/health")
@@ -122,6 +124,15 @@ def _migrate():
             conn.commit()
         except Exception:
             pass
+        for col, definition in [
+            ("oauth_provider", "TEXT"),
+            ("oauth_sub", "TEXT"),
+        ]:
+            try:
+                conn.execute(text(f"ALTER TABLE member ADD COLUMN {col} {definition}"))
+                conn.commit()
+            except Exception:
+                pass
 
 
 @app.on_event("startup")

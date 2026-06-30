@@ -16,7 +16,7 @@ async function route() {
   const hash = location.hash || (state.isLoggedIn() ? "#/calendrier" : "#/login");
   renderNavbar();
 
-  if (!state.isLoggedIn() && !hash.startsWith("#/login") && !hash.startsWith("#/inscription")) {
+  if (!state.isLoggedIn() && !hash.startsWith("#/login") && !hash.startsWith("#/inscription") && !hash.startsWith("#/oauth-callback")) {
     location.hash = "#/login";
     return;
   }
@@ -26,6 +26,15 @@ async function route() {
 
   if (hash.startsWith("#/login")) { await renderLogin(root); return; }
   if (hash.startsWith("#/inscription")) { await renderRegister(root); return; }
+  if (hash.startsWith("#/oauth-callback")) {
+    if (params.token) {
+      state.setAuth(params.token, parseInt(params.household_id), parseInt(params.member_id), params.member_name, params.is_owner === "true");
+      location.hash = "#/calendrier";
+    } else {
+      location.hash = "#/login" + (params.oauth_error ? "?oauth_error=" + params.oauth_error : "");
+    }
+    return;
+  }
   if (hash.startsWith("#/calendrier")) { await renderCalendar(root); return; }
   if (hash.startsWith("#/base")) { await renderBase(root); return; }
   if (hash.startsWith("#/courses")) { await renderShopping(root, params); return; }
