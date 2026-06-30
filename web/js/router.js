@@ -8,7 +8,6 @@ import { renderShopping } from "./views/shopping.js";
 import { renderTracking } from "./views/tracking.js";
 import { renderSettings } from "./views/settings.js";
 import { renderImport } from "./views/import.js";
-import { renderRecette } from "./views/recette.js";
 
 const root = document.getElementById("view-root");
 
@@ -39,7 +38,7 @@ async function route() {
   if (hash.startsWith("#/base")) { await renderBase(root); return; }
   if (hash.startsWith("#/courses")) { await renderShopping(root, params); return; }
   if (hash.startsWith("#/suivi")) { await renderTracking(root); return; }
-  if (hash.startsWith("#/recette")) { await renderRecette(root); return; }
+  if (hash.startsWith("#/recette")) { location.hash = "#/base"; return; }
   if (hash.startsWith("#/importer")) { await renderImport(root); return; }
   if (hash.startsWith("#/reglages")) { await renderSettings(root); return; }
 

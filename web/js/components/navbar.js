@@ -2,8 +2,7 @@ import { state } from "../state.js";
 
 const TABS = [
   { hash: "#/calendrier", icon: "📅", label: "Calendrier" },
-  { hash: "#/base", icon: "🍽️", label: "Base" },
-  { hash: "#/recette", icon: "📖", label: "Recettes" },
+  { hash: "#/base", icon: "🍽️", label: "Plats" },
   { hash: "#/courses", icon: "🛒", label: "Courses" },
   { hash: "#/importer", icon: "🔗", label: "Importer" },
   { hash: "#/reglages", icon: "⚙️", label: "Réglages" },
