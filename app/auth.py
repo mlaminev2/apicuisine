@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -27,7 +27,7 @@ def verify_password(password: str, hashed: str) -> bool:
 def create_token(member_id: int) -> str:
     data = {
         "sub": str(member_id),
-        "exp": datetime.utcnow() + timedelta(days=TOKEN_EXPIRE_DAYS),
+        "exp": datetime.now(timezone.utc) + timedelta(days=TOKEN_EXPIRE_DAYS),
     }
     return jwt.encode(data, settings.secret_key, algorithm=ALGORITHM)
 

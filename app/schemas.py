@@ -1,12 +1,12 @@
 import json as _json
 from datetime import datetime, date
 from typing import Optional
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, Field, field_validator
 
 
 class LoginRequest(BaseModel):
-    email: str
-    password: str
+    email: str = Field(max_length=200)
+    password: str = Field(max_length=128)
 
 
 class LoginResponse(BaseModel):
@@ -19,11 +19,11 @@ class LoginResponse(BaseModel):
 
 
 class RegisterRequest(BaseModel):
-    name: str
-    email: str
-    password: str
-    color: str = "#4B8FA6"
-    invite_code: Optional[str] = None
+    name: str = Field(min_length=1, max_length=50)
+    email: str = Field(max_length=200)
+    password: str = Field(min_length=8, max_length=128)
+    color: str = Field(default="#4B8FA6", max_length=20)
+    invite_code: Optional[str] = Field(default=None, max_length=20)
 
 
 class MemberRead(BaseModel):
@@ -41,18 +41,18 @@ class InviteRead(BaseModel):
 
 
 class DishCreate(BaseModel):
-    name: str
+    name: str = Field(min_length=1, max_length=200)
     category: str
 
 
 class DishUpdate(BaseModel):
-    name: Optional[str] = None
+    name: Optional[str] = Field(default=None, max_length=200)
     category: Optional[str] = None
     active: Optional[bool] = None
     ingredients: Optional[list[str]] = None
     instructions: Optional[list[str]] = None
-    thumbnail_url: Optional[str] = None
-    author: Optional[str] = None
+    thumbnail_url: Optional[str] = Field(default=None, max_length=500)
+    author: Optional[str] = Field(default=None, max_length=200)
 
 
 class DishRead(BaseModel):
@@ -90,7 +90,7 @@ class PlanEntryUpdate(BaseModel):
     main_dish_id: Optional[int] = None
     dessert_dish_id: Optional[int] = None
     entree_dish_id: Optional[int] = None
-    free_text: Optional[str] = None
+    free_text: Optional[str] = Field(default=None, max_length=500)
     planned_by: Optional[int] = None
 
 
@@ -133,13 +133,13 @@ class ShoppingCategoryRead(BaseModel):
 
 
 class ShoppingCategoryCreate(BaseModel):
-    name: str
-    color: str = "#888888"
+    name: str = Field(min_length=1, max_length=50)
+    color: str = Field(default="#888888", max_length=20)
 
 
 class ShoppingCategoryUpdate(BaseModel):
-    name: Optional[str] = None
-    color: Optional[str] = None
+    name: Optional[str] = Field(default=None, max_length=50)
+    color: Optional[str] = Field(default=None, max_length=20)
     sort_order: Optional[int] = None
 
 
@@ -149,7 +149,7 @@ class IngredientMapEntry(BaseModel):
 
 
 class ShoppingItem(BaseModel):
-    text: str
+    text: str = Field(max_length=300)
     checked: bool = False
     category_id: Optional[int] = None
 

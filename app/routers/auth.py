@@ -1,9 +1,12 @@
 import hmac
+import logging
 import secrets
 import time
 from collections import defaultdict
-from datetime import datetime
+from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, Request, status
+
+logger = logging.getLogger(__name__)
 from sqlmodel import Session, select
 from app.db import get_session
 from app.models import Household, Member
@@ -14,11 +17,23 @@ router = APIRouter(prefix="/api", tags=["auth"])
 
 _MAX_ATTEMPTS = 10
 _WINDOW_SECONDS = 300
+_MAX_TRACKED_IPS = 5_000
 _login_attempts: dict[str, list[float]] = defaultdict(list)
 _register_attempts: dict[str, list[float]] = defaultdict(list)
 
 
+def _prune_store(store: dict) -> None:
+    """Supprime les entrées expirées pour éviter la croissance illimitée."""
+    if len(store) <= _MAX_TRACKED_IPS:
+        return
+    cutoff = time.time() - _WINDOW_SECONDS
+    stale = [ip for ip, ts in store.items() if not any(t > cutoff for t in ts)]
+    for ip in stale[:len(store) - _MAX_TRACKED_IPS]:
+        del store[ip]
+
+
 def _enforce_rate_limit(store: dict, ip: str) -> None:
+    _prune_store(store)
     now = time.time()
     cutoff = now - _WINDOW_SECONDS
     attempts = [t for t in store[ip] if t > cutoff]
@@ -77,6 +92,7 @@ def register(body: RegisterRequest, request: Request, session: Session = Depends
     session.commit()
     session.refresh(member)
 
+    logger.info("register.ok ip=%s member_id=%s is_owner=%s", ip, member.id, is_owner)
     token = create_token(member.id)
     return LoginResponse(
         token=token,
@@ -97,9 +113,11 @@ def login(body: LoginRequest, request: Request, session: Session = Depends(get_s
     member = session.exec(select(Member).where(Member.email == normalized_email)).first()
 
     if not member or not member.password_hash or not verify_password(body.password, member.password_hash):
+        logger.warning("login.fail ip=%s email=%s", ip, normalized_email)
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Email ou mot de passe incorrect")
 
     _login_attempts.pop(ip, None)
+    logger.info("login.ok ip=%s member_id=%s", ip, member.id)
     household = session.get(Household, member.household_id)
     token = create_token(member.id)
     return LoginResponse(
@@ -131,7 +149,7 @@ def create_invite(
 ):
     household = session.get(Household, owner.household_id)
     household.invite_code = secrets.token_urlsafe(8)
-    household.invite_code_created_at = datetime.utcnow()
+    household.invite_code_created_at = datetime.now(timezone.utc)
     session.add(household)
     session.commit()
     session.refresh(household)

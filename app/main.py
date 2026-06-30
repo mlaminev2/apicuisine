@@ -1,9 +1,17 @@
+import logging
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pathlib import Path
 from sqlalchemy import text
 from app.db import create_db_and_tables, engine
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)-8s %(name)s — %(message)s",
+    datefmt="%Y-%m-%dT%H:%M:%S",
+)
+logger = logging.getLogger(__name__)
 from app.seed import run_seed
 from app.routers import (
     auth,
@@ -60,7 +68,14 @@ app.include_router(categories.router)
 
 @app.get("/api/health")
 def health():
-    return {"status": "ok"}
+    try:
+        with engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+        return {"status": "ok", "db": "ok"}
+    except Exception:
+        from fastapi.responses import JSONResponse
+        logger.error("Health check: DB inaccessible")
+        return JSONResponse(status_code=503, content={"status": "degraded", "db": "error"})
 
 
 def _migrate():
@@ -114,6 +129,7 @@ def on_startup():
     create_db_and_tables()
     _migrate()
     run_seed()
+    logger.info("Menus Famille démarré")
 
 
 web_dir = Path(__file__).parent.parent / "web"

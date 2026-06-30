@@ -1,5 +1,5 @@
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from fastapi import APIRouter, Depends
 from sqlmodel import Session
 from app.db import get_session
@@ -44,7 +44,7 @@ def update_settings(
         sett.weekday_category_map = json.dumps(body.weekday_category_map)
     if body.dessert_enabled is not None:
         sett.dessert_enabled = body.dessert_enabled
-    sett.updated_at = datetime.utcnow()
+    sett.updated_at = datetime.now(timezone.utc)
     session.add(sett)
     session.commit()
     session.refresh(sett)

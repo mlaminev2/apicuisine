@@ -1,5 +1,5 @@
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from fastapi import APIRouter, Depends
 from sqlmodel import Session, select
 from app.db import get_session
@@ -99,7 +99,7 @@ def upsert_shopping(
             d["category_id"] = resolve_category_id(item.text, household.id, session)
         enriched.append(d)
     sl.items = json.dumps(enriched)
-    sl.updated_at = datetime.utcnow()
+    sl.updated_at = datetime.now(timezone.utc)
     session.add(sl)
     session.commit()
     session.refresh(sl)

@@ -1,6 +1,10 @@
-from datetime import datetime, date
+from datetime import datetime, date, timezone
 from typing import Optional
 from sqlmodel import Field, SQLModel, UniqueConstraint
+
+
+def _utcnow() -> datetime:
+    return datetime.now(timezone.utc)
 
 
 class Household(SQLModel, table=True):
@@ -10,7 +14,7 @@ class Household(SQLModel, table=True):
     passcode_hash: Optional[str] = Field(default=None)
     invite_code: Optional[str] = Field(default=None)
     invite_code_created_at: Optional[datetime] = Field(default=None)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=_utcnow)
 
 
 class Member(SQLModel, table=True):
@@ -22,7 +26,7 @@ class Member(SQLModel, table=True):
     email: Optional[str] = Field(default=None, unique=True, index=True)
     password_hash: Optional[str] = Field(default=None)
     is_owner: bool = Field(default=False)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=_utcnow)
 
 
 class Dish(SQLModel, table=True):
@@ -39,7 +43,7 @@ class Dish(SQLModel, table=True):
     source_url: Optional[str] = Field(default=None)
     thumbnail_url: Optional[str] = Field(default=None)
     author: Optional[str] = Field(default=None)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=_utcnow)
 
 
 class ShoppingCategory(SQLModel, table=True):
@@ -74,7 +78,7 @@ class PlanEntry(SQLModel, table=True):
     cooked: bool = Field(default=False)
     cooked_by: Optional[int] = Field(default=None, foreign_key="member.id")
     cooked_at: Optional[datetime] = Field(default=None)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=_utcnow)
 
 
 class ShoppingList(SQLModel, table=True):
@@ -85,7 +89,7 @@ class ShoppingList(SQLModel, table=True):
     iso_year: int
     iso_week: int
     items: str = Field(default="[]")
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=_utcnow)
 
 
 class Settings(SQLModel, table=True):
@@ -95,4 +99,4 @@ class Settings(SQLModel, table=True):
         default='{"0":"pomme_de_terre","1":"riz","2":"pates","3":"pomme_de_terre","4":"riz","5":"autre","6":"africain"}'
     )
     dessert_enabled: bool = Field(default=True)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=_utcnow)

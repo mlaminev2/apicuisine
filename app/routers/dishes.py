@@ -1,8 +1,8 @@
 import json
 from pathlib import Path
 from typing import Optional
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
-from sqlmodel import Session, select
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
+from sqlmodel import Session, select, col
 from app.db import get_session
 from app.models import Household, Dish
 from app.auth import get_current_household
@@ -27,6 +27,9 @@ def _assert_valid_category(category: str) -> None:
 def list_dishes(
     category: Optional[str] = None,
     active: Optional[bool] = None,
+    q: Optional[str] = Query(default=None, max_length=100, description="Recherche par nom"),
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=500, ge=1, le=500),
     household: Household = Depends(get_current_household),
     session: Session = Depends(get_session),
 ):
@@ -35,6 +38,9 @@ def list_dishes(
         stmt = stmt.where(Dish.category == category)
     if active is not None:
         stmt = stmt.where(Dish.active == active)
+    if q:
+        stmt = stmt.where(col(Dish.name).ilike(f"%{q}%"))
+    stmt = stmt.order_by(Dish.seed_order, Dish.name).offset(skip).limit(limit)
     return session.exec(stmt).all()
 
 

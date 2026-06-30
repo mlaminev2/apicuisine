@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlmodel import Session, select
@@ -93,7 +93,7 @@ def upsert_plan(
         entry.free_text = body.free_text
     if body.planned_by is not None:
         entry.planned_by = body.planned_by
-    entry.updated_at = datetime.utcnow()
+    entry.updated_at = datetime.now(timezone.utc)
     session.add(entry)
     session.commit()
     session.refresh(entry)
@@ -118,8 +118,8 @@ def patch_plan(
     entry.cooked = body.cooked
     if body.cooked_by is not None:
         entry.cooked_by = body.cooked_by
-    entry.cooked_at = datetime.utcnow() if body.cooked else None
-    entry.updated_at = datetime.utcnow()
+    entry.cooked_at = datetime.now(timezone.utc) if body.cooked else None
+    entry.updated_at = datetime.now(timezone.utc)
     session.add(entry)
     session.commit()
     session.refresh(entry)

@@ -4,7 +4,7 @@ import re
 import unicodedata
 import urllib.request
 import urllib.parse
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 from fastapi import APIRouter, Depends
 from sqlmodel import Session, select
@@ -581,7 +581,7 @@ def save_import(
             if t.strip()
         ]
         sl.items = json.dumps(existing + new_items)
-        sl.updated_at = datetime.utcnow()
+        sl.updated_at = datetime.now(timezone.utc)
         session.add(sl)
         session.commit()
         items_added = len(new_items)
