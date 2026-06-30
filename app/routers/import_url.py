@@ -81,6 +81,11 @@ _YOUTUBE_HOSTS = {"youtube.com", "www.youtube.com", "m.youtube.com", "youtu.be"}
 _INSTAGRAM_HOSTS = {"instagram.com", "www.instagram.com"}
 _TIKTOK_HOSTS = {"tiktok.com", "www.tiktok.com", "vm.tiktok.com", "m.tiktok.com"}
 
+_VALID_CATEGORIES = frozenset({
+    "pomme_de_terre", "riz", "pates", "entree", "autre", "sucree", "africain",
+})
+_MAX_EXTRACT_TEXT_LEN = 50_000
+
 
 def _safe_host(url: str) -> str:
     """Returns the lowercase hostname for http(s) URLs, or '' if invalid/unsafe."""
@@ -511,6 +516,8 @@ def extract_text_endpoint(
     session: Session = Depends(get_session),
 ):
     """Extract ingredients and steps from user-provided raw text (paste fallback)."""
+    if len(body.text) > _MAX_EXTRACT_TEXT_LEN:
+        raise HTTPException(status_code=413, detail="Texte trop long (50 000 caractères max.)")
     text = body.text.strip()
     ingredients = _extract_ingredients(text)
     steps = _extract_steps(text)
@@ -533,6 +540,8 @@ def save_import(
     household: Household = Depends(get_current_household),
     session: Session = Depends(get_session),
 ):
+    if body.category not in _VALID_CATEGORIES:
+        raise HTTPException(status_code=422, detail="Catégorie invalide")
     dish = Dish(
         household_id=household.id,
         name=body.name,

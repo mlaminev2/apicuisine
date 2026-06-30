@@ -39,6 +39,8 @@ def register(body: RegisterRequest, request: Request, session: Session = Depends
 
     if len(body.password) < 8:
         raise HTTPException(status_code=400, detail="Le mot de passe doit contenir au moins 8 caractères")
+    if len(body.password) > 128:
+        raise HTTPException(status_code=400, detail="Le mot de passe est trop long (128 caractères max.)")
 
     normalized_email = body.email.lower().strip()
 
