@@ -10,6 +10,13 @@ from app.schemas import PlanEntryRead, PlanEntryUpdate, PlanEntryPatch, DishRead
 router = APIRouter(prefix="/api", tags=["plan"])
 
 
+def _parse_date(date_str: str) -> date:
+    try:
+        return date.fromisoformat(date_str)
+    except ValueError:
+        raise HTTPException(status_code=422, detail="Format de date invalide (attendu : YYYY-MM-DD)")
+
+
 def _enrich(entry: PlanEntry, session: Session) -> PlanEntryRead:
     main_dish = session.get(Dish, entry.main_dish_id) if entry.main_dish_id else None
     dessert = session.get(Dish, entry.dessert_dish_id) if entry.dessert_dish_id else None
@@ -60,10 +67,13 @@ def list_plan(
     session: Session = Depends(get_session),
 ):
     stmt = select(PlanEntry).where(PlanEntry.household_id == household.id)
-    if from_:
-        stmt = stmt.where(PlanEntry.date >= date.fromisoformat(from_))
-    if to:
-        stmt = stmt.where(PlanEntry.date <= date.fromisoformat(to))
+    try:
+        if from_:
+            stmt = stmt.where(PlanEntry.date >= date.fromisoformat(from_))
+        if to:
+            stmt = stmt.where(PlanEntry.date <= date.fromisoformat(to))
+    except ValueError:
+        raise HTTPException(status_code=422, detail="Format de date invalide (attendu : YYYY-MM-DD)")
     entries = session.exec(stmt).all()
     return [_enrich(e, session) for e in entries]
 
@@ -75,7 +85,7 @@ def upsert_plan(
     household: Household = Depends(get_current_household),
     session: Session = Depends(get_session),
 ):
-    d = date.fromisoformat(date_str)
+    d = _parse_date(date_str)
     entry = session.exec(
         select(PlanEntry).where(
             PlanEntry.household_id == household.id, PlanEntry.date == d
@@ -107,7 +117,7 @@ def patch_plan(
     household: Household = Depends(get_current_household),
     session: Session = Depends(get_session),
 ):
-    d = date.fromisoformat(date_str)
+    d = _parse_date(date_str)
     entry = session.exec(
         select(PlanEntry).where(
             PlanEntry.household_id == household.id, PlanEntry.date == d
@@ -132,7 +142,7 @@ def delete_plan(
     household: Household = Depends(get_current_household),
     session: Session = Depends(get_session),
 ):
-    d = date.fromisoformat(date_str)
+    d = _parse_date(date_str)
     entry = session.exec(
         select(PlanEntry).where(
             PlanEntry.household_id == household.id, PlanEntry.date == d

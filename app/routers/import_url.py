@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from app.db import get_session
 from app.models import Household, Dish, ShoppingList
 from app.auth import get_current_household
@@ -408,7 +408,7 @@ def _extract_steps(description: str) -> list[str]:
 # ── Schemas ──────────────────────────────────────────────────────────────────
 
 class ImportRequest(BaseModel):
-    url: str
+    url: str = Field(max_length=2048)
 
 
 class ImportResult(BaseModel):
@@ -424,17 +424,17 @@ class ImportResult(BaseModel):
 
 
 class SaveImportRequest(BaseModel):
-    name: str
+    name: str = Field(min_length=1, max_length=200)
     category: str
-    url: str
-    source_tag: Optional[str] = None
-    shopping_items: list[str] = []
-    ingredients: list[str] = []
-    instructions: list[str] = []
+    url: str = Field(max_length=2048)
+    source_tag: Optional[str] = Field(default=None, max_length=20)
+    shopping_items: list[str] = Field(default=[], max_length=100)
+    ingredients: list[str] = Field(default=[], max_length=50)
+    instructions: list[str] = Field(default=[], max_length=30)
     iso_year: int
     iso_week: int
-    thumbnail_url: Optional[str] = None
-    author: Optional[str] = None
+    thumbnail_url: Optional[str] = Field(default=None, max_length=500)
+    author: Optional[str] = Field(default=None, max_length=200)
 
 
 class SaveImportResult(BaseModel):
