@@ -13,7 +13,7 @@ import { renderRecette } from "./views/recette.js";
 const root = document.getElementById("view-root");
 
 async function route() {
-  const hash = location.hash || "#/calendrier";
+  const hash = location.hash || (state.isLoggedIn() ? "#/calendrier" : "#/login");
   renderNavbar();
 
   if (!state.isLoggedIn() && !hash.startsWith("#/login") && !hash.startsWith("#/inscription")) {

@@ -1,3 +1,5 @@
+import { state } from "./state.js";
+
 const BASE = "";
 
 function getToken() { return localStorage.getItem("token") || ""; }
@@ -15,6 +17,13 @@ async function request(method, path, body = null) {
     res = await fetch(BASE + path, opts);
   } catch (e) {
     throw new Error("Hors ligne");
+  }
+
+  // Token expiré ou révoqué → logout automatique
+  if (res.status === 401 && path !== "/api/login" && path !== "/api/register") {
+    state.clearAuth();
+    location.hash = "#/login";
+    throw new Error("Session expirée");
   }
 
   if (!res.ok) {
