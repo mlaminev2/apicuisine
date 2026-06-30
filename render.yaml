@@ -3,6 +3,7 @@ services:
     name: menus-famille
     runtime: python
     plan: free
+    pythonVersion: "3.11"
     buildCommand: pip install -r requirements.txt && python create_icons.py
     startCommand: python -m app.seed && uvicorn app.main:app --host 0.0.0.0 --port $PORT
     disk:
@@ -14,7 +15,4 @@ services:
         generateValue: true
       - key: DATABASE_URL
         value: sqlite:////data/menu.db
-      - key: GOOGLE_CLIENT_ID
-        value: ""
-      - key: GOOGLE_CLIENT_SECRET
-        value: ""
+      # GOOGLE_CLIENT_ID et GOOGLE_CLIENT_SECRET : à renseigner dans le dashboard Render
