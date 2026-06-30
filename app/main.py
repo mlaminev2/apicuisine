@@ -140,6 +140,9 @@ def on_startup():
     create_db_and_tables()
     _migrate()
     run_seed()
+    from app.config import settings as _s
+    if _s.secret_key == "dev-secret-key-change-in-production":
+        logger.warning("SECRET_KEY est la clé de développement — changez-la en production !")
     logger.info("Menus Famille démarré")
 
 

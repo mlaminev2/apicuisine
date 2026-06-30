@@ -125,7 +125,7 @@ _GOOGLE_USERINFO = "https://www.googleapis.com/oauth2/v3/userinfo"
 @router.get("/google")
 def google_start(
     request: Request,
-    invite_code: Optional[str] = Query(default=None),
+    invite_code: Optional[str] = Query(default=None, max_length=20),
 ):
     if not settings.google_client_id:
         return RedirectResponse("/#/login?oauth_error=not_configured")
@@ -186,7 +186,7 @@ def google_callback(
 
     sub = info.get("sub", "")
     email = (info.get("email") or "").lower().strip()
-    name = info.get("name") or email.split("@")[0] or "Membre"
+    name = (info.get("name") or email.split("@")[0] or "Membre")[:50]
 
     if not sub or not email:
         return RedirectResponse("/#/login?oauth_error=no_email")
