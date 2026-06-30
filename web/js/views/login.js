@@ -2,16 +2,14 @@ import { api } from "../api.js";
 import { state } from "../state.js";
 
 const OAUTH_ERRORS = {
-  cancelled:        "Connexion annulée.",
-  invalid_state:    "Erreur de sécurité, réessayez.",
-  invite_required:  "Un code d'invitation est requis pour rejoindre ce foyer.",
-  invalid_invite:   "Code d'invitation invalide.",
-  not_configured:   "La connexion OAuth n'est pas configurée sur ce serveur.",
-  no_email:         "Votre compte Google/Apple n'a pas partagé d'adresse email.",
-  google_error:     "Erreur de connexion Google. Réessayez.",
-  apple_error:      "Erreur de connexion Apple. Réessayez.",
-  apple_token_error:"Erreur de vérification Apple. Réessayez.",
-  no_household:     "Configuration serveur incorrecte.",
+  cancelled:       "Connexion annulée.",
+  invalid_state:   "Erreur de sécurité, réessayez.",
+  invite_required: "Un code d'invitation est requis pour rejoindre ce foyer.",
+  invalid_invite:  "Code d'invitation invalide.",
+  not_configured:  "La connexion Google n'est pas configurée sur ce serveur.",
+  no_email:        "Votre compte Google n'a pas partagé d'adresse email.",
+  google_error:    "Erreur de connexion Google. Réessayez.",
+  no_household:    "Configuration serveur incorrecte.",
 };
 
 export async function renderLogin(root) {
@@ -49,12 +47,6 @@ export async function renderLogin(root) {
             <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
           </svg>
           Continuer avec Google
-        </a>
-        <a href="/api/auth/apple" class="btn-oauth btn-oauth-apple">
-          <svg width="18" height="18" viewBox="0 0 814 1000" aria-hidden="true" fill="currentColor">
-            <path d="M788.1 340.9c-5.8 4.5-108.2 62.2-108.2 190.5 0 148.4 130.3 200.9 134.2 202.2-.6 3.2-20.7 71.9-68.7 141.9-42.8 61.6-87.5 123.1-155.5 123.1s-85.5-39.5-164-39.5c-76.5 0-103.7 40.8-165.9 40.8s-105-57.8-155.5-127.4C46 376.7 0 248.4 0 124.8 0 54.3 20.7 0 57.8 0c16.4 0 33.5 6.5 48 18.2 27.6 21.5 58.9 69.5 58.9 120.3 0 45.5-22.2 92.6-35.8 108.2 2.7 1.9 8.2 6.5 22.8 6.5 70.5 0 156.2-47.6 156.2-47.6z"/>
-          </svg>
-          Continuer avec Apple
         </a>
       </div>
     </div>`;

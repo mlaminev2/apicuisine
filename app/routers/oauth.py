@@ -1,5 +1,4 @@
 import hmac
-import json
 import logging
 import secrets
 import time
@@ -7,8 +6,8 @@ from typing import Optional
 from urllib.parse import urlencode
 
 import httpx
-from fastapi import APIRouter, Depends, Form, Query, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi import APIRouter, Depends, Query, Request
+from fastapi.responses import RedirectResponse
 from sqlmodel import Session, select
 
 from app.auth import create_token
@@ -203,128 +202,3 @@ def google_callback(
     return RedirectResponse(_success_redirect(household, member))
 
 
-# ── Apple OAuth ───────────────────────────────────────────────────────────────
-
-_APPLE_AUTH = "https://appleid.apple.com/auth/authorize"
-_APPLE_TOKEN = "https://appleid.apple.com/auth/token"
-
-
-def _apple_client_secret() -> str:
-    """Génère le client_secret Apple : JWT ES256 signé avec la clé privée .p8."""
-    from jose import jwt as jose_jwt
-    now = int(time.time())
-    return jose_jwt.encode(
-        {
-            "iss": settings.apple_team_id,
-            "iat": now,
-            "exp": now + 86400,
-            "aud": "https://appleid.apple.com",
-            "sub": settings.apple_client_id,
-        },
-        settings.apple_private_key,
-        algorithm="ES256",
-        headers={"kid": settings.apple_key_id},
-    )
-
-
-@router.get("/apple")
-def apple_start(
-    request: Request,
-    invite_code: Optional[str] = Query(default=None),
-):
-    if not settings.apple_client_id:
-        return RedirectResponse("/#/login?oauth_error=not_configured")
-    redirect_uri = str(request.base_url).rstrip("/") + "/api/auth/apple/callback"
-    state = _new_state({"invite_code": invite_code, "redirect_uri": redirect_uri})
-    params = urlencode({
-        "client_id": settings.apple_client_id,
-        "redirect_uri": redirect_uri,
-        "response_type": "code",
-        "scope": "name email",
-        "state": state,
-        "response_mode": "form_post",
-    })
-    return RedirectResponse(f"{_APPLE_AUTH}?{params}")
-
-
-@router.post("/apple/callback")
-async def apple_callback(
-    code: Optional[str] = Form(default=None),
-    state: Optional[str] = Form(default=None),
-    error: Optional[str] = Form(default=None),
-    user: Optional[str] = Form(default=None),  # JSON, uniquement au 1er login
-    session: Session = Depends(get_session),
-):
-    """Apple envoie un form POST → on retourne une page HTML qui redirige vers le SPA."""
-
-    def _html(fragment: str) -> HTMLResponse:
-        return HTMLResponse(
-            f"""<!DOCTYPE html><html><head><title>Connexion…</title></head>
-<body><script>window.location.replace("{fragment}");</script>
-<p>Redirection en cours…</p></body></html>"""
-        )
-
-    if error or not code or not state:
-        return _html("/#/login?oauth_error=cancelled")
-
-    state_data = _pop_state(state)
-    if not state_data:
-        return _html("/#/login?oauth_error=invalid_state")
-
-    redirect_uri = state_data["redirect_uri"]
-    invite_code = state_data.get("invite_code")
-
-    # Nom (disponible seulement au premier login Apple)
-    user_info: dict = {}
-    if user:
-        try:
-            user_info = json.loads(user)
-        except Exception:
-            pass
-
-    try:
-        client_secret = _apple_client_secret()
-        with httpx.Client(timeout=10) as client:
-            tok = client.post(_APPLE_TOKEN, data={
-                "client_id": settings.apple_client_id,
-                "client_secret": client_secret,
-                "code": code,
-                "grant_type": "authorization_code",
-                "redirect_uri": redirect_uri,
-            })
-            tok.raise_for_status()
-            tokens = tok.json()
-    except Exception as exc:
-        logger.error("apple_callback token exchange: %s", exc)
-        return _html("/#/login?oauth_error=apple_error")
-
-    # Décoder l'id_token pour récupérer sub + email
-    # (la réponse vient directement d'Apple via HTTPS serveur→serveur — pas besoin de vérifier la signature)
-    try:
-        from jose import jwt as jose_jwt
-        payload = jose_jwt.decode(
-            tokens.get("id_token", ""),
-            options={"verify_signature": False},
-        )
-        sub = payload.get("sub", "")
-        email = (payload.get("email") or "").lower().strip()
-    except Exception as exc:
-        logger.error("apple_callback id_token decode: %s", exc)
-        return _html("/#/login?oauth_error=apple_token_error")
-
-    first = (user_info.get("name") or {}).get("firstName", "")
-    last = (user_info.get("name") or {}).get("lastName", "")
-    name = f"{first} {last}".strip() or email.split("@")[0] or "Membre"
-
-    if not sub or not email:
-        return _html("/#/login?oauth_error=no_email")
-
-    household = session.exec(select(Household)).first()
-    if not household:
-        return _html("/#/login?oauth_error=no_household")
-
-    member, err = _find_or_create(session, household, email, name, "apple", sub, invite_code)
-    if err:
-        return _html(f"/#/login?oauth_error={err}")
-
-    return _html(_success_redirect(household, member))

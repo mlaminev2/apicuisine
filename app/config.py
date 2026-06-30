@@ -10,13 +10,7 @@ class Settings(BaseSettings):
     google_client_id: str = ""
     google_client_secret: str = ""
 
-    # Apple OAuth (optionnel)
-    apple_client_id: str = ""      # Services ID (ex: com.example.menus-famille)
-    apple_team_id: str = ""        # 10-char Team ID
-    apple_key_id: str = ""         # Key ID from developer.apple.com
-    apple_private_key: str = ""    # Contenu du fichier .p8 (clé ES256)
-
-    class Config:
+class Config:
         env_file = ".env"
         extra = "ignore"
 

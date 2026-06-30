@@ -198,7 +198,6 @@ a { color: inherit; text-decoration: none; }
 }
 .btn-oauth:hover { opacity: .9; box-shadow: 0 2px 8px rgba(0,0,0,.12); }
 .btn-oauth-google { background: #fff; color: #3c4043; }
-.btn-oauth-apple  { background: #000; color: #fff; border-color: #000; }
 
 /* ── Toast ── */
 #toast-root { position: fixed; top: 16px; right: 16px; z-index: 999; display: flex; flex-direction: column; gap: 8px; }
