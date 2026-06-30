@@ -28,7 +28,10 @@ async function request(method, path, body = null) {
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: "Erreur serveur" }));
-    throw new Error(err.detail || `Erreur ${res.status}`);
+    const detail = Array.isArray(err.detail)
+      ? err.detail.map((e) => e.msg || JSON.stringify(e)).join(", ")
+      : (err.detail || `Erreur ${res.status}`);
+    throw new Error(detail);
   }
   if (res.status === 204) return null;
   return res.json();

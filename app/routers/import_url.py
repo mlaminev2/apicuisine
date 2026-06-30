@@ -433,7 +433,7 @@ class SaveImportRequest(BaseModel):
     instructions: list[str] = Field(default=[], max_length=30)
     iso_year: int
     iso_week: int
-    thumbnail_url: Optional[str] = Field(default=None, max_length=500)
+    thumbnail_url: Optional[str] = Field(default=None, max_length=2048)
     author: Optional[str] = Field(default=None, max_length=200)
 
 
