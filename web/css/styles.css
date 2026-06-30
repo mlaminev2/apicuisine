@@ -97,10 +97,19 @@ a { color: inherit; text-decoration: none; }
 .btn-full { width: 100%; display: block; text-align: center; }
 
 /* ── Login ── */
-.login-wrap { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; gap: 16px; }
+.login-wrap {
+  min-height: 100vh; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; padding: 24px; gap: 16px;
+  background: url('/images/banner.png') center/cover no-repeat fixed;
+}
+.login-wrap::before {
+  content: ""; position: fixed; inset: 0;
+  background: rgba(255,255,255,.55); backdrop-filter: blur(3px);
+  z-index: 0;
+}
+.login-wrap > * { position: relative; z-index: 1; }
 .login-wrap h1 { font-size: 26px; color: var(--accent-dark); font-weight: 800; }
 .login-logo { width: 200px; height: 200px; object-fit: contain; }
-.login-banner { width: 100%; max-width: 480px; border-radius: 16px; object-fit: cover; box-shadow: 0 4px 16px rgba(0,0,0,.12); }
 .login-form { width: 100%; max-width: 360px; display: flex; flex-direction: column; gap: 12px; }
 .form-group { display: flex; flex-direction: column; gap: 4px; }
 .form-group label { font-size: 13px; font-weight: 600; color: #555; }
