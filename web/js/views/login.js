@@ -18,7 +18,7 @@ export async function renderLogin(root) {
 
   root.innerHTML = `
     <div class="login-wrap">
-      <h1>🍴 Menus Famille</h1>
+      <img src="/images/logo.png" alt="Menus Famille" class="login-logo" />
       <form class="login-form" id="login-form">
         <div class="form-group">
           <label>Email</label>

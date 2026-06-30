@@ -99,6 +99,7 @@ a { color: inherit; text-decoration: none; }
 /* ── Login ── */
 .login-wrap { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; gap: 16px; }
 .login-wrap h1 { font-size: 26px; color: var(--accent-dark); font-weight: 800; }
+.login-logo { width: 200px; height: 200px; object-fit: contain; }
 .login-form { width: 100%; max-width: 360px; display: flex; flex-direction: column; gap: 12px; }
 .form-group { display: flex; flex-direction: column; gap: 4px; }
 .form-group label { font-size: 13px; font-weight: 600; color: #555; }

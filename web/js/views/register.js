@@ -7,7 +7,7 @@ export async function renderRegister(root) {
 
   root.innerHTML = `
     <div class="login-wrap">
-      <h1>🍴 Menus Famille</h1>
+      <img src="/images/logo.png" alt="Menus Famille" class="login-logo" />
       <form class="login-form" id="register-form">
         <div class="form-group">
           <label>Prénom</label>
