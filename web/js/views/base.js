@@ -73,17 +73,8 @@ function renderDishList(container, dishes) {
     return;
   }
 
-  const active = dishes.filter((d) => d.active);
-  const inactive = dishes.filter((d) => !d.active);
-
-  for (const dish of active) container.appendChild(makeDishCard(dish));
-
-  if (inactive.length) {
-    const sep = document.createElement("div");
-    sep.style.cssText = "padding:10px 16px 2px;font-size:10px;font-weight:700;color:#ccc;text-transform:uppercase;letter-spacing:.6px";
-    sep.textContent = "Désactivés";
-    container.appendChild(sep);
-    for (const dish of inactive) container.appendChild(makeDishCard(dish));
+  for (const dish of dishes.filter((d) => d.active)) {
+    container.appendChild(makeDishCard(dish));
   }
 }
 
