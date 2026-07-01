@@ -103,7 +103,7 @@ async function draw() {
         if (entry.entree_dish) {
           const entEl = document.createElement("div");
           entEl.className = "day-dish";
-          entEl.style.cssText = "font-size:9px;color:var(--cat-entree);margin-top:1px";
+          entEl.style.cssText = "font-size:7px;color:var(--cat-entree);margin-top:1px;line-height:1.2;overflow:hidden;white-space:nowrap;text-overflow:ellipsis";
           entEl.textContent = "🥗 " + entry.entree_dish.name;
           cell.appendChild(entEl);
         }
