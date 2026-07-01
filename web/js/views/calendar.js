@@ -142,7 +142,13 @@ async function draw() {
         }
       }
 
-      cell.addEventListener("click", () => openDayPicker(dateStr, entry, settings, draw));
+      cell.addEventListener("click", () => {
+        if (entry && (entry.main_dish || entry.free_text || entry.entree_dish || entry.dessert_dish)) {
+          openDaySummary(dateStr, entry, settings, draw);
+        } else {
+          openDayPicker(dateStr, entry, settings, draw);
+        }
+      });
       grid.appendChild(cell);
     }
 
@@ -171,4 +177,90 @@ async function openDayPicker(dateStr, entry, settings, onSave) {
   const catMap = settings.weekday_category_map;
   const category = catMap[String(dow)] || ["pomme_de_terre","riz","pates","pomme_de_terre","riz","autre","africain"][dow];
   await renderPicker(dateStr, category, entry, settings.dessert_enabled, onSave);
+}
+
+function openDaySummary(dateStr, entry, settings, onSave) {
+  const root = document.getElementById("modal-root");
+  const overlay = document.createElement("div");
+  overlay.className = "modal-overlay";
+
+  const d = new Date(dateStr + "T00:00:00");
+  const label = d.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
+
+  let menuHtml = "";
+  if (entry.entree_dish) {
+    menuHtml += `<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #f5f5f5">
+      <span style="font-size:18px">🥗</span>
+      <div>
+        <div style="font-size:10px;font-weight:700;color:#aaa;text-transform:uppercase">Entrée</div>
+        <div style="font-size:14px;font-weight:600">${entry.entree_dish.name}</div>
+      </div>
+    </div>`;
+  }
+  if (entry.main_dish) {
+    menuHtml += `<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #f5f5f5">
+      <span style="font-size:18px">🍽️</span>
+      <div>
+        <div style="font-size:10px;font-weight:700;color:#aaa;text-transform:uppercase">Plat principal</div>
+        <div style="font-size:14px;font-weight:600">${entry.main_dish.name}</div>
+      </div>
+    </div>`;
+  } else if (entry.free_text) {
+    menuHtml += `<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #f5f5f5">
+      <span style="font-size:18px">🍽️</span>
+      <div>
+        <div style="font-size:10px;font-weight:700;color:#aaa;text-transform:uppercase">Plat</div>
+        <div style="font-size:14px;font-weight:600">${entry.free_text}</div>
+      </div>
+    </div>`;
+  }
+  if (entry.dessert_dish) {
+    menuHtml += `<div style="display:flex;align-items:center;gap:8px;padding:8px 0">
+      <span style="font-size:18px">🍰</span>
+      <div>
+        <div style="font-size:10px;font-weight:700;color:#aaa;text-transform:uppercase">Dessert</div>
+        <div style="font-size:14px;font-weight:600">${entry.dessert_dish.name}</div>
+      </div>
+    </div>`;
+  }
+
+  const cookedStatus = entry.cooked
+    ? `<div style="display:flex;align-items:center;gap:6px;margin-top:12px;padding:8px 12px;background:#d5ead8;border-radius:10px;font-size:13px;color:#2d6a4f;font-weight:600">
+        ✅ Repas réalisé${entry.cooked_by ? " par " + entry.cooked_by : ""}
+      </div>`
+    : "";
+
+  overlay.innerHTML = `
+    <div class="modal-box">
+      <div class="modal-header">
+        <h2 style="font-size:15px;text-transform:capitalize">${label}</h2>
+        <button class="btn-close">✕</button>
+      </div>
+      <div class="modal-body">
+        ${menuHtml}
+        ${cookedStatus}
+      </div>
+      <div class="modal-footer" style="gap:8px">
+        <button class="btn btn-danger btn-sm" id="btn-day-delete" style="padding:8px 12px;font-size:13px">🗑 Effacer</button>
+        <button class="btn btn-primary flex-1" id="btn-day-modify">✏️ Modifier le repas</button>
+      </div>
+    </div>`;
+
+  root.appendChild(overlay);
+  overlay.querySelector(".btn-close").onclick = () => overlay.remove();
+  overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+
+  overlay.querySelector("#btn-day-modify").onclick = () => {
+    overlay.remove();
+    openDayPicker(dateStr, entry, settings, onSave);
+  };
+
+  overlay.querySelector("#btn-day-delete").onclick = async () => {
+    if (!confirm("Effacer le repas de ce jour ?")) return;
+    try {
+      await api.deletePlan(dateStr);
+      overlay.remove();
+      onSave();
+    } catch (err) { showToast(err.message, "error"); }
+  };
 }

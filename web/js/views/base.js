@@ -177,8 +177,6 @@ function openDishModal(dish) {
     ? `<button class="btn btn-primary flex-1" id="btn-add-to-shop">🛒 Courses</button>`
     : "";
 
-  const toggleLabel = dish.active ? "🗑 Désactiver" : "↩ Réactiver";
-
   overlay.innerHTML = `
     <div class="modal-box">
       <div class="modal-header">
@@ -192,7 +190,7 @@ function openDishModal(dish) {
         ${shopBtn}
         ${videoBtn}
         <button class="btn btn-ghost flex-1" id="btn-edit-dish">✏️ ${hasRecipe ? "Modifier" : "Ajouter recette"}</button>
-        <button class="btn btn-ghost" id="btn-toggle-active" style="padding:8px 12px;font-size:12px">${toggleLabel}</button>
+        <button class="btn btn-danger" id="btn-delete-dish" style="padding:8px 12px;font-size:13px">🗑 Supprimer</button>
       </div>
     </div>`;
 
@@ -231,13 +229,14 @@ function openDishModal(dish) {
     }
   });
 
-  // Toggle active/inactive
-  overlay.querySelector("#btn-toggle-active").onclick = async () => {
+  // Supprimer
+  overlay.querySelector("#btn-delete-dish").onclick = async () => {
+    const label = dish.active ? "Supprimer" : "Supprimer définitivement";
+    if (!confirm(`${label} "${dish.name}" ?\nCette action est irréversible.`)) return;
     try {
-      if (dish.active) await api.deleteDish(dish.id);
-      else await api.updateDish(dish.id, { active: true });
+      await api.deleteDish(dish.id);
       overlay.remove();
-      showToast(dish.active ? `"${dish.name}" désactivé` : `"${dish.name}" réactivé`);
+      showToast(`"${dish.name}" supprimé`);
       loadDishes();
     } catch (err) { showToast(err.message, "error"); }
   };
