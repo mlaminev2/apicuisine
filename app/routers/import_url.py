@@ -55,30 +55,39 @@ _QTY_RE = re.compile(
     re.IGNORECASE,
 )
 _SECTION_INGR = re.compile(r"ingr[eé]dients?", re.IGNORECASE)
-_SECTION_END = re.compile(
-    r"^(pr[eé]paration|instructions?|[eé]tapes?|recette\s*:|m[eé]thode|"
-    r"pour\s+\d+|ustensiles?|mat[eé]riel|d[eé]roulement|mani[eè]re)",
-    re.IGNORECASE,
-)
 _BULLET = re.compile(r"^\s*[-•*·▪▸→✓]\s*")
 _NUMBEREDLINE = re.compile(r"^\s*\d+[.)]\s*")
-# Same verbs without ^ anchor — used to detect instruction sentences mid-text
-_VERB_IN_LINE = re.compile(
-    r"\b(ajoutez?|ajouter?|m[eé]langez?|m[eé]langer?|versez?|verser?|"
-    r"cuire|cuisez?|faites?|faire\s+revenir|pr[eé]chauffez?|pr[eé]chauffer?|"
-    r"incorporez?|incorporer?|d[eé]posez?|d[eé]poser?|r[eé]servez?|r[eé]server?)\b",
-    re.IGNORECASE,
+# Verbes d'instruction (fr impératif/infinitif + en) partagés par les deux
+# détecteurs. Liste volontairement large : un verbe raté = une étape classée
+# ingrédient.
+_VERBS_FR = (
+    r"faire|faites?|ajouter|ajoutez|m[eé]langer|m[eé]langez|"
+    r"mettre|mettez|verser|versez|cuire|cuisez|"
+    r"pr[eé]chauffer|pr[eé]chauffez|d[eé]couper|d[eé]coupez|trancher|tranchez|"
+    r"laver|lavez|[eé]plucher|[eé]pluchez|incorporer|incorporez|"
+    r"d[eé]poser|d[eé]posez|r[eé]server|r[eé]servez|porter|portez|"
+    r"battre|battez|fouetter|fouettez|enfourner|enfournez|"
+    r"saupoudrer|saupoudrez|laisser|laissez|remuer|remuez|"
+    r"[eé]goutter|[eé]gouttez|assaisonner|assaisonnez|griller|grillez|"
+    r"mijoter|mixer|mixez|hacher|hachez|[eé]taler|[eé]talez|"
+    r"beurrer|beurrez|fariner|farinez|couvrir|couvrez|"
+    r"saler|salez|poivrer|poivrez|servir|servez|d[eé]guster|d[eé]gustez|"
+    r"disposer|disposez|former|formez|p[eé]trir|p[eé]trissez|"
+    r"abaisser|abaissez|napper|nappez|garnir|garnissez|"
+    r"d[eé]glacer|d[eé]glacez|filtrer|filtrez|chauffer|chauffez|"
+    r"d[eé]mouler|d[eé]moulez|retourner|retournez|dorer|dorez|"
+    r"saisir|saisissez|remettre|remettez|rectifier|rectifiez|"
+    r"faire\s+revenir"
 )
-_INSTRUCTION_VERB = re.compile(
-    r"^(faire|faites?|ajouter?|ajoutez?|m[eé]langer?|m[eé]langez?|"
-    r"mettre|mettez?|verser?|versez?|cuire|cuisez?|cuire|faire\s+revenir|"
-    r"pr[eé]chauffer?|pr[eé]chauffez?|d[eé]couper?|d[eé]coupez?|trancher?|"
-    r"laver?|lavez?|[eé]plucher?|[eé]pluchez?|incorporer?|incorporez?|"
-    r"d[eé]poser?|d[eé]posez?|r[eé]server?|r[eé]servez?|porter?|portez?|"
-    r"add|mix|stir|cook|heat|place|put|pour|chop|cut|dice|blend|whisk|combine|"
-    r"serve|bake|fry|boil|simmer|season|drain|rinse|peel)\b",
-    re.IGNORECASE,
+_VERBS_EN = (
+    r"add|mix|stir|cook|heat|preheat|place|put|pour|chop|cut|dice|blend|"
+    r"whisk|combine|serve|bake|fry|boil|simmer|season|drain|rinse|peel|"
+    r"knead|spread|sprinkle|grease"
 )
+# Détection d'un verbe n'importe où dans la ligne (phrases d'instruction)
+_VERB_IN_LINE = re.compile(rf"\b(?:{_VERBS_FR})\b", re.IGNORECASE)
+# Ligne qui COMMENCE par un verbe d'instruction
+_INSTRUCTION_VERB = re.compile(rf"^(?:{_VERBS_FR}|{_VERBS_EN})\b", re.IGNORECASE)
 
 
 _YOUTUBE_HOSTS = {"youtube.com", "www.youtube.com", "m.youtube.com", "youtu.be"}
@@ -445,120 +454,115 @@ def _strip_source_prefix(description: str) -> str:
     return description
 
 
-def _extract_ingredients(description: str) -> list[str]:
-    """Heuristically extract ingredient lines from a recipe description."""
-    if not description:
-        return []
-
-    lines = description.splitlines()
-    results: list[str] = []
-    in_section = False
-
-    for line in lines:
-        stripped = line.strip()
-        if not stripped:
-            continue
-
-        # Entering an ingredients section
-        if _SECTION_INGR.search(stripped):
-            in_section = True
-            continue
-
-        # Leaving an ingredients section
-        if in_section and _SECTION_END.match(stripped):
-            in_section = False
-
-        if len(stripped) > 120:
-            continue  # Instructions are long; ingredients are short
-
-        is_ingredient = False
-        if _QTY_RE.search(stripped):
-            is_ingredient = True
-        elif _UNIT_RE.search(stripped) or _UNIT_SUFFIX_RE.search(stripped):
-            is_ingredient = True
-        elif in_section and len(stripped) < 80:
-            is_ingredient = True
-
-        if is_ingredient:
-            clean = _BULLET.sub("", stripped)
-            clean = _NUMBEREDLINE.sub("", clean).strip()
-            # Outside a section: also reject if an instruction verb appears anywhere in the line
-            has_verb = (
-                _VERB_IN_LINE.search(clean) if not in_section
-                else _INSTRUCTION_VERB.match(clean)
-            )
-            if clean and len(clean) > 2 and not has_verb:
-                results.append(clean)
-
-    # Deduplicate while preserving order
-    seen: set[str] = set()
-    unique = []
-    for r in results:
-        key = r.lower()
-        if key not in seen:
-            seen.add(key)
-            unique.append(r)
-
-    return unique[:35]
-
-
 _SECTION_PREP = re.compile(
     r"^(pr[eé]paration|instructions?|[eé]tapes?|recette\s*:|m[eé]thode|"
     r"d[eé]roulement|mani[eè]re\s*de\s*faire|steps?|directions?)\s*:?\s*$",
     re.IGNORECASE,
 )
+# Sections annexes dont le contenu n'est ni ingrédient ni étape
+_SECTION_OTHER = re.compile(
+    r"^(ustensiles?|mat[eé]riel|conservation|accompagnements?)\b", re.IGNORECASE
+)
+# Ligne de rendement ("Pour 4 personnes") : neutre, ne change pas de section
+_YIELD_LINE = re.compile(
+    r"^pour\s+\d+\s*(personnes?|parts?|portions?|pers\.?)?\s*:?\s*$", re.IGNORECASE
+)
+# Fin de recette : notes, hashtags, mentions, formules de conclusion
+_END_MARKERS = re.compile(
+    r"^(notes?\s*:|astuces?\s*:?|conseils?\s*:?|sources?\s*:|cr[eé]dits?|"
+    r"tags?\s*:|[#@]|abonne|suivez|retrouvez|\bbon\s+app[eé]tit\b|r[eé]galez|"
+    r"vous\s+allez|j'ai\s+pu|tr[eè]s\s+bon|jusqu'[àa]\s+[eé]puisement|"
+    r"enjoy\b|musi(?:c|que))",
+    re.IGNORECASE,
+)
 
 
-def _extract_steps(description: str) -> list[str]:
-    """Heuristically extract preparation steps from a recipe description."""
+def _dedupe(values: list[str]) -> list[str]:
+    seen: set[str] = set()
+    unique: list[str] = []
+    for v in values:
+        key = v.lower()
+        if key not in seen:
+            seen.add(key)
+            unique.append(v)
+    return unique
+
+
+def _extract_recipe_parts(description: str) -> tuple[list[str], list[str]]:
+    """Sépare ingrédients et étapes en UNE passe avec suivi de section.
+
+    Contrairement aux anciens extracteurs indépendants, une ligne ne peut
+    atterrir que dans une seule liste — fini les instructions mélangées aux
+    courses. Retourne (ingredients, steps).
+    """
     if not description:
-        return []
+        return [], []
 
-    lines = description.splitlines()
-    results: list[str] = []
-    in_section = False
+    ingredients: list[str] = []
+    steps: list[str] = []
+    section: Optional[str] = None  # None | "ingredients" | "steps" | "other"
 
-    for line in lines:
+    for line in description.splitlines():
         stripped = line.strip()
         if not stripped:
             continue
 
-        # Entering a preparation section
-        if _SECTION_PREP.match(stripped):
-            in_section = True
+        clean = _BULLET.sub("", stripped)
+        clean = _NUMBEREDLINE.sub("", clean).strip()
+        if len(clean) <= 2:
             continue
 
-        # Stop at common end-of-recipe markers (comments, hashtags, sign-offs)
-        if in_section and re.match(
-            r"^(notes?|astuces?|conseils?|source|cr[eé]dits?|tags?|#"
-            r"|\bbon\s+app[eé]tit\b|vous\s+allez|j'ai\s+pu|tr[eè]s\s+bon|"
-            r"jusqu'[àa]\s+[eé]puisement|r[eé]galez)",
-            stripped, re.IGNORECASE
-        ):
-            break
+        starts_with_verb = bool(_INSTRUCTION_VERB.match(clean))
+        has_verb = bool(_VERB_IN_LINE.search(clean))
 
-        is_step = False
-        if in_section:
-            is_step = True
-        elif _INSTRUCTION_VERB.match(_BULLET.sub("", _NUMBEREDLINE.sub("", stripped))):
-            # Numbered/bulleted instruction lines even outside a section
-            is_step = bool(_NUMBEREDLINE.match(stripped) or _BULLET.match(stripped))
+        # ── Transitions de section ──
+        # Un vrai titre de section est court et sans verbe ("Ingrédients :"),
+        # pas une étape qui mentionne le mot ("Mélangez les ingrédients secs").
+        if _SECTION_INGR.search(stripped) and len(stripped) < 40 and not has_verb:
+            section = "ingredients"
+            continue
+        if _SECTION_PREP.match(stripped):
+            section = "steps"
+            continue
+        if _SECTION_OTHER.match(stripped) and len(stripped) < 40 and not has_verb:
+            section = "other"
+            continue
+        if _YIELD_LINE.match(stripped):
+            continue
+        if _END_MARKERS.match(stripped):
+            if len(ingredients) + len(steps) >= 3:
+                break  # fin de recette : hashtags, notes, formules de politesse
+            continue  # trop tôt pour conclure (mention en tête de description)
 
-        if is_step and 4 < len(stripped) <= 300:
-            clean = _BULLET.sub("", stripped)
-            clean = _NUMBEREDLINE.sub("", clean).strip()
-            if clean:
-                results.append(clean)
+        if section == "other":
+            continue
 
-    # Deduplicate
-    seen: set[str] = set()
-    unique = []
-    for r in results:
-        if r.lower() not in seen:
-            seen.add(r.lower())
-            unique.append(r)
+        has_qty = bool(
+            _QTY_RE.search(stripped)
+            or _UNIT_RE.search(stripped)
+            or _UNIT_SUFFIX_RE.search(stripped)
+        )
 
-    return unique[:30]
+        if section == "ingredients":
+            if starts_with_verb and len(clean) > 25:
+                steps.append(clean)  # étape égarée dans la liste d'ingrédients
+            elif len(stripped) <= 120:
+                ingredients.append(clean)
+            continue
+
+        if section == "steps":
+            if 4 < len(stripped) <= 300:
+                steps.append(clean)
+            continue
+
+        # ── Hors section : heuristique, une seule destination par ligne ──
+        if starts_with_verb or (has_verb and len(clean) > 40):
+            if 4 < len(stripped) <= 300:
+                steps.append(clean)
+        elif has_qty and len(stripped) <= 120 and not has_verb:
+            ingredients.append(clean)
+
+    return _dedupe(ingredients)[:35], _dedupe(steps)[:30]
 
 
 # ── Schemas ──────────────────────────────────────────────────────────────────
@@ -670,8 +674,7 @@ def import_url_endpoint(
     # Strip social-media intro (e.g. "1,749 likes, 42 comments - user on Nov 2, 2020: ")
     clean_description = _strip_source_prefix(description)
 
-    suggested_ingredients = _extract_ingredients(clean_description)
-    suggested_steps = _extract_steps(clean_description)
+    suggested_ingredients, suggested_steps = _extract_recipe_parts(clean_description)
 
     # Fallback: if nothing found, offer all description lines as editable candidates
     if not suggested_ingredients and not suggested_steps and clean_description.strip():
@@ -702,8 +705,7 @@ def extract_text_endpoint(
     if len(body.text) > _MAX_EXTRACT_TEXT_LEN:
         raise HTTPException(status_code=413, detail="Texte trop long (50 000 caractères max.)")
     text = body.text.strip()
-    ingredients = _extract_ingredients(text)
-    steps = _extract_steps(text)
+    ingredients, steps = _extract_recipe_parts(text)
 
     # If the heuristics found nothing, fall back to all lines
     if not ingredients and not steps and text:
