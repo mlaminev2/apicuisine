@@ -2,7 +2,7 @@ import { api } from "../api.js";
 import { state } from "../state.js";
 import { showToast } from "../components/toast.js";
 import { renderPicker } from "./picker.js";
-import { DAYS_FR, MONTHS_FR, CAT_LABELS, monthGrid, toIsoDate, today, isoWeekOf } from "../utils.js";
+import { DAYS_FR, MONTHS_FR, CAT_LABELS, monthGrid, toIsoDate, today, isoWeekOf, mergeShoppingItems } from "../utils.js";
 
 let currentYear, currentMonth;
 
@@ -159,16 +159,67 @@ async function draw() {
       const { year, week: wk } = isoWeekOf(new Date(dateStr));
       const actionRow = document.createElement("div");
       actionRow.className = "week-row-actions";
+      const aggBtn = document.createElement("button");
+      aggBtn.className = "btn-week-shop btn-week-ingr";
+      aggBtn.textContent = "🧺 + Ingrédients";
+      aggBtn.title = "Ajouter les ingrédients de tous les plats planifiés de la semaine à la liste de courses";
+      aggBtn.onclick = () => addWeekIngredients(dateStr, aggBtn);
       const btn = document.createElement("button");
       btn.className = "btn-week-shop";
       btn.textContent = "🛒 Courses sem.";
       btn.onclick = () => { location.hash = `#/courses?year=${year}&week=${wk}`; };
-      actionRow.appendChild(btn);
+      actionRow.append(aggBtn, btn);
       grid.appendChild(actionRow);
     }
   }
 
   body.appendChild(grid);
+}
+
+/**
+ * Agrège les ingrédients de tous les plats planifiés (entrée, plat, dessert)
+ * de la semaine contenant anyDateOfWeek, puis les fusionne dans la liste de
+ * courses de cette semaine (les doublons sont fusionnés, quantités sommées).
+ */
+async function addWeekIngredients(anyDateOfWeek, btn) {
+  const d = new Date(anyDateOfWeek + "T00:00:00");
+  const monday = new Date(d);
+  monday.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+  const from = toIsoDate(monday.getFullYear(), monday.getMonth(), monday.getDate());
+  const to = toIsoDate(sunday.getFullYear(), sunday.getMonth(), sunday.getDate());
+  const { year, week } = isoWeekOf(monday);
+
+  btn.disabled = true;
+  try {
+    const entries = await api.getPlan(from, to);
+    const ingredients = [];
+    let dishCount = 0;
+    for (const e of entries) {
+      for (const dish of [e.entree_dish, e.main_dish, e.dessert_dish]) {
+        if (dish?.ingredients?.length) {
+          dishCount++;
+          ingredients.push(...dish.ingredients);
+        }
+      }
+    }
+    if (!ingredients.length) {
+      showToast("Aucun plat de la semaine n'a d'ingrédients enregistrés", "error");
+      return;
+    }
+    if (!confirm(`Ajouter les ingrédients de ${dishCount} plat(s) de la semaine ${week} à la liste de courses ?`)) return;
+
+    let existing = [];
+    try { existing = (await api.getShopping(year, week)).items || []; } catch {}
+    const merged = mergeShoppingItems(existing, ingredients.map((t) => ({ text: t, checked: false })));
+    await api.putShopping(year, week, merged);
+    showToast(`🧺 Ingrédients de ${dishCount} plat(s) ajoutés — sem. ${week} ✓`);
+  } catch (err) {
+    showToast(err.message, "error");
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 async function openDayPicker(dateStr, entry, settings, onSave) {

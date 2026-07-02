@@ -118,8 +118,10 @@ a { color: inherit; text-decoration: none; }
 .day-dish.free-text { font-style: italic; color: #888; }
 .day-cooked { font-size: 14px; align-self: flex-end; margin-top: auto; }
 
-.week-row-actions { background: #f8f8f8; grid-column: 1 / -1; padding: 4px 8px; display: flex; justify-content: flex-end; }
+.week-row-actions { background: #f8f8f8; grid-column: 1 / -1; padding: 4px 8px; display: flex; justify-content: flex-end; gap: 6px; }
 .btn-week-shop { font-size: 12px; background: var(--shopping-header); color: white; padding: 3px 10px; border-radius: 20px; }
+.btn-week-ingr { background: var(--accent-header); }
+.btn-week-shop:disabled { opacity: .5; }
 
 /* ── Boutons génériques ── */
 .btn {
