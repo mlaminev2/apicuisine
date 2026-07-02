@@ -121,6 +121,7 @@ a { color: inherit; text-decoration: none; }
 .week-row-actions { background: #f8f8f8; grid-column: 1 / -1; padding: 4px 8px; display: flex; justify-content: flex-end; gap: 6px; }
 .btn-week-shop { font-size: 12px; background: var(--shopping-header); color: white; padding: 3px 10px; border-radius: 20px; }
 .btn-week-ingr { background: var(--accent-header); }
+.btn-week-fill { background: var(--weekend-accent); }
 .btn-week-shop:disabled { opacity: .5; }
 
 /* ── Boutons génériques ── */
@@ -211,6 +212,15 @@ a { color: inherit; text-decoration: none; }
 .badge-count { background: #e9ecef; color: #495057; }
 .badge-tag { font-size: 9px; background: #e8f4f8; color: var(--accent-dark); padding: 1px 5px; border-radius: 4px; }
 .priority-label { font-size: 11px; color: var(--shopping-header); font-weight: 700; margin: 4px 0 2px; }
+
+/* Raccourcis du sélecteur (restes, resto…) */
+.quick-chip {
+  font-size: 12px; font-weight: 600; padding: 5px 12px;
+  border: 1.5px solid #ddd; border-radius: 20px; color: #666;
+  transition: background var(--t-fast), color var(--t-fast), transform var(--t-fast) var(--ease-out);
+}
+.quick-chip:active { transform: scale(.94); }
+.quick-chip.active { background: var(--accent-dark); border-color: var(--accent-dark); color: white; }
 
 /* Listes optionnelles du sélecteur : hauteur maîtrisée, défilement interne */
 .entree-list { max-height: 84px; }   /* deux entrées visibles */

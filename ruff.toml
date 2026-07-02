@@ -1,0 +1,10 @@
+# Configuration ruff du projet
+
+[lint]
+# E712 : `== True` est l'idiome SQLAlchemy/SQLModel pour construire des
+# expressions SQL — `if x:` ne fonctionne pas sur une colonne.
+ignore = ["E712"]
+
+[lint.per-file-ignores]
+# main.py configure le logging avant d'importer les modules applicatifs
+"app/main.py" = ["E402"]

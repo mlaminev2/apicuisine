@@ -131,6 +131,27 @@ export async function renderPicker(dateStr, category, currentEntry, dessertEnabl
     };
     body.appendChild(freeInput);
 
+    // Raccourcis fréquents (jour restes, repas à l'extérieur…)
+    const quickRow = document.createElement("div");
+    quickRow.style.cssText = "display:flex;gap:6px;flex-wrap:wrap";
+    for (const label of ["🍲 Restes", "🍽️ Resto / extérieur"]) {
+      const chip = document.createElement("button");
+      chip.type = "button";
+      chip.className = "quick-chip" + (freeText === label ? " active" : "");
+      chip.textContent = label;
+      chip.onclick = () => {
+        freeText = freeText === label ? "" : label;
+        if (freeText) selectedMainId = null;
+        freeInput.value = freeText;
+        quickRow.querySelectorAll(".quick-chip").forEach((c) => {
+          c.classList.toggle("active", c.textContent === freeText);
+        });
+        renderList();
+      };
+      quickRow.appendChild(chip);
+    }
+    body.appendChild(quickRow);
+
     // Entrée
     if (entreeList.length > 0) {
       const entLabel = document.createElement("div");

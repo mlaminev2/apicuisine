@@ -159,6 +159,12 @@ async function draw() {
       const { year, week: wk } = isoWeekOf(new Date(dateStr));
       const actionRow = document.createElement("div");
       actionRow.className = "week-row-actions";
+      const fillBtn = document.createElement("button");
+      fillBtn.className = "btn-week-shop btn-week-fill";
+      fillBtn.textContent = "✨ Remplir";
+      fillBtn.title = "Proposer automatiquement un plat pour chaque jour vide de la semaine (roulement + plats les moins cuisinés)";
+      fillBtn.onclick = () => fillWeek(dateStr, fillBtn);
+      actionRow.appendChild(fillBtn);
       const aggBtn = document.createElement("button");
       aggBtn.className = "btn-week-shop btn-week-ingr";
       aggBtn.textContent = "🧺 + Ingrédients";
@@ -174,6 +180,76 @@ async function draw() {
   }
 
   body.appendChild(grid);
+}
+
+function _weekBounds(anyDateOfWeek) {
+  const d = new Date(anyDateOfWeek + "T00:00:00");
+  const monday = new Date(d);
+  monday.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+  return { monday, sunday };
+}
+
+function _isoOf(d) {
+  return toIsoDate(d.getFullYear(), d.getMonth(), d.getDate());
+}
+
+/**
+ * Remplit les jours vides de la semaine avec le plat le moins cuisiné de la
+ * catégorie du jour (roulement), sans jamais proposer deux fois le même plat
+ * dans la semaine ni toucher aux jours déjà planifiés.
+ */
+async function fillWeek(anyDateOfWeek, btn) {
+  const { monday, sunday } = _weekBounds(anyDateOfWeek);
+  const from = _isoOf(monday);
+  const to = _isoOf(sunday);
+  const { week } = isoWeekOf(monday);
+
+  btn.disabled = true;
+  try {
+    const entries = await api.getPlan(from, to);
+    const byDate = {};
+    for (const e of entries) byDate[e.date] = e;
+
+    const days = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(monday);
+      d.setDate(monday.getDate() + i);
+      const iso = _isoOf(d);
+      const entry = byDate[iso];
+      if (!entry || (!entry.main_dish && !entry.free_text)) days.push({ iso, entry });
+    }
+    if (!days.length) {
+      showToast("La semaine est déjà entièrement planifiée");
+      return;
+    }
+    if (!confirm(`Proposer un plat pour ${days.length} jour(s) vide(s) de la semaine ${week} ? (les moins cuisinés en premier)`)) return;
+
+    const used = new Set(entries.filter((e) => e.main_dish).map((e) => e.main_dish.id));
+    let filled = 0;
+    for (const { iso, entry } of days) {
+      let prio = [];
+      try { prio = await api.getPriority(iso); } catch { continue; }
+      const pick = prio.find((p) => !used.has(p.dish.id)) || prio[0];
+      if (!pick) continue;
+      used.add(pick.dish.id);
+      await api.putPlan(iso, {
+        main_dish_id: pick.dish.id,
+        dessert_dish_id: entry?.dessert_dish?.id ?? null,
+        entree_dish_id: entry?.entree_dish?.id ?? null,
+        free_text: null,
+        planned_by: state.memberId,
+      });
+      filled++;
+    }
+    showToast(`✨ ${filled} jour(s) rempli(s) — ajustez ce qui ne convient pas ✓`);
+    draw();
+  } catch (err) {
+    showToast(err.message, "error");
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 /**

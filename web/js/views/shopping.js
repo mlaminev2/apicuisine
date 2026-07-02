@@ -61,7 +61,42 @@ export async function renderShopping(root, params) {
   try { categories = await api.getShopCategories(); } catch {}
   syncViewMode();
   loadItemSuggestions();
+  _startPolling();
 }
+
+// ── Synchronisation entre appareils (courses à deux) ──────────────────────────
+// Toutes les 8 s, si quelqu'un d'autre a modifié la liste, on la rafraîchit.
+
+let _pollTimer = null;
+let _lastLocalEdit = 0;
+
+function _startPolling() {
+  if (_pollTimer) clearInterval(_pollTimer);
+  _pollTimer = setInterval(_pollTick, 8000);
+}
+
+async function _pollTick() {
+  const container = document.getElementById("shopping-items");
+  if (!container) { clearInterval(_pollTimer); _pollTimer = null; return; }
+  if (viewAll || document.hidden) return;
+  // Ne jamais écraser une édition locale en cours
+  if (Date.now() - _lastLocalEdit < 4000) return;
+  const active = document.activeElement;
+  if (active && (active.id === "shop-new-item" || active.id === "shop-new-qty")) return;
+  try {
+    const data = await api.getShopping(currentYear, currentWeek);
+    if (Date.now() - _lastLocalEdit < 4000) return; // re-vérifié après l'await
+    const fresh = data.items || [];
+    if (JSON.stringify(fresh) !== JSON.stringify(items)) {
+      items = fresh;
+      renderItems();
+    }
+  } catch {}
+}
+
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden && _pollTimer) _pollTick();
+});
 
 // ── View mode ─────────────────────────────────────────────────────────────────
 
@@ -290,6 +325,7 @@ function renderItems() {
 }
 
 async function saveItems() {
+  _lastLocalEdit = Date.now();
   try { await api.putShopping(currentYear, currentWeek, items); }
   catch (err) { showToast(err.message, "error"); }
 }

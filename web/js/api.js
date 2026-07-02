@@ -81,6 +81,7 @@ export const api = {
 
   getSettings: () => request("GET", "/api/settings"),
   putSettings: (data) => request("PUT", "/api/settings", data),
+  exportData: () => request("GET", "/api/export"),
 
   importUrl: (url) => request("POST", "/api/import-url", { url }),
   importSave: (data) => request("POST", "/api/import-save", data),

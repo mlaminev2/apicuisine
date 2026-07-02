@@ -228,7 +228,33 @@ export async function renderSettings(root) {
   };
   sec3Body.appendChild(pwdBtn);
 
-  body.append(sec1, sec2, ...(sec2b ? [sec2b] : []), sec3);
+  // ── Section sauvegarde ──
+  const { sec: sec4, body: sec4Body } = makeSection("💾 Sauvegarde", "sauvegarde");
+  sec4Body.innerHTML = `
+    <div style="font-size:12px;color:#888;margin-bottom:10px">
+      Téléchargez une copie complète de vos données (plats, recettes, planning,
+      courses, réglages) au format JSON. Gardez-la en lieu sûr.
+    </div>`;
+  const exportBtn = document.createElement("button");
+  exportBtn.className = "btn btn-primary btn-full";
+  exportBtn.textContent = "⬇️ Exporter mes données";
+  exportBtn.onclick = async () => {
+    exportBtn.disabled = true;
+    try {
+      const data = await api.exportData();
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `menus-famille-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+      showToast("Export téléchargé ✓");
+    } catch (err) { showToast(err.message, "error"); }
+    finally { exportBtn.disabled = false; }
+  };
+  sec4Body.appendChild(exportBtn);
+
+  body.append(sec1, sec2, ...(sec2b ? [sec2b] : []), sec3, sec4);
   renderShopCategories(body);
 }
 

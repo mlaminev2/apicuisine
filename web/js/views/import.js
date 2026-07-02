@@ -17,11 +17,14 @@ export async function renderImport(root) {
       <!-- Étape 1 : URL -->
       <div class="card p-16">
         <div style="font-weight:700;color:var(--accent-dark);margin-bottom:10px;font-size:15px">
-          1. Colle le lien YouTube, Instagram ou TikTok
+          1. Colle un lien : site de recettes, YouTube, Instagram ou TikTok
+        </div>
+        <div style="font-size:12px;color:#888;margin-bottom:8px">
+          Marmiton, 750g, CuisineAZ, blogs… la recette est extraite automatiquement.
         </div>
         <div style="display:flex;gap:8px">
           <input id="import-url-input" type="url"
-            placeholder="YouTube, Instagram ou TikTok…"
+            placeholder="https://www.marmiton.org/…"
             style="flex:1;border:1.5px solid #ddd;border-radius:10px;padding:10px 12px;font-size:14px" />
           <button id="import-fetch-btn" class="btn btn-primary">Récupérer</button>
         </div>
@@ -148,10 +151,12 @@ export async function renderImport(root) {
       // Badge source
       const srcColor = result.source === "youtube" ? "#FF0000"
                      : result.source === "instagram" ? "#C13584"
-                     : result.source === "tiktok" ? "#010101" : "#888";
+                     : result.source === "tiktok" ? "#010101"
+                     : result.source === "site" ? "var(--shopping-header)" : "#888";
       const srcLabel = result.source === "youtube" ? "▶️ YouTube"
                      : result.source === "instagram" ? "📸 Instagram"
-                     : result.source === "tiktok" ? "🎵 TikTok" : "🔗 Lien";
+                     : result.source === "tiktok" ? "🎵 TikTok"
+                     : result.source === "site" ? "🌐 Site de recettes" : "🔗 Lien";
       document.getElementById("import-source-badge").innerHTML =
         `<span style="background:${srcColor};color:white;padding:2px 10px;border-radius:20px;font-size:11px">${srcLabel} détecté</span>`;
 

@@ -1,11 +1,15 @@
 import html as _html
+import ipaddress
 import json
 import re
+import socket
 import unicodedata
 import urllib.request
 import urllib.parse
 from datetime import datetime, timezone
 from typing import Optional
+
+import httpx
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
 from pydantic import BaseModel, Field
@@ -132,6 +136,148 @@ def _og_first(patterns, html):
         m = p.search(html)
         if m:
             return _unescape_html(m.group(1))
+    return None
+
+
+# ── Import générique (sites de recettes, JSON-LD schema.org/Recipe) ──────────
+
+def _is_public_host(host: str) -> bool:
+    """Anti-SSRF : l'hôte doit résoudre uniquement vers des IP publiques
+    (rejette localhost, réseaux privés, link-local, metadata cloud, etc.)."""
+    try:
+        infos = socket.getaddrinfo(host, None)
+    except OSError:
+        return False
+    if not infos:
+        return False
+    for info in infos:
+        ip = ipaddress.ip_address(info[4][0])
+        if not ip.is_global:
+            return False
+    return True
+
+
+def _fetch_public_html(url: str, max_redirects: int = 3) -> Optional[str]:
+    """Récupère une page publique en validant hôte et schéma à chaque
+    redirection, avec taille de lecture plafonnée."""
+    with httpx.Client(timeout=8, follow_redirects=False, headers={"User-Agent": _YT_UA}) as client:
+        for _ in range(max_redirects + 1):
+            parsed = urllib.parse.urlparse(url)
+            if parsed.scheme not in ("http", "https"):
+                return None
+            host = (parsed.hostname or "").lower()
+            if not host or not _is_public_host(host):
+                return None
+            with client.stream("GET", url) as resp:
+                if resp.status_code in (301, 302, 303, 307, 308):
+                    location = resp.headers.get("location")
+                    if not location:
+                        return None
+                    url = urllib.parse.urljoin(url, location)
+                    continue
+                if resp.status_code != 200:
+                    return None
+                chunks: list[bytes] = []
+                size = 0
+                for chunk in resp.iter_bytes():
+                    size += len(chunk)
+                    if size > _MAX_FETCH_BYTES:
+                        break
+                    chunks.append(chunk)
+                return b"".join(chunks).decode("utf-8", errors="ignore")
+    return None
+
+
+# Certains sites (Marmiton…) encodent l'attribut en entités HTML :
+# type="application&#x2F;ld&#x2B;json" — on accepte / + et leurs entités.
+_JSONLD_RE = re.compile(
+    r'<script[^>]+type=["\']application(?:/|&#x2f;)ld(?:\+|&#x2b;)json["\'][^>]*>(.*?)</script>',
+    re.IGNORECASE | re.DOTALL,
+)
+
+
+def _jsonld_nodes(data) -> list[dict]:
+    """Aplati un document JSON-LD (dict, liste, @graph) en liste de nœuds."""
+    nodes: list[dict] = []
+    if isinstance(data, list):
+        for item in data:
+            nodes.extend(_jsonld_nodes(item))
+    elif isinstance(data, dict):
+        nodes.append(data)
+        graph = data.get("@graph")
+        if isinstance(graph, list):
+            nodes.extend(_jsonld_nodes(graph))
+    return nodes
+
+
+def _is_recipe_node(node: dict) -> bool:
+    t = node.get("@type", "")
+    if isinstance(t, list):
+        return "Recipe" in t
+    return t == "Recipe"
+
+
+def _first_str(value) -> Optional[str]:
+    """Extrait une chaîne d'une valeur JSON-LD polymorphe (str, liste, dict)."""
+    if isinstance(value, str):
+        return value.strip() or None
+    if isinstance(value, list) and value:
+        return _first_str(value[0])
+    if isinstance(value, dict):
+        return _first_str(value.get("url") or value.get("name"))
+    return None
+
+
+def _instruction_steps(value) -> list[str]:
+    """recipeInstructions : str | [str] | [HowToStep] | [HowToSection]."""
+    steps: list[str] = []
+    if isinstance(value, str):
+        steps = [s.strip() for s in value.splitlines() if s.strip()]
+    elif isinstance(value, list):
+        for item in value:
+            if isinstance(item, str):
+                if item.strip():
+                    steps.append(item.strip())
+            elif isinstance(item, dict):
+                itype = item.get("@type", "")
+                if itype == "HowToSection":
+                    steps.extend(_instruction_steps(item.get("itemListElement")))
+                else:  # HowToStep ou objet libre
+                    text = item.get("text") or item.get("name")
+                    if isinstance(text, str) and text.strip():
+                        steps.append(text.strip())
+    return steps
+
+
+def _parse_recipe_jsonld(html: str) -> Optional[dict]:
+    """Cherche un nœud schema.org/Recipe dans les blocs JSON-LD de la page."""
+    for m in _JSONLD_RE.finditer(html):
+        try:
+            data = json.loads(m.group(1))
+        except Exception:
+            continue
+        for node in _jsonld_nodes(data):
+            if not _is_recipe_node(node):
+                continue
+            ingredients = node.get("recipeIngredient") or node.get("ingredients") or []
+            if isinstance(ingredients, str):
+                ingredients = [ingredients]
+            ingredients = [
+                unicodedata.normalize("NFC", _html.unescape(i)).strip()
+                for i in ingredients if isinstance(i, str) and i.strip()
+            ]
+            steps = [
+                unicodedata.normalize("NFC", _html.unescape(s))
+                for s in _instruction_steps(node.get("recipeInstructions"))
+            ]
+            return {
+                "title": _first_str(node.get("name")) or "",
+                "author": _first_str(node.get("author")),
+                "thumbnail": _first_str(node.get("image")),
+                "description": _first_str(node.get("description")) or "",
+                "ingredients": ingredients,
+                "steps": steps,
+            }
     return None
 
 
@@ -493,6 +639,33 @@ def import_url_endpoint(
         title, author, thumbnail_url, description = _fetch_tiktok_data(url)
         title = title or ""
         description = description or ""
+    elif _safe_host(url):
+        # Site de recettes générique : JSON-LD schema.org/Recipe (structuré,
+        # fiable — Marmiton, 750g, la plupart des blogs), sinon balises OG
+        # + heuristiques sur la description.
+        html = None
+        try:
+            html = _fetch_public_html(url)
+        except Exception:
+            html = None
+        if html:
+            recipe = _parse_recipe_jsonld(html)
+            if recipe:
+                return ImportResult(
+                    title=recipe["title"],
+                    source="site",
+                    source_tag=None,
+                    url=url,
+                    description=recipe["description"],
+                    suggested_ingredients=recipe["ingredients"][:35],
+                    suggested_steps=recipe["steps"][:30],
+                    thumbnail_url=recipe["thumbnail"],
+                    author=recipe["author"],
+                )
+            source = "site"
+            title = _og_first([_OG_TITLE, _OG_TITLE2], html) or ""
+            description = _og_first([_OG_DESC, _OG_DESC2], html) or ""
+            thumbnail_url = _og_first([_OG_IMAGE, _OG_IMAGE2], html)
 
     # Strip social-media intro (e.g. "1,749 likes, 42 comments - user on Nov 2, 2020: ")
     clean_description = _strip_source_prefix(description)
@@ -502,7 +675,7 @@ def import_url_endpoint(
 
     # Fallback: if nothing found, offer all description lines as editable candidates
     if not suggested_ingredients and not suggested_steps and clean_description.strip():
-        desc_lines = [l.strip() for l in clean_description.splitlines() if 2 < len(l.strip()) < 120]
+        desc_lines = [ln.strip() for ln in clean_description.splitlines() if 2 < len(ln.strip()) < 120]
         if len(desc_lines) >= 2:
             suggested_ingredients = desc_lines[:30]
 
@@ -534,9 +707,9 @@ def extract_text_endpoint(
 
     # If the heuristics found nothing, fall back to all lines
     if not ingredients and not steps and text:
-        lines = [l.strip() for l in text.splitlines() if 2 < len(l.strip()) < 120]
-        ingredients = [l for l in lines if len(l) <= 70 and not _INSTRUCTION_VERB.match(_BULLET.sub("", _NUMBEREDLINE.sub("", l)))][:25]
-        steps = [l for l in lines if len(l) > 20 and (_INSTRUCTION_VERB.match(_BULLET.sub("", _NUMBEREDLINE.sub("", l))) or _NUMBEREDLINE.match(l))][:15]
+        lines = [ln.strip() for ln in text.splitlines() if 2 < len(ln.strip()) < 120]
+        ingredients = [ln for ln in lines if len(ln) <= 70 and not _INSTRUCTION_VERB.match(_BULLET.sub("", _NUMBEREDLINE.sub("", ln)))][:25]
+        steps = [ln for ln in lines if len(ln) > 20 and (_INSTRUCTION_VERB.match(_BULLET.sub("", _NUMBEREDLINE.sub("", ln))) or _NUMBEREDLINE.match(ln))][:15]
         # If still nothing classified, return all as ingredients
         if not ingredients and not steps:
             ingredients = lines[:30]

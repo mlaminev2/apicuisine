@@ -5,8 +5,6 @@ import time
 from collections import defaultdict
 from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-
-logger = logging.getLogger(__name__)
 from sqlmodel import Session, select
 from app.db import get_session
 from app.models import Household, Member
@@ -26,6 +24,7 @@ from app.schemas import (
     PasswordChangeRequest,
 )
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api", tags=["auth"])
 
 _MAX_ATTEMPTS = 10
