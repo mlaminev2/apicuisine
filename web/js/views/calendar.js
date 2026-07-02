@@ -157,13 +157,28 @@ async function draw() {
     if (nonZero) {
       const dateStr = toIsoDate(currentYear, currentMonth, nonZero);
       const { year, week: wk } = isoWeekOf(new Date(dateStr));
+      // La semaine a-t-elle au moins un plat planifié ?
+      const hasMeals = week.some((d) => {
+        if (!d) return false;
+        const e = planMap[toIsoDate(currentYear, currentMonth, d)];
+        return e && (e.main_dish || e.free_text);
+      });
       const actionRow = document.createElement("div");
       actionRow.className = "week-row-actions";
       const fillBtn = document.createElement("button");
-      fillBtn.className = "btn-week-shop btn-week-fill";
-      fillBtn.textContent = "✨ Remplir";
-      fillBtn.title = "Proposer automatiquement un plat pour chaque jour vide de la semaine (roulement + plats les moins cuisinés)";
-      fillBtn.onclick = () => fillWeek(dateStr, fillBtn);
+      if (hasMeals) {
+        // Semaine déjà planifiée → le bouton vide tout
+        fillBtn.className = "btn-week-shop btn-week-clear";
+        fillBtn.textContent = "🗑 Vider";
+        fillBtn.title = "Effacer tous les plats planifiés de la semaine";
+        fillBtn.onclick = () => clearWeek(dateStr, fillBtn);
+      } else {
+        // Semaine vide → le bouton remplit automatiquement
+        fillBtn.className = "btn-week-shop btn-week-fill";
+        fillBtn.textContent = "✨ Remplir";
+        fillBtn.title = "Proposer automatiquement un plat pour chaque jour vide de la semaine (roulement + plats les moins cuisinés)";
+        fillBtn.onclick = () => fillWeek(dateStr, fillBtn);
+      }
       actionRow.appendChild(fillBtn);
       const aggBtn = document.createElement("button");
       aggBtn.className = "btn-week-shop btn-week-ingr";
@@ -244,6 +259,38 @@ async function fillWeek(anyDateOfWeek, btn) {
       filled++;
     }
     showToast(`✨ ${filled} jour(s) rempli(s) — ajustez ce qui ne convient pas ✓`);
+    draw();
+  } catch (err) {
+    showToast(err.message, "error");
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+/**
+ * Efface tous les plats planifiés de la semaine (bascule du bouton Remplir
+ * quand la semaine contient déjà des plats).
+ */
+async function clearWeek(anyDateOfWeek, btn) {
+  const { monday, sunday } = _weekBounds(anyDateOfWeek);
+  const from = _isoOf(monday);
+  const to = _isoOf(sunday);
+  const { week } = isoWeekOf(monday);
+
+  btn.disabled = true;
+  try {
+    const entries = await api.getPlan(from, to);
+    const planned = entries.filter((e) => e.main_dish || e.free_text || e.entree_dish || e.dessert_dish);
+    if (!planned.length) {
+      showToast("La semaine est déjà vide");
+      return;
+    }
+    if (!confirm(`Effacer les ${planned.length} plat(s) planifié(s) de la semaine ${week} ?`)) return;
+
+    for (const e of planned) {
+      await api.deletePlan(e.date);
+    }
+    showToast(`🗑 Semaine ${week} vidée ✓`);
     draw();
   } catch (err) {
     showToast(err.message, "error");
