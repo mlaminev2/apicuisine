@@ -3,13 +3,12 @@ import ipaddress
 import json
 import re
 import socket
+import ssl
 import unicodedata
 import urllib.request
 import urllib.parse
 from datetime import datetime, timezone
 from typing import Optional
-
-import httpx
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
 from pydantic import BaseModel, Field
@@ -150,50 +149,127 @@ def _og_first(patterns, html):
 
 # ── Import générique (sites de recettes, JSON-LD schema.org/Recipe) ──────────
 
-def _is_public_host(host: str) -> bool:
-    """Anti-SSRF : l'hôte doit résoudre uniquement vers des IP publiques
-    (rejette localhost, réseaux privés, link-local, metadata cloud, etc.)."""
+def _resolve_public_ip(host: str, port: int) -> Optional[tuple[int, str]]:
+    """Résout l'hôte et n'accepte QUE si toutes les IP sont publiques.
+    Retourne (famille, ip) à utiliser pour la connexion, ou None.
+
+    Toutes les IP renvoyées sont validées (défense contre les réponses DNS
+    mixtes public/privé) et c'est cette IP exacte qui sera connectée — pas de
+    seconde résolution possible (défense contre le DNS rebinding)."""
     try:
-        infos = socket.getaddrinfo(host, None)
+        infos = socket.getaddrinfo(host, port, proto=socket.IPPROTO_TCP)
     except OSError:
-        return False
+        return None
     if not infos:
-        return False
-    for info in infos:
-        ip = ipaddress.ip_address(info[4][0])
+        return None
+    chosen: Optional[tuple[int, str]] = None
+    for family, _type, _proto, _canon, sockaddr in infos:
+        ip = ipaddress.ip_address(sockaddr[0])
         if not ip.is_global:
-            return False
-    return True
+            return None  # une seule IP non publique → tout rejeté
+        if chosen is None:
+            chosen = (family, sockaddr[0])
+    return chosen
+
+
+def _is_public_host(host: str) -> bool:
+    """Conservé pour lisibilité/tests : l'hôte résout-il vers du public ?"""
+    return _resolve_public_ip(host, 80) is not None
+
+
+_HTTP_DEFAULT_PORTS = {"http": 80, "https": 443}
+
+
+def _pinned_get(url: str, timeout: int = 8) -> Optional[tuple[int, dict, bytes]]:
+    """GET épinglé sur l'IP validée : une seule résolution DNS, la connexion
+    se fait sur cette IP exacte (fenêtre de DNS rebinding fermée).
+    Retourne (status, headers_bas_de_casse, corps) ou None. Ne suit pas les
+    redirections (gérées par l'appelant, qui re-valide chaque saut)."""
+    parsed = urllib.parse.urlparse(url)
+    if parsed.scheme not in _HTTP_DEFAULT_PORTS:
+        return None
+    host = (parsed.hostname or "").lower()
+    if not host:
+        return None
+    port = parsed.port or _HTTP_DEFAULT_PORTS[parsed.scheme]
+    resolved = _resolve_public_ip(host, port)
+    if not resolved:
+        return None
+    family, ip = resolved
+
+    path = parsed.path or "/"
+    if parsed.query:
+        path += "?" + parsed.query
+    # HTTP/1.0 + Connection: close → pas de chunked ; identity → pas de gzip
+    request = (
+        f"GET {path} HTTP/1.0\r\n"
+        f"Host: {host}\r\n"
+        f"User-Agent: {_YT_UA}\r\n"
+        f"Accept: text/html\r\n"
+        f"Accept-Encoding: identity\r\n"
+        f"Connection: close\r\n\r\n"
+    ).encode("ascii", errors="ignore")
+
+    sock = None
+    try:
+        sock = socket.socket(family, socket.SOCK_STREAM)
+        sock.settimeout(timeout)
+        sock.connect((ip, port))
+        if parsed.scheme == "https":
+            ctx = ssl.create_default_context()
+            sock = ctx.wrap_socket(sock, server_hostname=host)  # SNI + vérif cert sur host
+        sock.sendall(request)
+
+        raw = bytearray()
+        while len(raw) <= _MAX_FETCH_BYTES:
+            chunk = sock.recv(65536)
+            if not chunk:
+                break
+            raw.extend(chunk)
+    except (OSError, ssl.SSLError):
+        return None
+    finally:
+        if sock is not None:
+            try:
+                sock.close()
+            except OSError:
+                pass
+
+    sep = raw.find(b"\r\n\r\n")
+    if sep == -1:
+        return None
+    head = raw[:sep].decode("iso-8859-1", errors="ignore")
+    body = bytes(raw[sep + 4:])
+    lines = head.split("\r\n")
+    try:
+        status = int(lines[0].split(" ", 2)[1])
+    except (IndexError, ValueError):
+        return None
+    headers: dict[str, str] = {}
+    for ln in lines[1:]:
+        if ":" in ln:
+            k, v = ln.split(":", 1)
+            headers[k.strip().lower()] = v.strip()
+    return status, headers, body
 
 
 def _fetch_public_html(url: str, max_redirects: int = 3) -> Optional[str]:
-    """Récupère une page publique en validant hôte et schéma à chaque
-    redirection, avec taille de lecture plafonnée."""
-    with httpx.Client(timeout=8, follow_redirects=False, headers={"User-Agent": _YT_UA}) as client:
-        for _ in range(max_redirects + 1):
-            parsed = urllib.parse.urlparse(url)
-            if parsed.scheme not in ("http", "https"):
+    """Récupère une page publique : IP épinglée, schéma et hôte validés à
+    chaque redirection, taille plafonnée."""
+    for _ in range(max_redirects + 1):
+        result = _pinned_get(url)
+        if result is None:
+            return None
+        status, headers, body = result
+        if status in (301, 302, 303, 307, 308):
+            location = headers.get("location")
+            if not location:
                 return None
-            host = (parsed.hostname or "").lower()
-            if not host or not _is_public_host(host):
-                return None
-            with client.stream("GET", url) as resp:
-                if resp.status_code in (301, 302, 303, 307, 308):
-                    location = resp.headers.get("location")
-                    if not location:
-                        return None
-                    url = urllib.parse.urljoin(url, location)
-                    continue
-                if resp.status_code != 200:
-                    return None
-                chunks: list[bytes] = []
-                size = 0
-                for chunk in resp.iter_bytes():
-                    size += len(chunk)
-                    if size > _MAX_FETCH_BYTES:
-                        break
-                    chunks.append(chunk)
-                return b"".join(chunks).decode("utf-8", errors="ignore")
+            url = urllib.parse.urljoin(url, location)
+            continue
+        if status != 200:
+            return None
+        return body.decode("utf-8", errors="ignore")
     return None
 
 

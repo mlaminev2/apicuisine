@@ -1,8 +1,11 @@
 import json
+import socket
 
 from app.routers.import_url import (
     _is_public_host,
     _parse_recipe_jsonld,
+    _pinned_get,
+    _resolve_public_ip,
 )
 
 
@@ -102,3 +105,50 @@ def test_public_host_blocklist():
     assert _is_public_host("10.0.0.5") is False
     assert _is_public_host("169.254.169.254") is False  # metadata cloud
     assert _is_public_host("hote-inexistant-xyz.invalid") is False
+
+
+def test_resolve_rejette_ip_mixte(monkeypatch):
+    """Réponse DNS avec une IP publique ET une IP privée → tout rejeté."""
+    def fake(host, port, *a, **k):
+        return [
+            (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("93.184.216.34", port)),
+            (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("127.0.0.1", port)),
+        ]
+    monkeypatch.setattr(socket, "getaddrinfo", fake)
+    assert _resolve_public_ip("piege.example", 443) is None
+
+
+def test_pas_de_dns_rebinding(monkeypatch):
+    """Régression SSRF : la résolution ne doit avoir lieu qu'UNE fois et la
+    connexion se faire sur cette IP — pas de seconde résolution exploitable."""
+    calls = {"n": 0}
+
+    def fake(host, port, *a, **k):
+        calls["n"] += 1
+        # 1re réponse publique, 2e réponse privée (tentative de rebinding)
+        ip = "93.184.216.34" if calls["n"] == 1 else "127.0.0.1"
+        return [(socket.AF_INET, socket.SOCK_STREAM, 6, "", (ip, port))]
+
+    monkeypatch.setattr(socket, "getaddrinfo", fake)
+
+    # Connexion coupée net : on capture l'IP visée sans attendre de timeout réseau.
+    targeted = {}
+
+    class FakeSock:
+        def __init__(self, *a, **k):
+            pass
+
+        def settimeout(self, *a):
+            pass
+
+        def connect(self, addr):
+            targeted["ip"] = addr[0]
+            raise OSError("connexion coupée pour le test")
+
+        def close(self):
+            pass
+
+    monkeypatch.setattr(socket, "socket", FakeSock)
+    _pinned_get("http://piege.example/")
+    assert calls["n"] == 1                     # une seule résolution DNS
+    assert targeted["ip"] == "93.184.216.34"   # l'IP publique validée, pas la privée
