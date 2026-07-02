@@ -260,6 +260,35 @@ a { color: inherit; text-decoration: none; }
 .settings-row label { flex: 1; font-size: 14px; }
 .settings-row label.toggle { flex: 0 0 auto; }
 .settings-row select { border: 1.5px solid #ddd; border-radius: 8px; padding: 4px 8px; font-size: 13px; }
+/* Sections dépliantes des réglages */
+.settings-section.collapsible { padding: 0; overflow: hidden; }
+.collapse-head {
+  display: flex; align-items: center; gap: 8px;
+  width: 100%; padding: 14px; text-align: left;
+  font-size: 15px; font-weight: 700; color: var(--accent-dark);
+  transition: background var(--t-fast);
+}
+.collapse-head:hover { background: #f6f8f9; }
+.collapse-head:active { background: #eef2f4; }
+.collapse-title { flex: 1; }
+.collapse-badge {
+  font-size: 11px; font-weight: 700; color: var(--accent-header);
+  background: #e8f4f8; border-radius: 20px; padding: 2px 8px;
+}
+.collapse-chevron {
+  color: #b0bcc2; font-size: 13px;
+  transition: transform var(--t-med) var(--ease-out);
+  transform: rotate(-90deg);
+}
+.collapsible.open .collapse-chevron { transform: rotate(0deg); }
+.collapse-wrap {
+  display: grid; grid-template-rows: 0fr;
+  transition: grid-template-rows var(--t-med) var(--ease-out);
+}
+.collapsible.open .collapse-wrap { grid-template-rows: 1fr; }
+.collapse-clip { overflow: hidden; min-height: 0; }
+.collapse-body { padding: 0 14px 14px; }
+
 .toggle { position: relative; width: 44px; height: 24px; }
 .toggle input { opacity: 0; width: 0; height: 0; }
 .toggle-slider { position: absolute; inset: 0; background: #ccc; border-radius: 24px; transition: .3s; }

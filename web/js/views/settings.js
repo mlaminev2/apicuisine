@@ -5,6 +5,43 @@ import { CAT_LABELS, DAYS_FULL_FR, escapeHtml } from "../utils.js";
 
 const CATEGORIES = ["pomme_de_terre", "riz", "pates", "entree", "autre", "sucree", "africain"];
 
+// ── Section dépliante ─────────────────────────────────────────────────────────
+// Retourne { sec, body } ; l'état ouvert/fermé est mémorisé par section.
+function makeSection(title, key, { open = false, badge = "" } = {}) {
+  const sec = document.createElement("div");
+  sec.className = "settings-section collapsible";
+
+  const head = document.createElement("button");
+  head.type = "button";
+  head.className = "collapse-head";
+  head.innerHTML = `
+    <span class="collapse-title">${title}</span>
+    ${badge ? `<span class="collapse-badge">${escapeHtml(badge)}</span>` : ""}
+    <span class="collapse-chevron" aria-hidden="true">▾</span>`;
+
+  const wrap = document.createElement("div");
+  wrap.className = "collapse-wrap";
+  const clip = document.createElement("div");
+  clip.className = "collapse-clip";
+  const body = document.createElement("div");
+  body.className = "collapse-body";
+  clip.appendChild(body);
+  wrap.appendChild(clip);
+  sec.append(head, wrap);
+
+  const storageKey = `settings_open_${key}`;
+  const setOpen = (o, save = true) => {
+    sec.classList.toggle("open", o);
+    head.setAttribute("aria-expanded", o ? "true" : "false");
+    if (save) localStorage.setItem(storageKey, o ? "1" : "0");
+  };
+  const saved = localStorage.getItem(storageKey);
+  setOpen(saved === null ? open : saved === "1", false);
+  head.onclick = () => setOpen(!sec.classList.contains("open"));
+
+  return { sec, body };
+}
+
 export async function renderSettings(root) {
   root.innerHTML = `<div class="page-header"><h1>Réglages</h1></div><div id="settings-body" style="padding:12px"></div>`;
   const body = document.getElementById("settings-body");
@@ -31,10 +68,8 @@ export async function renderSettings(root) {
     return;
   }
 
-  // Section roulement
-  const sec1 = document.createElement("div");
-  sec1.className = "settings-section";
-  sec1.innerHTML = `<h2>Roulement jour → catégorie</h2>`;
+  // ── Section roulement ──
+  const { sec: sec1, body: sec1Body } = makeSection("📅 Roulement de la semaine", "roulement", { open: true });
   for (let i = 0; i < 7; i++) {
     const row = document.createElement("div");
     row.className = "settings-row";
@@ -50,7 +85,7 @@ export async function renderSettings(root) {
       sel.appendChild(opt);
     }
     row.append(lbl, sel);
-    sec1.appendChild(row);
+    sec1Body.appendChild(row);
   }
 
   // Dessert toggle
@@ -62,27 +97,24 @@ export async function renderSettings(root) {
       <input type="checkbox" id="dessert-toggle" ${sett.dessert_enabled ? "checked" : ""} />
       <span class="toggle-slider"></span>
     </label>`;
-  sec1.appendChild(dessertRow);
+  sec1Body.appendChild(dessertRow);
 
   const saveBtn = document.createElement("button");
   saveBtn.className = "btn btn-primary btn-full mt-8";
   saveBtn.textContent = "Enregistrer les réglages";
   saveBtn.onclick = async () => {
     const map = {};
-    sec1.querySelectorAll("select[data-dow]").forEach((s) => { map[s.dataset.dow] = s.value; });
+    sec1Body.querySelectorAll("select[data-dow]").forEach((s) => { map[s.dataset.dow] = s.value; });
     const dessertEnabled = document.getElementById("dessert-toggle").checked;
     try {
       await api.putSettings({ weekday_category_map: map, dessert_enabled: dessertEnabled });
       showToast("Réglages enregistrés ✓");
     } catch (err) { showToast(err.message, "error"); }
   };
-  sec1.appendChild(saveBtn);
+  sec1Body.appendChild(saveBtn);
 
-  // Section membres
-  const sec2 = document.createElement("div");
-  sec2.className = "settings-section mt-16";
-  sec2.innerHTML = `<h2>Membres du foyer</h2>`;
-  const memberList = document.createElement("div");
+  // ── Section membres ──
+  const { sec: sec2, body: sec2Body } = makeSection("👥 Membres du foyer", "membres", { badge: String(members.length) });
   for (const m of members) {
     const row = document.createElement("div");
     row.className = "settings-row";
@@ -104,16 +136,15 @@ export async function renderSettings(root) {
       };
       row.appendChild(delBtn);
     }
-    memberList.appendChild(row);
+    sec2Body.appendChild(row);
   }
-  sec2.appendChild(memberList);
 
-  // Section partage d'accès (propriétaire uniquement)
+  // ── Section partage d'accès (propriétaire uniquement) ──
   let sec2b = null;
   if (state.isOwner) {
-    sec2b = document.createElement("div");
-    sec2b.className = "settings-section mt-16";
-    sec2b.innerHTML = `<h2>Partager l'accès</h2>`;
+    const made = makeSection("🔗 Partager l'accès", "partage");
+    sec2b = made.sec;
+    const shareBody = made.body;
 
     const codeDisplay = document.createElement("div");
     codeDisplay.style.cssText = "padding:10px;background:#f4f6f8;border-radius:10px;margin-bottom:12px;word-break:break-all";
@@ -129,7 +160,7 @@ export async function renderSettings(root) {
       }
     };
     updateCodeDisplay(invite);
-    sec2b.appendChild(codeDisplay);
+    shareBody.appendChild(codeDisplay);
 
     const btnRow = document.createElement("div");
     btnRow.style.cssText = "display:flex;gap:8px";
@@ -163,40 +194,39 @@ export async function renderSettings(root) {
     };
 
     btnRow.append(genBtn, revokeBtn);
-    sec2b.appendChild(btnRow);
+    shareBody.appendChild(btnRow);
   }
 
-  // Section changement de mot de passe
-  const sec3 = document.createElement("div");
-  sec3.className = "settings-section mt-16";
-  sec3.innerHTML = `
-    <h2>Changer le mot de passe</h2>
-    <div style="display:flex;flex-direction:column;gap:8px">
-      <input type="password" id="pwd-current" placeholder="Mot de passe actuel" autocomplete="current-password"
-        style="border:1.5px solid #ddd;border-radius:8px;padding:8px 10px;font-size:13px" />
-      <input type="password" id="pwd-new" placeholder="Nouveau mot de passe (8 caractères min.)" autocomplete="new-password"
-        style="border:1.5px solid #ddd;border-radius:8px;padding:8px 10px;font-size:13px" />
-      <input type="password" id="pwd-confirm" placeholder="Confirmer le nouveau mot de passe" autocomplete="new-password"
-        style="border:1.5px solid #ddd;border-radius:8px;padding:8px 10px;font-size:13px" />
-    </div>`;
+  // ── Section changement de mot de passe ──
+  const { sec: sec3, body: sec3Body } = makeSection("🔒 Changer le mot de passe", "motdepasse");
+  const pwdFields = document.createElement("div");
+  pwdFields.style.cssText = "display:flex;flex-direction:column;gap:8px";
+  pwdFields.innerHTML = `
+    <input type="password" id="pwd-current" placeholder="Mot de passe actuel" autocomplete="current-password"
+      style="border:1.5px solid #ddd;border-radius:8px;padding:8px 10px;font-size:13px" />
+    <input type="password" id="pwd-new" placeholder="Nouveau mot de passe (8 caractères min.)" autocomplete="new-password"
+      style="border:1.5px solid #ddd;border-radius:8px;padding:8px 10px;font-size:13px" />
+    <input type="password" id="pwd-confirm" placeholder="Confirmer le nouveau mot de passe" autocomplete="new-password"
+      style="border:1.5px solid #ddd;border-radius:8px;padding:8px 10px;font-size:13px" />`;
+  sec3Body.appendChild(pwdFields);
   const pwdBtn = document.createElement("button");
   pwdBtn.className = "btn btn-primary btn-full mt-8";
   pwdBtn.textContent = "Changer le mot de passe";
   pwdBtn.onclick = async () => {
-    const current = sec3.querySelector("#pwd-current").value;
-    const next = sec3.querySelector("#pwd-new").value;
-    const confirm_ = sec3.querySelector("#pwd-confirm").value;
+    const current = sec3Body.querySelector("#pwd-current").value;
+    const next = sec3Body.querySelector("#pwd-new").value;
+    const confirm_ = sec3Body.querySelector("#pwd-confirm").value;
     if (next.length < 8) { showToast("8 caractères minimum", "error"); return; }
     if (next !== confirm_) { showToast("Les mots de passe ne correspondent pas", "error"); return; }
     try {
       const res = await api.changePassword(current, next);
       // Les anciens tokens sont révoqués côté serveur : on adopte le nouveau
       state.setAuth(res.token, res.household_id, res.member_id, res.member_name, res.is_owner);
-      sec3.querySelectorAll("input").forEach((i) => { i.value = ""; });
+      sec3Body.querySelectorAll("input").forEach((i) => { i.value = ""; });
       showToast("Mot de passe changé ✓ Les autres appareils devront se reconnecter.");
     } catch (err) { showToast(err.message, "error"); }
   };
-  sec3.appendChild(pwdBtn);
+  sec3Body.appendChild(pwdBtn);
 
   body.append(sec1, sec2, ...(sec2b ? [sec2b] : []), sec3);
   renderShopCategories(body);
@@ -205,53 +235,58 @@ export async function renderSettings(root) {
 // ── Catégories de courses ─────────────────────────────────────────────────────
 
 async function renderShopCategories(body) {
-  // Build placeholder section immediately
-  const sec = document.createElement("div");
-  sec.className = "settings-section mt-16";
-  sec.id = "sec-shop-cats";
   const catsEnabled = localStorage.getItem("shop_categories_enabled") !== "false";
-  sec.innerHTML = `
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-      <h2 style="margin:0">Catégories de courses</h2>
-      <label class="toggle" style="margin:0" title="Activer / désactiver le regroupement par catégorie dans les courses">
+
+  const { sec: catSec, body: catBody } = makeSection("🛒 Catégories de courses", "shopcats");
+  catBody.innerHTML = `
+    <div class="settings-row" style="border-bottom:1px solid #f0f0f0">
+      <label for="shop-cats-toggle">Regrouper les courses par catégorie</label>
+      <label class="toggle">
         <input type="checkbox" id="shop-cats-toggle" ${catsEnabled ? "checked" : ""} />
         <span class="toggle-slider"></span>
       </label>
     </div>
-    <div id="shop-cats-body">
+    <div id="shop-cats-body" class="mt-8">
       <div id="shop-cats-list" style="display:flex;flex-direction:column;gap:8px"></div>
       <button class="btn btn-primary btn-sm mt-8" id="shop-cat-add">+ Nouvelle catégorie</button>
-      <h2 style="margin-top:24px">Associer un ingrédient</h2>
-      <div style="font-size:12px;color:#888;margin-bottom:8px">Modifiez la catégorie attribuée à chaque ingrédient connu.</div>
-      <div id="ingr-map-list" style="display:flex;flex-direction:column;gap:6px"></div>
     </div>`;
-  body.appendChild(sec);
+  body.appendChild(catSec);
 
-  const catBody = sec.querySelector("#shop-cats-body");
-  catBody.style.display = catsEnabled ? "" : "none";
+  const { sec: ingrSec, body: ingrBody } = makeSection("🥕 Ingrédients connus", "ingrmap");
+  ingrBody.innerHTML = `
+    <div style="font-size:12px;color:#888;margin-bottom:8px">Modifiez la catégorie attribuée à chaque ingrédient connu.</div>
+    <div id="ingr-map-list" style="display:flex;flex-direction:column;gap:6px"></div>`;
+  body.appendChild(ingrSec);
 
-  sec.querySelector("#shop-cats-toggle").onchange = (e) => {
+  const catListBody = catBody.querySelector("#shop-cats-body");
+  const applyEnabled = (enabled) => {
+    catListBody.style.display = enabled ? "" : "none";
+    ingrSec.style.display = enabled ? "" : "none";
+  };
+  applyEnabled(catsEnabled);
+
+  catBody.querySelector("#shop-cats-toggle").onchange = (e) => {
     const enabled = e.target.checked;
     localStorage.setItem("shop_categories_enabled", enabled ? "true" : "false");
-    catBody.style.display = enabled ? "" : "none";
+    applyEnabled(enabled);
     showToast(enabled ? "Catégories activées ✓" : "Catégories désactivées ✓");
   };
 
   let cats = [], ingrMap = [];
   try { [cats, ingrMap] = await Promise.all([api.getShopCategories(), api.getIngredientMap()]); }
-  catch (err) { sec.querySelector("#shop-cats-list").innerHTML = `<div class="text-muted">${err.message}</div>`; return; }
+  catch (err) { catBody.querySelector("#shop-cats-list").innerHTML = `<div class="text-muted">${err.message}</div>`; return; }
 
-  renderCatList(cats, sec.querySelector("#shop-cats-list"));
-  renderIngrMap(ingrMap, cats, sec.querySelector("#ingr-map-list"));
+  renderCatList(cats, catBody.querySelector("#shop-cats-list"));
+  renderIngrMap(ingrMap, cats, ingrBody.querySelector("#ingr-map-list"));
 
-  document.getElementById("shop-cat-add").onclick = async () => {
+  catBody.querySelector("#shop-cat-add").onclick = async () => {
     const name = prompt("Nom de la nouvelle catégorie :");
     if (!name?.trim()) return;
     try {
       await api.createShopCategory(name.trim(), "#888888");
       showToast("Catégorie ajoutée ✓");
       cats = await api.getShopCategories();
-      renderCatList(cats, sec.querySelector("#shop-cats-list"));
+      renderCatList(cats, catBody.querySelector("#shop-cats-list"));
     } catch (err) { showToast(err.message, "error"); }
   };
 }
