@@ -182,6 +182,23 @@ def _VERB(line: str) -> bool:
     return bool(_INSTRUCTION_VERB.match(line))
 
 
+def test_clean_social_title():
+    """Le nom de plat doit être court et lisible, pas la légende entière."""
+    from app.routers.import_url import _clean_social_title
+
+    # Titre OG Instagram = « Auteur on Instagram: <légende> » → nom propre
+    caption = "✨ MOUSSAKA 🍆\n\nJe sais pas toi mais ce plat...\n* 300 g de bœuf"
+    og = f'Zoé Boury on Instagram: "{caption}'
+    assert _clean_social_title(og, caption) == "Moussaka"
+
+    # Emoji décoratifs retirés, prose d'intro ignorée
+    assert _clean_social_title("", "🍰 Tarte aux pommes 🍏\n3 pommes") == "Tarte aux pommes"
+    assert _clean_social_title("", "Je te montre ma recette\n\nCROQUE MONSIEUR\npain") == "Croque monsieur"
+
+    # Repli sur le titre OG quand la légende ne donne rien d'exploitable
+    assert _clean_social_title("Chef on TikTok: Poulet DG", "phrase beaucoup trop longue " * 5) == "Poulet DG"
+
+
 def test_vide():
     assert _extract_recipe_parts("") == ([], [])
     assert _extract_recipe_parts("Juste une phrase sans recette.") == ([], [])

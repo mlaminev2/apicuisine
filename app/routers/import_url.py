@@ -576,6 +576,46 @@ _INGR_HEADER_KW = re.compile(
 )
 
 
+# Emoji/symboles décoratifs en fin de titre ("MOUSSAKA 🍆" → "MOUSSAKA")
+_TRAIL_DECO = re.compile(
+    "[\\s\u2190-\u21ff\u2300-\u27bf\u2b00-\u2bff\ufe0f\u200d"
+    "\u2022\u00b7\u25aa\u25b8\u2192\u2713\u2605\u2606\u00ab\u00bb\u2026"
+    "\U0001F000-\U0001FAFF]+$"
+)
+# Intro Instagram/TikTok/YouTube : "Auteur on Instagram: ..."
+_SOCIAL_TITLE_PREFIX = re.compile(
+    r".*?\bon\s+(?:instagram|tiktok|youtube)\b\s*:?\s*", re.IGNORECASE | re.DOTALL
+)
+_TITLE_STOP = ("je ", "j'", "salut", "bonjour", "coucou", "aujourd", "voici", "voilà", "recette d")
+
+
+def _clean_social_title(raw_title: str, clean_description: str) -> str:
+    """Déduit un nom de plat court et lisible d'une légende de réseau social.
+
+    Le titre OpenGraph d'Instagram est « Auteur on Instagram: <légende
+    entière> » — inutilisable comme nom. On préfère la première vraie ligne
+    de la légende (« ✨ MOUSSAKA 🍆 » → « Moussaka »)."""
+    # 1. Première ligne « forte » de la légende (courte, pas de la prose)
+    for line in clean_description.splitlines():
+        s = _LEAD_JUNK.sub("", line).strip().strip("\"'“”«»")
+        s = _TRAIL_DECO.sub("", s).strip()
+        if not s or len(s) > 60:
+            continue
+        if s.lower().startswith(_TITLE_STOP):
+            continue
+        # Un vrai titre a peu de mots et pas de ponctuation de phrase
+        if s.endswith((".", "!", "?", ":", ",")) or len(s.split()) > 8:
+            continue
+        return s.capitalize() if s.isupper() else s
+
+    # 2. Repli : retirer « Auteur on Instagram: » du titre OG
+    base = _SOCIAL_TITLE_PREFIX.sub("", raw_title or "", count=1)
+    base = _LEAD_JUNK.sub("", base).strip().strip("\"'“”«»")
+    base = base.splitlines()[0] if base else ""
+    base = _TRAIL_DECO.sub("", base).strip()
+    return (base[:60] or raw_title or "").strip()
+
+
 def _classify_header(stripped: str) -> Optional[str]:
     """Un sous-titre de section (emoji + texte court finissant par ':' ou
     mot-clé connu) → 'ingredients' | 'steps' | None."""
@@ -817,6 +857,10 @@ def import_url_endpoint(
 
     # Strip social-media intro (e.g. "1,749 likes, 42 comments - user on Nov 2, 2020: ")
     clean_description = _strip_source_prefix(description)
+
+    # Nom de plat lisible : le titre OG social est la légende entière
+    if source in ("instagram", "tiktok", "youtube"):
+        title = _clean_social_title(title, clean_description)
 
     suggested_ingredients, suggested_steps = _extract_recipe_parts(clean_description)
 
