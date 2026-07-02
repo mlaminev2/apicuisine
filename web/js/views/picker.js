@@ -133,18 +133,16 @@ export async function renderPicker(dateStr, category, currentEntry, dessertEnabl
 
     // Entrée
     if (entreeList.length > 0) {
-      const entBox = document.createElement("div");
-      entBox.className = "opt-section";
-      entBox.style.setProperty("--opt-color", "var(--cat-entree)");
-      entBox.style.setProperty("--opt-bg", "#EDF4EE");
-      entBox.innerHTML = `
-        <div class="opt-head">
-          <span>🥗 Entrée</span>
-          <span class="opt-choice" id="picker-entree-choice"></span>
-        </div>
-        <div class="dish-list opt-list" id="picker-entree-list"></div>`;
-      body.appendChild(entBox);
-      renderEntree(entBox.querySelector("#picker-entree-list"));
+      const entLabel = document.createElement("div");
+      entLabel.className = "priority-label";
+      entLabel.style.cssText = "color:var(--cat-entree)";
+      entLabel.textContent = "🥗 Entrée (optionnel) :";
+      body.appendChild(entLabel);
+      const entContainer = document.createElement("div");
+      entContainer.className = "dish-list entree-list";
+      entContainer.id = "picker-entree-list";
+      body.appendChild(entContainer);
+      renderEntree(entContainer);
     }
 
     // Dessert
