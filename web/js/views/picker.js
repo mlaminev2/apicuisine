@@ -133,29 +133,34 @@ export async function renderPicker(dateStr, category, currentEntry, dessertEnabl
 
     // Entrée
     if (entreeList.length > 0) {
-      const entLabel = document.createElement("div");
-      entLabel.className = "priority-label";
-      entLabel.style.cssText = "color:var(--cat-entree)";
-      entLabel.textContent = "🥗 Entrée (optionnel) :";
-      body.appendChild(entLabel);
-      const entContainer = document.createElement("div");
-      entContainer.className = "dish-list";
-      entContainer.id = "picker-entree-list";
-      body.appendChild(entContainer);
-      renderEntree(entContainer);
+      const entBox = document.createElement("div");
+      entBox.className = "opt-section";
+      entBox.style.setProperty("--opt-color", "var(--cat-entree)");
+      entBox.style.setProperty("--opt-bg", "#EDF4EE");
+      entBox.innerHTML = `
+        <div class="opt-head">
+          <span>🥗 Entrée</span>
+          <span class="opt-choice" id="picker-entree-choice"></span>
+        </div>
+        <div class="dish-list opt-list" id="picker-entree-list"></div>`;
+      body.appendChild(entBox);
+      renderEntree(entBox.querySelector("#picker-entree-list"));
     }
 
     // Dessert
     if (dessertEnabled && dessertList.length > 0) {
-      const dessLabel = document.createElement("div");
-      dessLabel.className = "priority-label";
-      dessLabel.textContent = "🍰 Dessert (optionnel) :";
-      body.appendChild(dessLabel);
-      const dessContainer = document.createElement("div");
-      dessContainer.className = "dish-list";
-      dessContainer.id = "picker-dessert-list";
-      body.appendChild(dessContainer);
-      renderDessert(dessContainer);
+      const dessBox = document.createElement("div");
+      dessBox.className = "opt-section";
+      dessBox.style.setProperty("--opt-color", "var(--cat-sucree)");
+      dessBox.style.setProperty("--opt-bg", "#F9EEF4");
+      dessBox.innerHTML = `
+        <div class="opt-head">
+          <span>🍰 Dessert</span>
+          <span class="opt-choice" id="picker-dessert-choice"></span>
+        </div>
+        <div class="dish-list opt-list" id="picker-dessert-list"></div>`;
+      body.appendChild(dessBox);
+      renderDessert(dessBox.querySelector("#picker-dessert-list"));
     }
 
     renderList();
@@ -274,6 +279,14 @@ export async function renderPicker(dateStr, category, currentEntry, dessertEnabl
     };
   }
 
+  function _updateChoice(id, list, selectedId, emptyLabel) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const sel = list.find((d) => d.id === selectedId);
+    el.textContent = sel ? sel.name : emptyLabel;
+    el.classList.toggle("chosen", !!sel);
+  }
+
   function renderEntree(container) {
     container.innerHTML = "";
     for (const dish of entreeList) {
@@ -286,6 +299,7 @@ export async function renderPicker(dateStr, category, currentEntry, dessertEnabl
       };
       container.appendChild(item);
     }
+    _updateChoice("picker-entree-choice", entreeList, selectedEntreeId, "aucune");
   }
 
   function renderDessert(container) {
@@ -300,5 +314,6 @@ export async function renderPicker(dateStr, category, currentEntry, dessertEnabl
       };
       container.appendChild(item);
     }
+    _updateChoice("picker-dessert-choice", dessertList, selectedDessertId, "aucun");
   }
 }

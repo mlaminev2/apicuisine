@@ -207,6 +207,28 @@ a { color: inherit; text-decoration: none; }
 .badge-tag { font-size: 9px; background: #e8f4f8; color: var(--accent-dark); padding: 1px 5px; border-radius: 4px; }
 .priority-label { font-size: 11px; color: var(--shopping-header); font-weight: 700; margin: 4px 0 2px; }
 
+/* Sections optionnelles du sélecteur (entrée / dessert) */
+.opt-section {
+  border: 1.5px solid var(--opt-color, #ddd);
+  border-radius: 12px;
+  overflow: hidden;
+  margin-top: 6px;
+}
+.opt-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 9px 12px;
+  background: var(--opt-bg, #f6f6f6);
+  color: var(--opt-color, #555);
+  font-size: 13px; font-weight: 700;
+}
+.opt-choice {
+  font-size: 12px; font-weight: 600; color: #a5aeb3; font-style: italic;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 55%;
+}
+.opt-choice.chosen { color: var(--opt-color); font-style: normal; }
+.opt-choice.chosen::after { content: " ✓"; }
+.opt-list { padding: 6px; max-height: 170px; }
+
 /* ── Base plats ── */
 .cat-tabs { display: flex; overflow-x: auto; gap: 6px; padding: 10px 16px; background: white; border-bottom: 1px solid #eee; }
 .cat-tab { padding: 5px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; white-space: nowrap; border: 1.5px solid transparent; transition: background var(--t-fast), color var(--t-fast), transform var(--t-fast) var(--ease-out); }
