@@ -23,7 +23,17 @@ jobs:
         run: ruff check app tests
 
       - name: Tests (pytest)
-        run: pytest -q
+        shell: bash
+        run: pytest -q 2>&1 | tee pytest-output.txt
+
+      - name: Annoter les échecs pytest
+        if: failure()
+        shell: bash
+        run: |
+          grep -E "FAILED|^ERROR|^E   " pytest-output.txt | head -10 | while IFS= read -r l; do
+            echo "::error::$l"
+          done
+          tail -5 pytest-output.txt | while IFS= read -r l; do echo "::error::$l"; done
 
       - name: Syntaxe JavaScript
         run: |
