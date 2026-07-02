@@ -124,6 +124,64 @@ def test_arret_aux_hashtags():
     assert steps == []
 
 
+def test_instagram_moussaka_reel():
+    """Cas réel : reel Instagram avec sous-sections emoji, verbes en « tu »,
+    préfixe « 164K likes », prose d'intro et hashtags de fin."""
+    from app.routers.import_url import _strip_source_prefix
+
+    raw = (
+        "164K likes, 531 comments - miamzozo on September 24, 2025: "
+        '"✨ MOUSSAKA 🍆\n\n'
+        "Je sais pas toi, mais ce plat fait partie de mes traumatismes.\n"
+        "Alors voilà la recette qui va tout changer 👇\n\n"
+        "🥩 Pour la viande :\n\n"
+        "* 300 g de bœuf haché\n"
+        "* 1 petit oignon haché\n"
+        "* 150 g de purée de tomate\n\n"
+        "Fais revenir l'ail et l'oignon dans un filet d'huile d'olive, ajoute la viande.\n"
+        "Laisse mijoter à feu doux jusqu'à ce que la sauce épaississe.\n\n"
+        "🍆 Pour les légumes :\n\n"
+        "* 1 grosse aubergine\n"
+        "* Huile d'olive\n"
+        "* Sel\n\n"
+        "Coupe les légumes en tranches. Étale-les sur une plaque et enfourne à 200°C.\n\n"
+        "🧱 Montage :\n\n"
+        "1. Dispose les pommes de terre dans le fond du plat\n"
+        "2. Ajoute le ragoût de viande\n"
+        "3. Enfourne à 180°C pendant 35 minutes.\n\n"
+        "Et maintenant… régale-toi ! 😋\n\n"
+        "#moussakamaison #recettefacile"
+    )
+    clean = _strip_source_prefix(raw)
+    # Le préfixe "164K likes … :" doit disparaître
+    assert not clean.startswith("164K")
+
+    ingredients, steps = _extract_recipe_parts(clean)
+
+    # Ingrédients : les 3 sous-sections, y compris ceux sans quantité
+    assert "300 g de bœuf haché" in ingredients
+    assert "Huile d'olive" in ingredients
+    assert "Sel" in ingredients
+
+    # Étapes : verbes en « tu » (Fais, Coupe, Dispose, Ajoute, Enfourne)
+    assert any(s.startswith("Fais revenir") for s in steps)
+    assert any(s.startswith("Coupe les légumes") for s in steps)
+    assert any(s.startswith("Dispose les pommes") for s in steps)
+
+    # Aucune instruction dans les ingrédients, aucun ingrédient dans les étapes
+    assert not any(_VERB(s) for s in ingredients), f"instruction dans ingrédients: {ingredients}"
+    # La prose d'intro et les hashtags ne doivent apparaître nulle part
+    joined = " ".join(ingredients + steps).lower()
+    assert "traumatismes" not in joined
+    assert "#moussaka" not in joined
+    assert "régale" not in joined
+
+
+def _VERB(line: str) -> bool:
+    from app.routers.import_url import _INSTRUCTION_VERB
+    return bool(_INSTRUCTION_VERB.match(line))
+
+
 def test_vide():
     assert _extract_recipe_parts("") == ([], [])
     assert _extract_recipe_parts("Juste une phrase sans recette.") == ([], [])

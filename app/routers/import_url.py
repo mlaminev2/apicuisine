@@ -56,26 +56,40 @@ _QTY_RE = re.compile(
 _SECTION_INGR = re.compile(r"ingr[eé]dients?", re.IGNORECASE)
 _BULLET = re.compile(r"^\s*[-•*·▪▸→✓]\s*")
 _NUMBEREDLINE = re.compile(r"^\s*\d+[.)]\s*")
-# Verbes d'instruction (fr impératif/infinitif + en) partagés par les deux
-# détecteurs. Liste volontairement large : un verbe raté = une étape classée
-# ingrédient.
+# Verbes d'instruction (fr infinitif + impératif « vous » ET « tu » + en).
+# Les recettes Instagram sont très souvent en « tu » (Fais, Ajoute, Coupe…) :
+# un verbe raté = une étape classée à tort en ingrédient.
 _VERBS_FR = (
-    r"faire|faites?|ajouter|ajoutez|m[eé]langer|m[eé]langez|"
-    r"mettre|mettez|verser|versez|cuire|cuisez|"
-    r"pr[eé]chauffer|pr[eé]chauffez|d[eé]couper|d[eé]coupez|trancher|tranchez|"
-    r"laver|lavez|[eé]plucher|[eé]pluchez|incorporer|incorporez|"
-    r"d[eé]poser|d[eé]posez|r[eé]server|r[eé]servez|porter|portez|"
-    r"battre|battez|fouetter|fouettez|enfourner|enfournez|"
-    r"saupoudrer|saupoudrez|laisser|laissez|remuer|remuez|"
-    r"[eé]goutter|[eé]gouttez|assaisonner|assaisonnez|griller|grillez|"
-    r"mijoter|mixer|mixez|hacher|hachez|[eé]taler|[eé]talez|"
-    r"beurrer|beurrez|fariner|farinez|couvrir|couvrez|"
-    r"saler|salez|poivrer|poivrez|servir|servez|d[eé]guster|d[eé]gustez|"
-    r"disposer|disposez|former|formez|p[eé]trir|p[eé]trissez|"
-    r"abaisser|abaissez|napper|nappez|garnir|garnissez|"
-    r"d[eé]glacer|d[eé]glacez|filtrer|filtrez|chauffer|chauffez|"
-    r"d[eé]mouler|d[eé]moulez|retourner|retournez|dorer|dorez|"
-    r"saisir|saisissez|remettre|remettez|rectifier|rectifiez|"
+    # faire / mettre / battre / servir / couvrir irréguliers
+    r"faire|fais|faites|mettre|mets|mettez|battre|bats|battez|"
+    r"servir|sers|servez|couvrir|couvre|couvrez|"
+    # -er : infinitif, impératif tu (stem+e), impératif vous (stem+ez)
+    r"ajouter|ajoute|ajoutez|m[eé]langer|m[eé]lange|m[eé]langez|"
+    r"verser|verse|versez|cuire|cuis|cuisez|"
+    r"pr[eé]chauffer|pr[eé]chauffe|pr[eé]chauffez|d[eé]couper|d[eé]coupe|d[eé]coupez|"
+    r"trancher|tranche|tranchez|laver|lave|lavez|"
+    r"[eé]plucher|[eé]pluche|[eé]pluchez|incorporer|incorpore|incorporez|"
+    r"d[eé]poser|d[eé]pose|d[eé]posez|r[eé]server|r[eé]serve|r[eé]servez|"
+    r"porter|porte|portez|fouetter|fouette|fouettez|"
+    r"enfourner|enfourne|enfournez|saupoudrer|saupoudre|saupoudrez|"
+    r"laisser|laisse|laissez|remuer|remue|remuez|"
+    r"[eé]goutter|[eé]goutte|[eé]gouttez|assaisonner|assaisonne|assaisonnez|"
+    r"griller|grille|grillez|mijoter|mijote|mijotez|mixer|mixe|mixez|"
+    r"hacher|hache|hachez|[eé]taler|[eé]tale|[eé]talez|"
+    r"beurrer|beurre|beurrez|fariner|farine|farinez|"
+    r"saler|sale|salez|poivrer|poivre|poivrez|"
+    r"d[eé]guster|d[eé]guste|d[eé]gustez|disposer|dispose|disposez|"
+    r"former|forme|formez|abaisser|abaisse|abaissez|"
+    r"napper|nappe|nappez|d[eé]glacer|d[eé]glace|d[eé]glacez|"
+    r"filtrer|filtre|filtrez|chauffer|chauffe|chauffez|"
+    r"d[eé]mouler|d[eé]moule|d[eé]moulez|retourner|retourne|retournez|"
+    r"dorer|dore|dorez|saisir|saisis|saisissez|"
+    r"remettre|remets|remettez|rectifier|rectifie|rectifiez|"
+    r"badigeonner|badigeonne|badigeonnez|arroser|arrose|arrosez|"
+    r"parsemer|pars[eè]me|parsemez|recouvrir|recouvre|recouvrez|"
+    r"terminer|termine|terminez|r[eé]partir|r[eé]partis|r[eé]partissez|"
+    r"garnir|garnis|garnissez|p[eé]trir|p[eé]tris|p[eé]trissez|"
+    r"r[eé]chauffer|r[eé]chauffe|r[eé]chauffez|"
     r"faire\s+revenir"
 )
 _VERBS_EN = (
@@ -516,8 +530,11 @@ def _fetch_youtube_description(url: str) -> Optional[str]:
     return None
 
 
+# Compteurs type "164K", "1.2M", "1,749" — le suffixe K/M cassait l'ancienne
+# regex et laissait passer tout le préfixe comme premier « ingrédient ».
 _IG_INTRO = re.compile(
-    r"^[\d,]+\s+likes?,\s*[\d,]+\s+comments?\s*-\s*.+?on\s+\w+\s+\d{1,2},\s+\d{4}\s*:\s*[\"']?\s*",
+    r"^[\d.,]+\s*[KM]?\s+likes?,\s*[\d.,]+\s*[KM]?\s+comments?\s*[-–—]\s*"
+    r".+?on\s+\w+\s+\d{1,2},\s+\d{4}\s*:\s*[\"'“”]?\s*",
     re.IGNORECASE | re.DOTALL,
 )
 
@@ -543,12 +560,42 @@ _SECTION_OTHER = re.compile(
 _YIELD_LINE = re.compile(
     r"^pour\s+\d+\s*(personnes?|parts?|portions?|pers\.?)?\s*:?\s*$", re.IGNORECASE
 )
+# Emoji/symboles/puces en tête de ligne, à retirer pour tester un sous-titre
+_LEAD_JUNK = re.compile(r"^[\s\W_]+", re.UNICODE)
+# Sous-titres de préparation ("Montage :", "Dressage", "Pour le montage")
+_STEP_HEADER_KW = re.compile(
+    r"(montage|assemblage|pr[eé]paration|instructions?|[eé]tapes?|m[eé]thode|"
+    r"dressage|cuisson|finition|r[eé]alisation|d[eé]roulement)",
+    re.IGNORECASE,
+)
+# Sous-titres d'ingrédients ("Pour la viande :", "Pour la béchamel", "Sauce :")
+_INGR_HEADER_KW = re.compile(
+    r"(ingr[eé]dients?|garniture|sauce|b[eé]chamel|p[aâ]te|cr[eè]me|marinade|"
+    r"^pour\s+(la|le|les|l[’']|\d|une?|deux))",
+    re.IGNORECASE,
+)
+
+
+def _classify_header(stripped: str) -> Optional[str]:
+    """Un sous-titre de section (emoji + texte court finissant par ':' ou
+    mot-clé connu) → 'ingredients' | 'steps' | None."""
+    body = _LEAD_JUNK.sub("", stripped).strip()
+    if not body or len(body) > 45:
+        return None
+    ends_colon = body.rstrip().endswith(":")
+    core = body.rstrip(": ").strip()
+    # On vérifie « étapes » avant « ingrédients » : « Pour le montage » = étapes
+    if _STEP_HEADER_KW.search(core):
+        return "steps"
+    if _INGR_HEADER_KW.search(core):
+        return "ingredients"
+    return None if not ends_colon else "keep"
 # Fin de recette : notes, hashtags, mentions, formules de conclusion
 _END_MARKERS = re.compile(
     r"^(notes?\s*:|astuces?\s*:?|conseils?\s*:?|sources?\s*:|cr[eé]dits?|"
-    r"tags?\s*:|[#@]|abonne|suivez|retrouvez|\bbon\s+app[eé]tit\b|r[eé]galez|"
+    r"tags?\s*:|[#@]|abonne|suivez|retrouvez|\bbon\s+app[eé]tit\b|r[eé]gale|"
     r"vous\s+allez|j'ai\s+pu|tr[eè]s\s+bon|jusqu'[àa]\s+[eé]puisement|"
-    r"enjoy\b|musi(?:c|que))",
+    r"et\s+maintenant|et\s+voil[àa]|enjoy\b|musi(?:c|que))",
     re.IGNORECASE,
 )
 
@@ -591,37 +638,53 @@ def _extract_recipe_parts(description: str) -> tuple[list[str], list[str]]:
         starts_with_verb = bool(_INSTRUCTION_VERB.match(clean))
         has_verb = bool(_VERB_IN_LINE.search(clean))
 
-        # ── Transitions de section ──
-        # Un vrai titre de section est court et sans verbe ("Ingrédients :"),
-        # pas une étape qui mentionne le mot ("Mélangez les ingrédients secs").
-        if _SECTION_INGR.search(stripped) and len(stripped) < 40 and not has_verb:
-            section = "ingredients"
+        # ── Fin de recette (avant tout) : hashtags, notes, formules ──
+        if _END_MARKERS.match(stripped):
+            if len(ingredients) + len(steps) >= 3:
+                break
             continue
+
+        # ── Rendement ("Pour 4 personnes") : neutre ──
+        if _YIELD_LINE.match(stripped):
+            continue
+
+        # ── Transitions de section ──
+        # Un vrai titre est court et sans verbe ("Ingrédients :", "Pour la
+        # viande :", "Montage :"), pas une étape qui contient le mot
+        # ("Mélangez les ingrédients secs").
         if _SECTION_PREP.match(stripped):
             section = "steps"
             continue
         if _SECTION_OTHER.match(stripped) and len(stripped) < 40 and not has_verb:
             section = "other"
             continue
-        if _YIELD_LINE.match(stripped):
+        if not has_verb:
+            header = _classify_header(stripped)
+            if header == "steps":
+                section = "steps"
+                continue
+            if header == "ingredients":
+                section = "ingredients"
+                continue
+            if header == "keep":
+                continue  # sous-titre inconnu : on garde la section courante
+        # Fallback : mot « ingrédient » présent dans une ligne courte sans verbe
+        if _SECTION_INGR.search(stripped) and len(stripped) < 40 and not has_verb:
+            section = "ingredients"
             continue
-        if _END_MARKERS.match(stripped):
-            if len(ingredients) + len(steps) >= 3:
-                break  # fin de recette : hashtags, notes, formules de politesse
-            continue  # trop tôt pour conclure (mention en tête de description)
 
         if section == "other":
             continue
 
-        has_qty = bool(
-            _QTY_RE.search(stripped)
-            or _UNIT_RE.search(stripped)
-            or _UNIT_SUFFIX_RE.search(stripped)
-        )
+        starts_with_qty = bool(_QTY_RE.match(clean))
+        has_unit = bool(_UNIT_RE.search(stripped) or _UNIT_SUFFIX_RE.search(stripped))
 
         if section == "ingredients":
-            if starts_with_verb and len(clean) > 25:
-                steps.append(clean)  # étape égarée dans la liste d'ingrédients
+            # Dans une liste d'ingrédients, une phrase qui commence par un verbe
+            # (ou une longue phrase avec verbe) est une instruction égarée.
+            if starts_with_verb or (has_verb and len(clean) > 40):
+                if len(clean) > 15:
+                    steps.append(clean)
             elif len(stripped) <= 120:
                 ingredients.append(clean)
             continue
@@ -632,10 +695,15 @@ def _extract_recipe_parts(description: str) -> tuple[list[str], list[str]]:
             continue
 
         # ── Hors section : heuristique, une seule destination par ligne ──
+        # Étape = commence par un verbe, ou longue phrase contenant un verbe.
         if starts_with_verb or (has_verb and len(clean) > 40):
             if 4 < len(stripped) <= 300:
                 steps.append(clean)
-        elif has_qty and len(stripped) <= 120 and not has_verb:
+        # Ingrédient = commence par une quantité (évite la prose qui contient
+        # un mot-unité au milieu, ex. « des morceaux de viande »).
+        elif starts_with_qty and has_unit and len(stripped) <= 120:
+            ingredients.append(clean)
+        elif starts_with_qty and len(stripped) <= 80:
             ingredients.append(clean)
 
     return _dedupe(ingredients)[:35], _dedupe(steps)[:30]
