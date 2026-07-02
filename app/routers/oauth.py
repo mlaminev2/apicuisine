@@ -6,14 +6,16 @@ from typing import Optional
 from urllib.parse import urlencode
 
 import httpx
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi.responses import RedirectResponse
+from pydantic import BaseModel, Field
 from sqlmodel import Session, select
 
-from app.auth import create_token
+from app.auth import create_token, invite_code_valid
 from app.config import settings
 from app.db import get_session
 from app.models import Household, Member
+from app.schemas import LoginResponse
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/auth", tags=["oauth"])
@@ -45,16 +47,11 @@ def _pop_state(token: str) -> Optional[dict]:
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
-def _success_redirect(household: Household, member: Member) -> str:
-    token = create_token(member.id)
-    params = urlencode({
-        "token": token,
-        "household_id": household.id,
-        "member_id": member.id,
-        "member_name": member.name,
-        "is_owner": "true" if member.is_owner else "false",
-    })
-    return f"/#/oauth-callback?{params}"
+def _success_redirect(member: Member) -> str:
+    # Le token n'est jamais mis dans l'URL (historique navigateur) : on émet
+    # un code opaque à usage unique que le front échange via POST /exchange.
+    code = _new_state({"member_id": member.id})
+    return f"/#/oauth-callback?{urlencode({'code': code})}"
 
 
 def _find_or_create(
@@ -92,7 +89,7 @@ def _find_or_create(
     ).first()
 
     if existing_owner:
-        if not invite_code or not household.invite_code:
+        if not invite_code or not invite_code_valid(household):
             return None, "invite_required"
         if not hmac.compare_digest(invite_code, household.invite_code):
             return None, "invalid_invite"
@@ -199,6 +196,38 @@ def google_callback(
     if err:
         return RedirectResponse(f"/#/login?oauth_error={err}")
 
-    return RedirectResponse(_success_redirect(household, member))
+    return RedirectResponse(_success_redirect(member))
+
+
+# ── Échange code → token ──────────────────────────────────────────────────────
+
+class ExchangeRequest(BaseModel):
+    code: str = Field(max_length=64)
+
+
+@router.post("/exchange", response_model=LoginResponse)
+def exchange_code(body: ExchangeRequest, session: Session = Depends(get_session)):
+    """Échange le code à usage unique émis par le callback OAuth contre un token."""
+    data = _pop_state(body.code)
+    if not data or "member_id" not in data:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Code invalide ou expiré",
+        )
+    member = session.get(Member, data["member_id"])
+    if not member:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Compte introuvable"
+        )
+    household = session.get(Household, member.household_id)
+    token = create_token(member.id, member.token_version)
+    return LoginResponse(
+        token=token,
+        household_id=household.id,
+        household_name=household.name,
+        member_id=member.id,
+        member_name=member.name,
+        is_owner=member.is_owner,
+    )
 
 

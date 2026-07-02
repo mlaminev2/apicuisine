@@ -20,7 +20,8 @@ async function request(method, path, body = null) {
   }
 
   // Token expiré ou révoqué → logout automatique
-  if (res.status === 401 && path !== "/api/login" && path !== "/api/register") {
+  const noAutoLogout = ["/api/login", "/api/register", "/api/password", "/api/auth/exchange"];
+  if (res.status === 401 && !noAutoLogout.includes(path)) {
     state.clearAuth();
     location.hash = "#/login";
     throw new Error("Session expirée");
@@ -41,6 +42,9 @@ export const api = {
   login: (email, password) => request("POST", "/api/login", { email, password }),
   register: (name, email, password, color, invite_code) =>
     request("POST", "/api/register", { name, email, password, color, invite_code: invite_code || null }),
+  oauthExchange: (code) => request("POST", "/api/auth/exchange", { code }),
+  changePassword: (current_password, new_password) =>
+    request("POST", "/api/password", { current_password, new_password }),
   getMembers: () => request("GET", "/api/members"),
   deleteMember: (id) => request("DELETE", `/api/members/${id}`),
   getInvite: () => request("GET", "/api/invite"),

@@ -121,7 +121,7 @@ export async function renderSettings(root) {
       if (inv && inv.invite_code) {
         const link = `${location.origin}/#/inscription?code=${inv.invite_code}`;
         codeDisplay.innerHTML = `
-          <div style="font-size:12px;color:#888;margin-bottom:4px">Code d'invitation actif</div>
+          <div style="font-size:12px;color:#888;margin-bottom:4px">Code d'invitation actif (valable 7 jours)</div>
           <div style="font-size:16px;font-weight:700;letter-spacing:.08em;color:var(--accent-dark)">${escapeHtml(inv.invite_code)}</div>
           <div style="font-size:11px;color:#aaa;margin-top:6px">Lien : <a href="${escapeHtml(link)}" style="color:var(--accent-header)">${escapeHtml(link)}</a></div>`;
       } else {
@@ -166,7 +166,39 @@ export async function renderSettings(root) {
     sec2b.appendChild(btnRow);
   }
 
-  body.append(sec1, sec2, ...(sec2b ? [sec2b] : []));
+  // Section changement de mot de passe
+  const sec3 = document.createElement("div");
+  sec3.className = "settings-section mt-16";
+  sec3.innerHTML = `
+    <h2>Changer le mot de passe</h2>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <input type="password" id="pwd-current" placeholder="Mot de passe actuel" autocomplete="current-password"
+        style="border:1.5px solid #ddd;border-radius:8px;padding:8px 10px;font-size:13px" />
+      <input type="password" id="pwd-new" placeholder="Nouveau mot de passe (8 caractères min.)" autocomplete="new-password"
+        style="border:1.5px solid #ddd;border-radius:8px;padding:8px 10px;font-size:13px" />
+      <input type="password" id="pwd-confirm" placeholder="Confirmer le nouveau mot de passe" autocomplete="new-password"
+        style="border:1.5px solid #ddd;border-radius:8px;padding:8px 10px;font-size:13px" />
+    </div>`;
+  const pwdBtn = document.createElement("button");
+  pwdBtn.className = "btn btn-primary btn-full mt-8";
+  pwdBtn.textContent = "Changer le mot de passe";
+  pwdBtn.onclick = async () => {
+    const current = sec3.querySelector("#pwd-current").value;
+    const next = sec3.querySelector("#pwd-new").value;
+    const confirm_ = sec3.querySelector("#pwd-confirm").value;
+    if (next.length < 8) { showToast("8 caractères minimum", "error"); return; }
+    if (next !== confirm_) { showToast("Les mots de passe ne correspondent pas", "error"); return; }
+    try {
+      const res = await api.changePassword(current, next);
+      // Les anciens tokens sont révoqués côté serveur : on adopte le nouveau
+      state.setAuth(res.token, res.household_id, res.member_id, res.member_name, res.is_owner);
+      sec3.querySelectorAll("input").forEach((i) => { i.value = ""; });
+      showToast("Mot de passe changé ✓ Les autres appareils devront se reconnecter.");
+    } catch (err) { showToast(err.message, "error"); }
+  };
+  sec3.appendChild(pwdBtn);
+
+  body.append(sec1, sec2, ...(sec2b ? [sec2b] : []), sec3);
   renderShopCategories(body);
 }
 

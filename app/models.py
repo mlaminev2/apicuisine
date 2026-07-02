@@ -28,6 +28,7 @@ class Member(SQLModel, table=True):
     is_owner: bool = Field(default=False)
     oauth_provider: Optional[str] = Field(default=None)   # "google" | "apple"
     oauth_sub: Optional[str] = Field(default=None)        # identifiant unique chez le provider
+    token_version: int = Field(default=0)  # incrémenté pour révoquer tous les tokens émis
     created_at: datetime = Field(default_factory=_utcnow)
 
 

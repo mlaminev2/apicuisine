@@ -1,4 +1,5 @@
 import { state } from "./state.js";
+import { api } from "./api.js";
 import { renderNavbar } from "./components/navbar.js";
 import { renderLogin } from "./views/login.js";
 import { renderRegister } from "./views/register.js";
@@ -26,11 +27,17 @@ async function route() {
   if (hash.startsWith("#/login")) { await renderLogin(root); return; }
   if (hash.startsWith("#/inscription")) { await renderRegister(root); return; }
   if (hash.startsWith("#/oauth-callback")) {
-    if (params.token) {
-      state.setAuth(params.token, parseInt(params.household_id), parseInt(params.member_id), params.member_name, params.is_owner === "true");
-      location.hash = "#/calendrier";
+    if (params.code) {
+      try {
+        const res = await api.oauthExchange(params.code);
+        state.setAuth(res.token, res.household_id, res.member_id, res.member_name, res.is_owner);
+        // replace() : l'URL contenant le code ne reste pas dans l'historique
+        location.replace("#/calendrier");
+      } catch {
+        location.replace("#/login?oauth_error=exchange_failed");
+      }
     } else {
-      location.hash = "#/login" + (params.oauth_error ? "?oauth_error=" + params.oauth_error : "");
+      location.replace("#/login" + (params.oauth_error ? "?oauth_error=" + params.oauth_error : ""));
     }
     return;
   }

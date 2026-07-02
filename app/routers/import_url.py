@@ -112,6 +112,21 @@ def _detect_source(url: str) -> str:
     return "unknown"
 
 
+_ALLOWED_FETCH_HOSTS = _YOUTUBE_HOSTS | _INSTAGRAM_HOSTS | _TIKTOK_HOSTS
+_MAX_FETCH_BYTES = 2_000_000  # 2 Mo
+
+
+def _fetch_checked(req: urllib.request.Request, timeout: int) -> bytes:
+    """Fetch avec revalidation de l'hôte final (urlopen suit les redirections,
+    qui pourraient quitter la whitelist → SSRF) et taille de lecture plafonnée
+    (anti-DoS mémoire)."""
+    with urllib.request.urlopen(req, timeout=timeout) as resp:
+        final_host = _safe_host(resp.geturl())
+        if final_host not in _ALLOWED_FETCH_HOSTS:
+            raise ValueError(f"Redirection vers un hôte non autorisé: {final_host}")
+        return resp.read(_MAX_FETCH_BYTES)
+
+
 def _og_first(patterns, html):
     for p in patterns:
         m = p.search(html)
@@ -133,18 +148,16 @@ def _fetch_tiktok_data(url: str) -> tuple[Optional[str], Optional[str], Optional
             TIKTOK_OEMBED.format(url=encoded),
             headers={"User-Agent": "MenusFamille/1.0"},
         )
-        with urllib.request.urlopen(req, timeout=5) as resp:
-            data = json.loads(resp.read())
-            title = data.get("title")
-            author = data.get("author_name")
-            thumbnail = data.get("thumbnail_url")
+        data = json.loads(_fetch_checked(req, timeout=5))
+        title = data.get("title")
+        author = data.get("author_name")
+        thumbnail = data.get("thumbnail_url")
     except Exception:
         pass
 
     try:
         req = urllib.request.Request(url, headers={"User-Agent": _IG_UA})
-        with urllib.request.urlopen(req, timeout=8) as resp:
-            html = resp.read().decode("utf-8", errors="ignore")
+        html = _fetch_checked(req, timeout=8).decode("utf-8", errors="ignore")
         if not title:
             title = _og_first([_OG_TITLE, _OG_TITLE2], html)
         if not thumbnail:
@@ -173,11 +186,10 @@ def _fetch_youtube_data(url: str) -> tuple[Optional[str], Optional[str], Optiona
             YOUTUBE_OEMBED.format(url=encoded),
             headers={"User-Agent": "MenusFamille/1.0"},
         )
-        with urllib.request.urlopen(req, timeout=5) as resp:
-            data = json.loads(resp.read())
-            title = data.get("title")
-            author = data.get("author_name")
-            thumbnail = data.get("thumbnail_url")
+        data = json.loads(_fetch_checked(req, timeout=5))
+        title = data.get("title")
+        author = data.get("author_name")
+        thumbnail = data.get("thumbnail_url")
     except Exception:
         pass
     description = _fetch_youtube_description(url)
@@ -221,8 +233,7 @@ def _fetch_instagram_data(url: str) -> tuple[Optional[str], Optional[str], Optio
     """Returns (title, author, thumbnail_url, description)."""
     try:
         req = urllib.request.Request(url, headers={"User-Agent": _IG_UA})
-        with urllib.request.urlopen(req, timeout=8) as resp:
-            html = resp.read().decode("utf-8", errors="ignore")
+        html = _fetch_checked(req, timeout=8).decode("utf-8", errors="ignore")
 
         title = _og_first([_OG_TITLE, _OG_TITLE2], html)
         description = _og_first([_OG_DESC, _OG_DESC2], html)
@@ -257,8 +268,7 @@ def _fetch_youtube_description(url: str) -> Optional[str]:
     """Fetch YouTube page and extract shortDescription from embedded JSON."""
     try:
         req = urllib.request.Request(url, headers={"User-Agent": _YT_UA})
-        with urllib.request.urlopen(req, timeout=8) as resp:
-            html = resp.read().decode("utf-8", errors="ignore")
+        html = _fetch_checked(req, timeout=8).decode("utf-8", errors="ignore")
 
         # shortDescription is reliably embedded as a JSON string in the page
         match = re.search(r'"shortDescription":"((?:[^"\\]|\\.)*)"', html)

@@ -14,6 +14,7 @@ bearer = HTTPBearer(auto_error=False)
 
 ALGORITHM = "HS256"
 TOKEN_EXPIRE_DAYS = 30
+INVITE_CODE_TTL_DAYS = 7
 
 
 def hash_password(password: str) -> str:
@@ -24,12 +25,25 @@ def verify_password(password: str, hashed: str) -> bool:
     return pwd_context.verify(password, hashed)
 
 
-def create_token(member_id: int) -> str:
+def create_token(member_id: int, token_version: int = 0) -> str:
     data = {
         "sub": str(member_id),
+        "ver": token_version,
         "exp": datetime.now(timezone.utc) + timedelta(days=TOKEN_EXPIRE_DAYS),
     }
     return jwt.encode(data, settings.secret_key, algorithm=ALGORITHM)
+
+
+def invite_code_valid(household: Household) -> bool:
+    """Un code d'invitation expire INVITE_CODE_TTL_DAYS après sa création."""
+    if not household.invite_code:
+        return False
+    created = household.invite_code_created_at
+    if created is None:
+        return False
+    if created.tzinfo is None:
+        created = created.replace(tzinfo=timezone.utc)
+    return datetime.now(timezone.utc) - created <= timedelta(days=INVITE_CODE_TTL_DAYS)
 
 
 def decode_token(token: str) -> dict:
@@ -42,6 +56,22 @@ def decode_token(token: str) -> dict:
         )
 
 
+def _member_from_payload(payload: dict, session: Session) -> Member:
+    member_id = int(payload["sub"])
+    member = session.get(Member, member_id)
+    if not member:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Compte introuvable"
+        )
+    # Un token émis avant un changement de mot de passe porte une version
+    # antérieure : il est révoqué.
+    if payload.get("ver", 0) != member.token_version:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Session révoquée"
+        )
+    return member
+
+
 def get_current_household(
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(bearer),
     session: Session = Depends(get_session),
@@ -51,12 +81,7 @@ def get_current_household(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Non authentifié"
         )
     payload = decode_token(credentials.credentials)
-    member_id = int(payload["sub"])
-    member = session.get(Member, member_id)
-    if not member:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Compte introuvable"
-        )
+    member = _member_from_payload(payload, session)
     household = session.get(Household, member.household_id)
     if not household:
         raise HTTPException(
@@ -74,13 +99,7 @@ def get_current_member(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Non authentifié"
         )
     payload = decode_token(credentials.credentials)
-    member_id = int(payload["sub"])
-    member = session.get(Member, member_id)
-    if not member:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Compte introuvable"
-        )
-    return member
+    return _member_from_payload(payload, session)
 
 
 def get_current_owner(

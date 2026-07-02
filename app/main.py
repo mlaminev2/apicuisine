@@ -37,6 +37,8 @@ async def security_headers(request: Request, call_next):
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+    if request.url.scheme == "https":
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
     if "text/html" in response.headers.get("content-type", ""):
         response.headers["Content-Security-Policy"] = (
             "default-src 'none'; "
@@ -127,6 +129,7 @@ def _migrate():
         for col, definition in [
             ("oauth_provider", "TEXT"),
             ("oauth_sub", "TEXT"),
+            ("token_version", "INTEGER NOT NULL DEFAULT 0"),
         ]:
             try:
                 conn.execute(text(f"ALTER TABLE member ADD COLUMN {col} {definition}"))
@@ -142,7 +145,13 @@ def on_startup():
     run_seed()
     from app.config import settings as _s
     if _s.secret_key == "dev-secret-key-change-in-production":
-        logger.warning("SECRET_KEY est la clé de développement — changez-la en production !")
+        if _s.app_env == "dev":
+            logger.warning("SECRET_KEY est la clé de développement — changez-la en production !")
+        else:
+            raise RuntimeError(
+                "SECRET_KEY est la clé de développement publique : refus de démarrer "
+                "en production. Définissez SECRET_KEY dans l'environnement."
+            )
     logger.info("Menus Famille démarré")
 
 

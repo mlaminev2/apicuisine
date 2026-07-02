@@ -26,6 +26,11 @@ class RegisterRequest(BaseModel):
     invite_code: Optional[str] = Field(default=None, max_length=20)
 
 
+class PasswordChangeRequest(BaseModel):
+    current_password: str = Field(max_length=128)
+    new_password: str = Field(min_length=8, max_length=128)
+
+
 class MemberRead(BaseModel):
     id: int
     name: str

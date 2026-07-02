@@ -10,8 +10,21 @@ logger = logging.getLogger(__name__)
 from sqlmodel import Session, select
 from app.db import get_session
 from app.models import Household, Member
-from app.auth import hash_password, verify_password, create_token, get_current_owner
-from app.schemas import LoginRequest, LoginResponse, RegisterRequest, InviteRead
+from app.auth import (
+    hash_password,
+    verify_password,
+    create_token,
+    get_current_member,
+    get_current_owner,
+    invite_code_valid,
+)
+from app.schemas import (
+    LoginRequest,
+    LoginResponse,
+    RegisterRequest,
+    InviteRead,
+    PasswordChangeRequest,
+)
 
 router = APIRouter(prefix="/api", tags=["auth"])
 
@@ -68,11 +81,11 @@ def register(body: RegisterRequest, request: Request, session: Session = Depends
     ).first()
 
     if existing_owner:
-        if not body.invite_code or not household.invite_code or \
+        if not body.invite_code or not invite_code_valid(household) or \
                 not hmac.compare_digest(body.invite_code, household.invite_code):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Code d'invitation invalide ou requis",
+                detail="Code d'invitation invalide, expiré ou requis",
             )
 
     existing_email = session.exec(select(Member).where(Member.email == normalized_email)).first()
@@ -93,7 +106,7 @@ def register(body: RegisterRequest, request: Request, session: Session = Depends
     session.refresh(member)
 
     logger.info("register.ok ip=%s member_id=%s is_owner=%s", ip, member.id, is_owner)
-    token = create_token(member.id)
+    token = create_token(member.id, member.token_version)
     return LoginResponse(
         token=token,
         household_id=household.id,
@@ -119,7 +132,42 @@ def login(body: LoginRequest, request: Request, session: Session = Depends(get_s
     _login_attempts.pop(ip, None)
     logger.info("login.ok ip=%s member_id=%s", ip, member.id)
     household = session.get(Household, member.household_id)
-    token = create_token(member.id)
+    token = create_token(member.id, member.token_version)
+    return LoginResponse(
+        token=token,
+        household_id=household.id,
+        household_name=household.name,
+        member_id=member.id,
+        member_name=member.name,
+        is_owner=member.is_owner,
+    )
+
+
+@router.post("/password", response_model=LoginResponse)
+def change_password(
+    body: PasswordChangeRequest,
+    request: Request,
+    member: Member = Depends(get_current_member),
+    session: Session = Depends(get_session),
+):
+    ip = request.client.host if request.client else "unknown"
+    _enforce_rate_limit(_login_attempts, ip)
+
+    if not member.password_hash or not verify_password(body.current_password, member.password_hash):
+        logger.warning("password.fail ip=%s member_id=%s", ip, member.id)
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Mot de passe actuel incorrect")
+
+    member.password_hash = hash_password(body.new_password)
+    # Révoque tous les tokens existants ; un nouveau token est renvoyé au client
+    member.token_version += 1
+    session.add(member)
+    session.commit()
+    session.refresh(member)
+
+    _login_attempts.pop(ip, None)
+    logger.info("password.ok member_id=%s", member.id)
+    household = session.get(Household, member.household_id)
+    token = create_token(member.id, member.token_version)
     return LoginResponse(
         token=token,
         household_id=household.id,
