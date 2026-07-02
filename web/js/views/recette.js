@@ -59,7 +59,7 @@ function renderCatTabs() {
 async function loadDishes() {
   const container = document.getElementById("rec-dish-list");
   if (!container) return;
-  container.innerHTML = `<div class="text-muted p-16">Chargement…</div>`;
+  container.innerHTML = `<div class="loader-wrap"><div class="spinner"></div><span>Chargement…</span></div>`;
   try {
     const dishes = await api.getDishes({ category: activeCategory, active: true });
     renderDishList(container, dishes);

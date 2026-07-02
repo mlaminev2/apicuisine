@@ -35,7 +35,7 @@ export async function renderShopping(root, params) {
     <div id="shop-week-pills"
       style="display:none;gap:8px;padding:10px 16px;overflow-x:auto;background:white;border-bottom:1px solid #eee;-webkit-overflow-scrolling:touch;white-space:nowrap">
     </div>
-    <div id="shopping-items"></div>
+    <div id="shopping-items" class="stagger-in"></div>
     <datalist id="shop-item-suggestions"></datalist>
     <div class="shopping-add" id="shop-add-row" style="flex-wrap:wrap;gap:6px">
       <input id="shop-new-item" list="shop-item-suggestions" placeholder="Article…" style="flex:2;min-width:120px" autocomplete="off" />
@@ -392,7 +392,7 @@ function renderWeekPills(weeks) {
 async function loadAll() {
   const container = document.getElementById("shopping-items");
   if (!container) return;
-  container.innerHTML = `<div class="text-muted p-16">Chargement…</div>`;
+  container.innerHTML = `<div class="loader-wrap"><div class="spinner"></div><span>Chargement…</span></div>`;
   try {
     allWeeksData = await api.getShoppingAll();
     renderAllItems();

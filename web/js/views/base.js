@@ -30,7 +30,7 @@ export async function renderBase(root) {
       <button id="btn-add-dish" class="btn btn-sm" style="background:white;color:var(--accent-dark)">+ Ajouter</button>
     </div>
     <div class="cat-tabs" id="cat-tabs"></div>
-    <div id="dish-list-container"></div>`;
+    <div id="dish-list-container" class="stagger-in"></div>`;
 
   document.getElementById("btn-add-dish").onclick = () => showDishForm(null);
   renderCatTabs();
@@ -53,7 +53,7 @@ function renderCatTabs() {
 async function loadDishes() {
   const container = document.getElementById("dish-list-container");
   if (!container) return;
-  container.innerHTML = `<div class="text-muted p-16">Chargement…</div>`;
+  container.innerHTML = `<div class="loader-wrap"><div class="spinner"></div><span>Chargement…</span></div>`;
   try {
     const [dishes, tracking] = await Promise.all([
       api.getDishes({ category: activeCategory }),

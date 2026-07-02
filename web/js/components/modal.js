@@ -6,6 +6,9 @@ export function openModal(title, bodyFn, footerFn = null) {
 
   const box = document.createElement("div");
   box.className = "modal-box";
+  box.setAttribute("role", "dialog");
+  box.setAttribute("aria-modal", "true");
+  box.setAttribute("aria-label", title);
 
   const header = document.createElement("div");
   header.className = "modal-header";
@@ -14,6 +17,7 @@ export function openModal(title, bodyFn, footerFn = null) {
   const closeBtn = document.createElement("button");
   closeBtn.className = "btn-close";
   closeBtn.textContent = "✕";
+  closeBtn.setAttribute("aria-label", "Fermer");
   closeBtn.onclick = close;
   header.appendChild(h2);
   header.appendChild(closeBtn);
@@ -35,8 +39,20 @@ export function openModal(title, bodyFn, footerFn = null) {
   root.appendChild(overlay);
   overlay.addEventListener("click", (e) => { if (e.target === overlay) close(); });
 
+  const onKeydown = (e) => { if (e.key === "Escape") close(); };
+  document.addEventListener("keydown", onKeydown);
+
   bodyFn(body, close);
 
-  function close() { overlay.remove(); }
+  let closing = false;
+  function close() {
+    if (closing) return;
+    closing = true;
+    document.removeEventListener("keydown", onKeydown);
+    // Sortie animée (voir .modal-overlay.closing dans styles.css)
+    overlay.classList.add("closing");
+    overlay.addEventListener("animationend", () => overlay.remove(), { once: true });
+    setTimeout(() => overlay.remove(), 300); // filet si animationend ne part pas
+  }
   return close;
 }

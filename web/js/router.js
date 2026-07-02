@@ -12,6 +12,18 @@ import { renderImport } from "./views/import.js";
 
 const root = document.getElementById("view-root");
 
+let lastPath = null;
+
+function animateViewEntry(path) {
+  // Relance l'animation d'entrée uniquement quand on change de vue
+  if (path === lastPath) return;
+  lastPath = path;
+  root.scrollTop = 0;
+  root.classList.remove("view-enter");
+  void root.offsetWidth; // force un reflow pour redémarrer l'animation
+  root.classList.add("view-enter");
+}
+
 async function route() {
   const hash = location.hash || (state.isLoggedIn() ? "#/calendrier" : "#/login");
   renderNavbar();
@@ -23,6 +35,7 @@ async function route() {
 
   const [path, queryStr] = hash.slice(1).split("?");
   const params = Object.fromEntries(new URLSearchParams(queryStr || ""));
+  animateViewEntry(path);
 
   if (hash.startsWith("#/login")) { await renderLogin(root); return; }
   if (hash.startsWith("#/inscription")) { await renderRegister(root); return; }
