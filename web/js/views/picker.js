@@ -147,18 +147,16 @@ export async function renderPicker(dateStr, category, currentEntry, dessertEnabl
 
     // Dessert
     if (dessertEnabled && dessertList.length > 0) {
-      const dessBox = document.createElement("div");
-      dessBox.className = "opt-section";
-      dessBox.style.setProperty("--opt-color", "var(--cat-sucree)");
-      dessBox.style.setProperty("--opt-bg", "#F9EEF4");
-      dessBox.innerHTML = `
-        <div class="opt-head">
-          <span>🍰 Dessert</span>
-          <span class="opt-choice" id="picker-dessert-choice"></span>
-        </div>
-        <div class="dish-list opt-list" id="picker-dessert-list"></div>`;
-      body.appendChild(dessBox);
-      renderDessert(dessBox.querySelector("#picker-dessert-list"));
+      const dessLabel = document.createElement("div");
+      dessLabel.className = "priority-label";
+      dessLabel.style.cssText = "color:var(--cat-sucree)";
+      dessLabel.textContent = "🍰 Dessert (optionnel) :";
+      body.appendChild(dessLabel);
+      const dessContainer = document.createElement("div");
+      dessContainer.className = "dish-list dessert-list";
+      dessContainer.id = "picker-dessert-list";
+      body.appendChild(dessContainer);
+      renderDessert(dessContainer);
     }
 
     renderList();
@@ -277,14 +275,6 @@ export async function renderPicker(dateStr, category, currentEntry, dessertEnabl
     };
   }
 
-  function _updateChoice(id, list, selectedId, emptyLabel) {
-    const el = document.getElementById(id);
-    if (!el) return;
-    const sel = list.find((d) => d.id === selectedId);
-    el.textContent = sel ? sel.name : emptyLabel;
-    el.classList.toggle("chosen", !!sel);
-  }
-
   function renderEntree(container) {
     container.innerHTML = "";
     for (const dish of entreeList) {
@@ -297,7 +287,6 @@ export async function renderPicker(dateStr, category, currentEntry, dessertEnabl
       };
       container.appendChild(item);
     }
-    _updateChoice("picker-entree-choice", entreeList, selectedEntreeId, "aucune");
   }
 
   function renderDessert(container) {
@@ -312,6 +301,5 @@ export async function renderPicker(dateStr, category, currentEntry, dessertEnabl
       };
       container.appendChild(item);
     }
-    _updateChoice("picker-dessert-choice", dessertList, selectedDessertId, "aucun");
   }
 }
