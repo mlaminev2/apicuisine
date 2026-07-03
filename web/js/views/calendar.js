@@ -4,17 +4,23 @@ import { showToast } from "../components/toast.js";
 import { renderPicker } from "./picker.js";
 import { DAYS_FR, MONTHS_FR, CAT_LABELS, monthGrid, toIsoDate, today, isoWeekOf, mergeShoppingItems } from "../utils.js";
 
-let currentYear, currentMonth;
+const DEFAULT_CATS = ["pomme_de_terre","riz","pates","pomme_de_terre","riz","autre","africain"];
+
+let currentYear, currentMonth;                              // vue mois
+let currentMonday;                                          // vue semaine : ISO du lundi
+let viewMode = localStorage.getItem("calViewMode") === "week" ? "week" : "month";
 
 export async function renderCalendar(root) {
   const t = today();
   const now = new Date(t);
   if (!currentYear) { currentYear = now.getFullYear(); currentMonth = now.getMonth(); }
+  if (!currentMonday) currentMonday = _isoOf(_weekBounds(t).monday);
 
   root.innerHTML = `
     <div class="page-header">
       <button id="cal-prev">‹</button>
       <h1 id="cal-title"></h1>
+      <button id="cal-view-toggle" class="btn-view-toggle"></button>
       <button id="cal-today">Aujourd'hui</button>
       <button id="cal-next">›</button>
     </div>
@@ -25,41 +31,188 @@ export async function renderCalendar(root) {
   document.getElementById("cal-today").onclick = () => {
     const n = new Date(today());
     currentYear = n.getFullYear(); currentMonth = n.getMonth();
+    currentMonday = _isoOf(_weekBounds(today()).monday);
     draw();
   };
+  document.getElementById("cal-view-toggle").onclick = () => {
+    if (viewMode === "month") {
+      // Bascule vers la semaine d'aujourd'hui si le mois affiché la contient, sinon la 1re semaine du mois
+      const n = new Date(today());
+      const ref = (n.getFullYear() === currentYear && n.getMonth() === currentMonth)
+        ? today() : toIsoDate(currentYear, currentMonth, 1);
+      currentMonday = _isoOf(_weekBounds(ref).monday);
+      viewMode = "week";
+    } else {
+      // Mois du jeudi de la semaine affichée (mois majoritaire, convention ISO)
+      const m = new Date(currentMonday + "T00:00:00");
+      m.setDate(m.getDate() + 3);
+      currentYear = m.getFullYear(); currentMonth = m.getMonth();
+      viewMode = "month";
+    }
+    localStorage.setItem("calViewMode", viewMode);
+    updateToggleLabel();
+    draw();
+  };
+  updateToggleLabel();
   draw();
 }
 
-async function navigate(dir) {
-  currentMonth += dir;
-  if (currentMonth < 0) { currentMonth = 11; currentYear--; }
-  if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+function updateToggleLabel() {
+  const btn = document.getElementById("cal-view-toggle");
+  if (!btn) return;
+  btn.textContent = viewMode === "month" ? "Semaine" : "Mois";
+  btn.title = viewMode === "month" ? "Afficher la vue semaine" : "Afficher la vue mois";
+}
+
+function navigate(dir) {
+  if (viewMode === "week") {
+    const m = new Date(currentMonday + "T00:00:00");
+    m.setDate(m.getDate() + dir * 7);
+    currentMonday = _isoOf(m);
+  } else {
+    currentMonth += dir;
+    if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+    if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+  }
   draw();
 }
 
 async function draw() {
+  if (viewMode === "week") return drawWeek();
+  return drawMonth();
+}
+
+async function _loadPlan(from, to) {
+  let planEntries = [];
+  let settings = { weekday_category_map: {}, dessert_enabled: true };
+  try {
+    [planEntries, settings] = await Promise.all([
+      api.getPlan(from, to),
+      api.getSettings(),
+    ]);
+  } catch {}
+  const planMap = {};
+  for (const e of planEntries) planMap[e.date] = e;
+  return { planMap, settings };
+}
+
+function buildHeaderRow(grid, catMap) {
+  for (let i = 0; i < 7; i++) {
+    const cell = document.createElement("div");
+    cell.className = "cal-header-cell" + (i >= 5 ? " weekend" : "");
+    const cat = catMap[String(i)] || DEFAULT_CATS[i];
+    cell.innerHTML = `${DAYS_FR[i]}<span class="cat-label">${CAT_LABELS[cat] || cat}</span>`;
+    grid.appendChild(cell);
+  }
+}
+
+function buildDayCell(dateStr, dayNum, dow, planMap, todayStr, settings) {
+  const entry = planMap[dateStr];
+  const cell = document.createElement("div");
+  const isWeekend = dow >= 5;
+  const isToday = dateStr === todayStr;
+  cell.className = "day-cell" + (isWeekend ? " weekend" : "") + (isToday ? " today" : "");
+  cell.dataset.date = dateStr;
+
+  const numEl = document.createElement("div");
+  numEl.className = "day-num";
+  numEl.textContent = dayNum;
+  cell.appendChild(numEl);
+
+  if (entry) {
+    if (entry.entree_dish) {
+      const entEl = document.createElement("div");
+      entEl.className = "day-dish entree";
+      entEl.textContent = "🥗 " + entry.entree_dish.name;
+      cell.appendChild(entEl);
+    }
+
+    const dishEl = document.createElement("div");
+    if (entry.main_dish) {
+      dishEl.className = "day-dish";
+      dishEl.textContent = entry.main_dish.name;
+    } else if (entry.free_text) {
+      dishEl.className = "day-dish free-text";
+      dishEl.textContent = entry.free_text;
+    }
+    if (dishEl.textContent) cell.appendChild(dishEl);
+
+    if (entry.dessert_dish) {
+      const dessEl = document.createElement("div");
+      dessEl.className = "day-dish dessert";
+      dessEl.textContent = "🍰 " + entry.dessert_dish.name;
+      cell.appendChild(dessEl);
+    }
+
+    const cookedEl = document.createElement("div");
+    cookedEl.className = "day-cooked";
+    cookedEl.textContent = entry.cooked ? "✅" : (entry.main_dish || entry.free_text ? "⬜" : "");
+    if (cookedEl.textContent) {
+      cookedEl.title = entry.cooked ? "Marquer non fait" : "Marquer fait";
+      cookedEl.onclick = async (e) => {
+        e.stopPropagation();
+        try {
+          await api.patchPlan(dateStr, { cooked: !entry.cooked, cooked_by: state.memberId });
+          draw();
+        } catch (err) { showToast(err.message, "error"); }
+      };
+      cell.appendChild(cookedEl);
+    }
+  }
+
+  cell.addEventListener("click", () => {
+    if (entry && (entry.main_dish || entry.free_text || entry.entree_dish || entry.dessert_dish)) {
+      openDaySummary(dateStr, entry, settings, draw);
+    } else {
+      openDayPicker(dateStr, entry, settings, draw);
+    }
+  });
+  return cell;
+}
+
+function buildWeekActions(dateStr, hasMeals) {
+  const { year, week: wk } = isoWeekOf(new Date(dateStr));
+  const actionRow = document.createElement("div");
+  actionRow.className = "week-row-actions";
+  const fillBtn = document.createElement("button");
+  if (hasMeals) {
+    // Semaine déjà planifiée → le bouton vide tout
+    fillBtn.className = "btn-week-shop btn-week-clear";
+    fillBtn.textContent = "🗑 Vider";
+    fillBtn.title = "Effacer tous les plats planifiés de la semaine";
+    fillBtn.onclick = () => clearWeek(dateStr, fillBtn);
+  } else {
+    // Semaine vide → le bouton remplit automatiquement
+    fillBtn.className = "btn-week-shop btn-week-fill";
+    fillBtn.textContent = "✨ Remplir";
+    fillBtn.title = "Proposer automatiquement un plat pour chaque jour vide de la semaine (roulement + plats les moins cuisinés)";
+    fillBtn.onclick = () => fillWeek(dateStr, fillBtn);
+  }
+  actionRow.appendChild(fillBtn);
+  const aggBtn = document.createElement("button");
+  aggBtn.className = "btn-week-shop btn-week-ingr";
+  aggBtn.textContent = "🧺 + Ingrédients";
+  aggBtn.title = "Ajouter les ingrédients de tous les plats planifiés de la semaine à la liste de courses";
+  aggBtn.onclick = () => addWeekIngredients(dateStr, aggBtn);
+  const btn = document.createElement("button");
+  btn.className = "btn-week-shop";
+  btn.textContent = "🛒 Courses sem.";
+  btn.onclick = () => { location.hash = `#/courses?year=${year}&week=${wk}`; };
+  actionRow.append(aggBtn, btn);
+  return actionRow;
+}
+
+async function drawMonth() {
   const title = document.getElementById("cal-title");
   if (!title) return;
   title.textContent = `${MONTHS_FR[currentMonth]} ${currentYear}`;
 
   const firstDay = toIsoDate(currentYear, currentMonth, 1);
   const lastDay = toIsoDate(currentYear, currentMonth, new Date(currentYear, currentMonth + 1, 0).getDate());
-
-  let planEntries = [];
-  let settings = { weekday_category_map: {}, dessert_enabled: true };
-  try {
-    [planEntries, settings] = await Promise.all([
-      api.getPlan(firstDay, lastDay),
-      api.getSettings(),
-    ]);
-  } catch {}
-
-  const planMap = {};
-  for (const e of planEntries) planMap[e.date] = e;
+  const { planMap, settings } = await _loadPlan(firstDay, lastDay);
 
   const todayStr = today();
   const weeks = monthGrid(currentYear, currentMonth);
-  const catMap = settings.weekday_category_map;
 
   const body = document.getElementById("cal-body");
   if (!body) return;
@@ -67,132 +220,69 @@ async function draw() {
 
   const grid = document.createElement("div");
   grid.className = "calendar-grid";
-
-  // Header row
-  for (let i = 0; i < 7; i++) {
-    const cell = document.createElement("div");
-    cell.className = "cal-header-cell" + (i >= 5 ? " weekend" : "");
-    const weekdayStr = String(i);
-    const cat = catMap[weekdayStr] || ["pomme_de_terre","riz","pates","pomme_de_terre","riz","autre","africain"][i];
-    cell.innerHTML = `${DAYS_FR[i]}<span class="cat-label">${CAT_LABELS[cat] || cat}</span>`;
-    grid.appendChild(cell);
-  }
+  buildHeaderRow(grid, settings.weekday_category_map);
 
   for (const week of weeks) {
     for (let dow = 0; dow < 7; dow++) {
       const day = week[dow];
-      const cell = document.createElement("div");
       if (!day) {
+        const cell = document.createElement("div");
         cell.className = "day-cell empty";
         grid.appendChild(cell);
         continue;
       }
       const dateStr = toIsoDate(currentYear, currentMonth, day);
-      const entry = planMap[dateStr];
-      const isWeekend = dow >= 5;
-      const isToday = dateStr === todayStr;
-      cell.className = "day-cell" + (isWeekend ? " weekend" : "") + (isToday ? " today" : "");
-      cell.dataset.date = dateStr;
-
-      const numEl = document.createElement("div");
-      numEl.className = "day-num";
-      numEl.textContent = day;
-      cell.appendChild(numEl);
-
-      if (entry) {
-        if (entry.entree_dish) {
-          const entEl = document.createElement("div");
-          entEl.className = "day-dish";
-          entEl.style.cssText = "font-size:7px;color:var(--cat-entree);margin-top:1px;line-height:1.2;overflow:hidden;white-space:nowrap;text-overflow:ellipsis";
-          entEl.textContent = "🥗 " + entry.entree_dish.name;
-          cell.appendChild(entEl);
-        }
-
-        const dishEl = document.createElement("div");
-        if (entry.main_dish) {
-          dishEl.className = "day-dish";
-          dishEl.textContent = entry.main_dish.name;
-        } else if (entry.free_text) {
-          dishEl.className = "day-dish free-text";
-          dishEl.textContent = entry.free_text;
-        }
-        if (dishEl.textContent) cell.appendChild(dishEl);
-
-        if (entry.dessert_dish) {
-          const dessEl = document.createElement("div");
-          dessEl.className = "day-dish";
-          dessEl.style.cssText = "font-size:9px;color:var(--cat-sucree);margin-top:1px";
-          dessEl.textContent = "🍰 " + entry.dessert_dish.name;
-          cell.appendChild(dessEl);
-        }
-
-        const cookedEl = document.createElement("div");
-        cookedEl.className = "day-cooked";
-        cookedEl.textContent = entry.cooked ? "✅" : (entry.main_dish || entry.free_text ? "⬜" : "");
-        if (cookedEl.textContent) {
-          cookedEl.title = entry.cooked ? "Marquer non fait" : "Marquer fait";
-          cookedEl.onclick = async (e) => {
-            e.stopPropagation();
-            try {
-              await api.patchPlan(dateStr, { cooked: !entry.cooked, cooked_by: state.memberId });
-              draw();
-            } catch (err) { showToast(err.message, "error"); }
-          };
-          cell.appendChild(cookedEl);
-        }
-      }
-
-      cell.addEventListener("click", () => {
-        if (entry && (entry.main_dish || entry.free_text || entry.entree_dish || entry.dessert_dish)) {
-          openDaySummary(dateStr, entry, settings, draw);
-        } else {
-          openDayPicker(dateStr, entry, settings, draw);
-        }
-      });
-      grid.appendChild(cell);
+      grid.appendChild(buildDayCell(dateStr, day, dow, planMap, todayStr, settings));
     }
 
     // Week row action
     const nonZero = week.find((d) => d !== 0);
     if (nonZero) {
       const dateStr = toIsoDate(currentYear, currentMonth, nonZero);
-      const { year, week: wk } = isoWeekOf(new Date(dateStr));
       // La semaine a-t-elle au moins un plat planifié ?
       const hasMeals = week.some((d) => {
         if (!d) return false;
         const e = planMap[toIsoDate(currentYear, currentMonth, d)];
         return e && (e.main_dish || e.free_text);
       });
-      const actionRow = document.createElement("div");
-      actionRow.className = "week-row-actions";
-      const fillBtn = document.createElement("button");
-      if (hasMeals) {
-        // Semaine déjà planifiée → le bouton vide tout
-        fillBtn.className = "btn-week-shop btn-week-clear";
-        fillBtn.textContent = "🗑 Vider";
-        fillBtn.title = "Effacer tous les plats planifiés de la semaine";
-        fillBtn.onclick = () => clearWeek(dateStr, fillBtn);
-      } else {
-        // Semaine vide → le bouton remplit automatiquement
-        fillBtn.className = "btn-week-shop btn-week-fill";
-        fillBtn.textContent = "✨ Remplir";
-        fillBtn.title = "Proposer automatiquement un plat pour chaque jour vide de la semaine (roulement + plats les moins cuisinés)";
-        fillBtn.onclick = () => fillWeek(dateStr, fillBtn);
-      }
-      actionRow.appendChild(fillBtn);
-      const aggBtn = document.createElement("button");
-      aggBtn.className = "btn-week-shop btn-week-ingr";
-      aggBtn.textContent = "🧺 + Ingrédients";
-      aggBtn.title = "Ajouter les ingrédients de tous les plats planifiés de la semaine à la liste de courses";
-      aggBtn.onclick = () => addWeekIngredients(dateStr, aggBtn);
-      const btn = document.createElement("button");
-      btn.className = "btn-week-shop";
-      btn.textContent = "🛒 Courses sem.";
-      btn.onclick = () => { location.hash = `#/courses?year=${year}&week=${wk}`; };
-      actionRow.append(aggBtn, btn);
-      grid.appendChild(actionRow);
+      grid.appendChild(buildWeekActions(dateStr, hasMeals));
     }
   }
+
+  body.appendChild(grid);
+}
+
+async function drawWeek() {
+  const title = document.getElementById("cal-title");
+  if (!title) return;
+  const monday = new Date(currentMonday + "T00:00:00");
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+  const { week } = isoWeekOf(monday);
+  const fmt = (d) => d.toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+  title.textContent = `Sem. ${week} · ${fmt(monday)} – ${fmt(sunday)}`;
+
+  const { planMap, settings } = await _loadPlan(currentMonday, _isoOf(sunday));
+  const todayStr = today();
+
+  const body = document.getElementById("cal-body");
+  if (!body) return;
+  body.innerHTML = "";
+
+  const grid = document.createElement("div");
+  grid.className = "calendar-grid week-view";
+  buildHeaderRow(grid, settings.weekday_category_map);
+
+  let hasMeals = false;
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    const dateStr = _isoOf(d);
+    const e = planMap[dateStr];
+    if (e && (e.main_dish || e.free_text)) hasMeals = true;
+    grid.appendChild(buildDayCell(dateStr, d.getDate(), i, planMap, todayStr, settings));
+  }
+  grid.appendChild(buildWeekActions(currentMonday, hasMeals));
 
   body.appendChild(grid);
 }
@@ -349,7 +439,7 @@ async function openDayPicker(dateStr, entry, settings, onSave) {
   const d = new Date(dateStr);
   const dow = (d.getDay() + 6) % 7;
   const catMap = settings.weekday_category_map;
-  const category = catMap[String(dow)] || ["pomme_de_terre","riz","pates","pomme_de_terre","riz","autre","africain"][dow];
+  const category = catMap[String(dow)] || DEFAULT_CATS[dow];
   await renderPicker(dateStr, category, entry, settings.dessert_enabled, onSave);
 }
 
