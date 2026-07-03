@@ -65,3 +65,51 @@ def test_plan_free_text(client, household, auth_headers):
     )
     assert res.status_code == 200
     assert res.json()["free_text"] == "Plat spécial"
+
+
+def test_plan_lunch(client, household, auth_headers, session):
+    d = make_dish(session, household.id, "Plat midi")
+    res = client.put(
+        "/api/plan/2026-07-20", json={"lunch_dish_id": d.id}, headers=auth_headers
+    )
+    assert res.status_code == 200
+    assert res.json()["lunch_dish_id"] == d.id
+    assert res.json()["lunch_dish"]["name"] == "Plat midi"
+
+    # Le soir n'est pas affecté par le midi
+    d2 = make_dish(session, household.id, "Plat soir")
+    res = client.put(
+        "/api/plan/2026-07-20", json={"main_dish_id": d2.id}, headers=auth_headers
+    )
+    assert res.json()["lunch_dish_id"] == d.id
+    assert res.json()["main_dish_id"] == d2.id
+
+
+def test_plan_lunch_clear(client, household, auth_headers, session):
+    d = make_dish(session, household.id, "Plat midi")
+    client.put(
+        "/api/plan/2026-07-21",
+        json={"lunch_dish_id": d.id, "free_text": "Soir spécial"},
+        headers=auth_headers,
+    )
+    # Vider le midi via null explicite ne touche pas le soir
+    res = client.put(
+        "/api/plan/2026-07-21",
+        json={"lunch_dish_id": None, "lunch_free_text": None},
+        headers=auth_headers,
+    )
+    assert res.status_code == 200
+    assert res.json()["lunch_dish_id"] is None
+    assert res.json()["free_text"] == "Soir spécial"
+
+
+def test_plan_lunch_untouched_when_absent(client, household, auth_headers, session):
+    d = make_dish(session, household.id, "Plat midi")
+    client.put(
+        "/api/plan/2026-07-22", json={"lunch_free_text": "Restes"}, headers=auth_headers
+    )
+    # Un PUT sans clés lunch (ex. Remplir la semaine) laisse le midi intact
+    res = client.put(
+        "/api/plan/2026-07-22", json={"main_dish_id": d.id}, headers=auth_headers
+    )
+    assert res.json()["lunch_free_text"] == "Restes"

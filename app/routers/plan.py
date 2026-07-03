@@ -21,6 +21,7 @@ def _enrich(entry: PlanEntry, session: Session) -> PlanEntryRead:
     main_dish = session.get(Dish, entry.main_dish_id) if entry.main_dish_id else None
     dessert = session.get(Dish, entry.dessert_dish_id) if entry.dessert_dish_id else None
     entree = session.get(Dish, entry.entree_dish_id) if getattr(entry, "entree_dish_id", None) else None
+    lunch = session.get(Dish, entry.lunch_dish_id) if getattr(entry, "lunch_dish_id", None) else None
 
     def to_dish_read(d: Optional[Dish]) -> Optional[DishRead]:
         if not d:
@@ -48,6 +49,8 @@ def _enrich(entry: PlanEntry, session: Session) -> PlanEntryRead:
         dessert_dish_id=entry.dessert_dish_id,
         entree_dish_id=getattr(entry, "entree_dish_id", None),
         free_text=entry.free_text,
+        lunch_dish_id=getattr(entry, "lunch_dish_id", None),
+        lunch_free_text=getattr(entry, "lunch_free_text", None),
         planned_by=entry.planned_by,
         cooked=entry.cooked,
         cooked_by=entry.cooked_by,
@@ -56,6 +59,7 @@ def _enrich(entry: PlanEntry, session: Session) -> PlanEntryRead:
         main_dish=to_dish_read(main_dish),
         dessert_dish=to_dish_read(dessert),
         entree_dish=to_dish_read(entree),
+        lunch_dish=to_dish_read(lunch),
     )
 
 
@@ -101,6 +105,13 @@ def upsert_plan(
         entry.entree_dish_id = body.entree_dish_id
     if body.free_text is not None:
         entry.free_text = body.free_text
+    # Les champs du midi utilisent exclude_unset : envoyer explicitement null
+    # permet de vider le menu du midi sans toucher au reste du jour.
+    sent = body.model_dump(exclude_unset=True)
+    if "lunch_dish_id" in sent:
+        entry.lunch_dish_id = body.lunch_dish_id
+    if "lunch_free_text" in sent:
+        entry.lunch_free_text = body.lunch_free_text
     if body.planned_by is not None:
         entry.planned_by = body.planned_by
     entry.updated_at = datetime.now(timezone.utc)

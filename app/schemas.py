@@ -96,6 +96,8 @@ class PlanEntryUpdate(BaseModel):
     dessert_dish_id: Optional[int] = None
     entree_dish_id: Optional[int] = None
     free_text: Optional[str] = Field(default=None, max_length=500)
+    lunch_dish_id: Optional[int] = None
+    lunch_free_text: Optional[str] = Field(default=None, max_length=500)
     planned_by: Optional[int] = None
 
 
@@ -112,6 +114,8 @@ class PlanEntryRead(BaseModel):
     dessert_dish_id: Optional[int]
     entree_dish_id: Optional[int] = None
     free_text: Optional[str]
+    lunch_dish_id: Optional[int] = None
+    lunch_free_text: Optional[str] = None
     planned_by: Optional[int]
     cooked: bool
     cooked_by: Optional[int]
@@ -120,6 +124,7 @@ class PlanEntryRead(BaseModel):
     main_dish: Optional[DishRead] = None
     dessert_dish: Optional[DishRead] = None
     entree_dish: Optional[DishRead] = None
+    lunch_dish: Optional[DishRead] = None
 
 
 class ShoppingWeekSummary(BaseModel):
@@ -179,8 +184,10 @@ class TrackingEntry(BaseModel):
 class SettingsRead(BaseModel):
     weekday_category_map: dict[str, str]
     dessert_enabled: bool
+    lunch_enabled: bool
 
 
 class SettingsUpdate(BaseModel):
     weekday_category_map: Optional[dict[str, str]] = None
     dessert_enabled: Optional[bool] = None
+    lunch_enabled: Optional[bool] = None

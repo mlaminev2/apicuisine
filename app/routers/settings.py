@@ -23,6 +23,7 @@ def _to_read(s: Settings) -> SettingsRead:
     return SettingsRead(
         weekday_category_map=json.loads(s.weekday_category_map),
         dessert_enabled=s.dessert_enabled,
+        lunch_enabled=getattr(s, "lunch_enabled", False),
     )
 
 
@@ -76,6 +77,7 @@ def export_data(
         "settings": {
             "weekday_category_map": json.loads(sett.weekday_category_map) if sett else {},
             "dessert_enabled": sett.dessert_enabled if sett else True,
+            "lunch_enabled": getattr(sett, "lunch_enabled", False) if sett else False,
         },
     }
 
@@ -93,6 +95,8 @@ def update_settings(
         sett.weekday_category_map = json.dumps(body.weekday_category_map)
     if body.dessert_enabled is not None:
         sett.dessert_enabled = body.dessert_enabled
+    if body.lunch_enabled is not None:
+        sett.lunch_enabled = body.lunch_enabled
     sett.updated_at = datetime.now(timezone.utc)
     session.add(sett)
     session.commit()

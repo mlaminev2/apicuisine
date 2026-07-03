@@ -4,7 +4,7 @@ import { openModal } from "../components/modal.js";
 import { showToast } from "../components/toast.js";
 import { CAT_LABELS, DAYS_FULL_FR, isoWeekOf, mergeShoppingItems, escapeHtml } from "../utils.js";
 
-export async function renderPicker(dateStr, category, currentEntry, dessertEnabled, onSave) {
+export async function renderPicker(dateStr, category, currentEntry, dessertEnabled, onSave, lunchEnabled = false) {
   const d = new Date(dateStr + "T00:00:00");
   const dayName = DAYS_FULL_FR[(d.getDay() + 6) % 7];
   const dateLabel = `${dayName} ${d.getDate().toString().padStart(2, "0")}/${(d.getMonth() + 1).toString().padStart(2, "0")}`;
@@ -86,6 +86,20 @@ export async function renderPicker(dateStr, category, currentEntry, dessertEnabl
 
   function renderBody(body) {
     body.innerHTML = "";
+
+    // Accès au menu du midi (option activée dans les réglages)
+    if (lunchEnabled) {
+      const lunchBtn = document.createElement("button");
+      lunchBtn.type = "button";
+      lunchBtn.className = "btn-lunch-link";
+      const lunchName = currentEntry?.lunch_dish?.name || currentEntry?.lunch_free_text;
+      lunchBtn.textContent = lunchName ? `🌞 Midi : ${lunchName}` : "🌞 Ajouter un menu du midi…";
+      lunchBtn.onclick = () => {
+        closeModal();
+        renderLunchPicker(dateStr, currentEntry, onSave);
+      };
+      body.appendChild(lunchBtn);
+    }
 
     // Search
     const searchInput = document.createElement("input");
@@ -323,4 +337,129 @@ export async function renderPicker(dateStr, category, currentEntry, dessertEnabl
       container.appendChild(item);
     }
   }
+}
+
+/**
+ * Sélecteur du menu du midi (option « Menu du midi » des réglages).
+ * Plus simple que celui du soir : un plat de la base (toutes catégories)
+ * ou un plat libre. N'affecte jamais le menu du soir du même jour.
+ */
+export async function renderLunchPicker(dateStr, currentEntry, onSave) {
+  const d = new Date(dateStr + "T00:00:00");
+  const dayName = DAYS_FULL_FR[(d.getDay() + 6) % 7];
+  const dateLabel = `${dayName} ${d.getDate().toString().padStart(2, "0")}/${(d.getMonth() + 1).toString().padStart(2, "0")}`;
+  const title = `🌞 Midi — ${dateLabel}`;
+
+  let dishes = [];
+  try {
+    dishes = await api.getDishes({ active: true });
+    dishes.sort((a, b) => a.name.localeCompare(b.name, "fr"));
+  } catch {}
+
+  let selectedLunchId = currentEntry?.lunch_dish_id || null;
+  let lunchText = currentEntry?.lunch_free_text || "";
+  let query = "";
+
+  openModal(title, (body, close) => {
+    const searchInput = document.createElement("input");
+    searchInput.className = "picker-search";
+    searchInput.placeholder = "Rechercher un plat…";
+    searchInput.oninput = (e) => {
+      query = e.target.value.toLowerCase();
+      renderList();
+    };
+    body.appendChild(searchInput);
+
+    const listContainer = document.createElement("div");
+    listContainer.className = "dish-list";
+    body.appendChild(listContainer);
+
+    const freeLabel = document.createElement("div");
+    freeLabel.className = "priority-label";
+    freeLabel.textContent = "ou plat libre :";
+    body.appendChild(freeLabel);
+    const freeInput = document.createElement("input");
+    freeInput.className = "picker-search";
+    freeInput.placeholder = "Saisir un plat hors liste…";
+    freeInput.value = lunchText;
+    freeInput.oninput = (e) => {
+      lunchText = e.target.value;
+      if (lunchText) selectedLunchId = null;
+      renderList();
+    };
+    body.appendChild(freeInput);
+
+    const quickRow = document.createElement("div");
+    quickRow.style.cssText = "display:flex;gap:6px;flex-wrap:wrap";
+    for (const label of ["🍲 Restes", "🍽️ Resto / extérieur", "🥪 Sandwich"]) {
+      const chip = document.createElement("button");
+      chip.type = "button";
+      chip.className = "quick-chip" + (lunchText === label ? " active" : "");
+      chip.textContent = label;
+      chip.onclick = () => {
+        lunchText = lunchText === label ? "" : label;
+        if (lunchText) selectedLunchId = null;
+        freeInput.value = lunchText;
+        quickRow.querySelectorAll(".quick-chip").forEach((c) => {
+          c.classList.toggle("active", c.textContent === lunchText);
+        });
+        renderList();
+      };
+      quickRow.appendChild(chip);
+    }
+    body.appendChild(quickRow);
+
+    function renderList() {
+      listContainer.innerHTML = "";
+      const filtered = query
+        ? dishes.filter((dish) => dish.name.toLowerCase().includes(query))
+        : dishes;
+      for (const dish of filtered) {
+        const item = document.createElement("div");
+        item.className = "dish-item" + (selectedLunchId === dish.id ? " selected" : "");
+        item.innerHTML = `<span class="dish-name">${escapeHtml(dish.name)}</span>`;
+        item.onclick = () => {
+          selectedLunchId = selectedLunchId === dish.id ? null : dish.id;
+          lunchText = "";
+          freeInput.value = "";
+          renderList();
+        };
+        listContainer.appendChild(item);
+      }
+      if (filtered.length === 0) {
+        listContainer.innerHTML = `<div class="text-muted" style="padding:8px">Aucun plat trouvé</div>`;
+      }
+    }
+    renderList();
+  }, (footer, close) => {
+    const saveBtn = document.createElement("button");
+    saveBtn.className = "btn btn-primary flex-1";
+    saveBtn.textContent = "Enregistrer";
+    saveBtn.onclick = async () => {
+      try {
+        await api.putPlan(dateStr, {
+          lunch_dish_id: selectedLunchId || null,
+          lunch_free_text: lunchText || null,
+          planned_by: state.memberId,
+        });
+        showToast("Menu du midi enregistré ✓");
+        close();
+        onSave && onSave();
+      } catch (err) { showToast(err.message, "error"); }
+    };
+
+    const clearBtn = document.createElement("button");
+    clearBtn.className = "btn btn-danger";
+    clearBtn.textContent = "Vider le midi";
+    clearBtn.onclick = async () => {
+      try {
+        await api.putPlan(dateStr, { lunch_dish_id: null, lunch_free_text: null });
+        showToast("Menu du midi vidé");
+        close();
+        onSave && onSave();
+      } catch (err) { showToast(err.message, "error"); }
+    };
+
+    footer.append(saveBtn, clearBtn);
+  });
 }

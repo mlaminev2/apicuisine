@@ -99,6 +99,17 @@ export async function renderSettings(root) {
     </label>`;
   sec1Body.appendChild(dessertRow);
 
+  // Menu du midi toggle
+  const lunchRow = document.createElement("div");
+  lunchRow.className = "settings-row";
+  lunchRow.innerHTML = `
+    <label>Menu du midi activé</label>
+    <label class="toggle">
+      <input type="checkbox" id="lunch-toggle" ${sett.lunch_enabled ? "checked" : ""} />
+      <span class="toggle-slider"></span>
+    </label>`;
+  sec1Body.appendChild(lunchRow);
+
   const saveBtn = document.createElement("button");
   saveBtn.className = "btn btn-primary btn-full mt-8";
   saveBtn.textContent = "Enregistrer les réglages";
@@ -106,8 +117,9 @@ export async function renderSettings(root) {
     const map = {};
     sec1Body.querySelectorAll("select[data-dow]").forEach((s) => { map[s.dataset.dow] = s.value; });
     const dessertEnabled = document.getElementById("dessert-toggle").checked;
+    const lunchEnabled = document.getElementById("lunch-toggle").checked;
     try {
-      await api.putSettings({ weekday_category_map: map, dessert_enabled: dessertEnabled });
+      await api.putSettings({ weekday_category_map: map, dessert_enabled: dessertEnabled, lunch_enabled: lunchEnabled });
       showToast("Réglages enregistrés ✓");
     } catch (err) { showToast(err.message, "error"); }
   };

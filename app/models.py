@@ -77,6 +77,8 @@ class PlanEntry(SQLModel, table=True):
     dessert_dish_id: Optional[int] = Field(default=None, foreign_key="dish.id")
     entree_dish_id: Optional[int] = Field(default=None, foreign_key="dish.id")
     free_text: Optional[str] = Field(default=None)
+    lunch_dish_id: Optional[int] = Field(default=None, foreign_key="dish.id")
+    lunch_free_text: Optional[str] = Field(default=None)
     planned_by: Optional[int] = Field(default=None, foreign_key="member.id")
     cooked: bool = Field(default=False)
     cooked_by: Optional[int] = Field(default=None, foreign_key="member.id")
@@ -102,4 +104,5 @@ class Settings(SQLModel, table=True):
         default='{"0":"pomme_de_terre","1":"riz","2":"pates","3":"pomme_de_terre","4":"riz","5":"autre","6":"africain"}'
     )
     dessert_enabled: bool = Field(default=True)
+    lunch_enabled: bool = Field(default=False)
     updated_at: datetime = Field(default_factory=_utcnow)

@@ -1,8 +1,8 @@
 import { api } from "../api.js";
 import { state } from "../state.js";
 import { showToast } from "../components/toast.js";
-import { renderPicker } from "./picker.js";
-import { DAYS_FR, MONTHS_FR, CAT_LABELS, monthGrid, toIsoDate, today, isoWeekOf, mergeShoppingItems } from "../utils.js";
+import { renderPicker, renderLunchPicker } from "./picker.js";
+import { DAYS_FR, MONTHS_FR, CAT_LABELS, monthGrid, toIsoDate, today, isoWeekOf, mergeShoppingItems, escapeHtml } from "../utils.js";
 
 const DEFAULT_CATS = ["pomme_de_terre","riz","pates","pomme_de_terre","riz","autre","africain"];
 
@@ -84,7 +84,7 @@ async function draw() {
 
 async function _loadPlan(from, to) {
   let planEntries = [];
-  let settings = { weekday_category_map: {}, dessert_enabled: true };
+  let settings = { weekday_category_map: {}, dessert_enabled: true, lunch_enabled: false };
   try {
     [planEntries, settings] = await Promise.all([
       api.getPlan(from, to),
@@ -120,6 +120,14 @@ function buildDayCell(dateStr, dayNum, dow, planMap, todayStr, settings) {
   cell.appendChild(numEl);
 
   if (entry) {
+    // Menu du midi : ligne discrète, le soir reste l'affichage principal
+    if (settings.lunch_enabled && (entry.lunch_dish || entry.lunch_free_text)) {
+      const lunchEl = document.createElement("div");
+      lunchEl.className = "day-dish lunch";
+      lunchEl.textContent = "🌞 " + (entry.lunch_dish?.name || entry.lunch_free_text);
+      cell.appendChild(lunchEl);
+    }
+
     if (entry.entree_dish) {
       const entEl = document.createElement("div");
       entEl.className = "day-dish entree";
@@ -410,7 +418,7 @@ async function addWeekIngredients(anyDateOfWeek, btn) {
     const ingredients = [];
     let dishCount = 0;
     for (const e of entries) {
-      for (const dish of [e.entree_dish, e.main_dish, e.dessert_dish]) {
+      for (const dish of [e.lunch_dish, e.entree_dish, e.main_dish, e.dessert_dish]) {
         if (dish?.ingredients?.length) {
           dishCount++;
           ingredients.push(...dish.ingredients);
@@ -440,7 +448,7 @@ async function openDayPicker(dateStr, entry, settings, onSave) {
   const dow = (d.getDay() + 6) % 7;
   const catMap = settings.weekday_category_map;
   const category = catMap[String(dow)] || DEFAULT_CATS[dow];
-  await renderPicker(dateStr, category, entry, settings.dessert_enabled, onSave);
+  await renderPicker(dateStr, category, entry, settings.dessert_enabled, onSave, settings.lunch_enabled);
 }
 
 function openDaySummary(dateStr, entry, settings, onSave) {
@@ -452,12 +460,22 @@ function openDaySummary(dateStr, entry, settings, onSave) {
   const label = d.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
 
   let menuHtml = "";
+  if (settings.lunch_enabled && (entry.lunch_dish || entry.lunch_free_text)) {
+    const lunchName = entry.lunch_dish?.name || entry.lunch_free_text;
+    menuHtml += `<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #f5f5f5">
+      <span style="font-size:18px">🌞</span>
+      <div>
+        <div style="font-size:10px;font-weight:700;color:#aaa;text-transform:uppercase">Midi</div>
+        <div style="font-size:14px;font-weight:600">${escapeHtml(lunchName)}</div>
+      </div>
+    </div>`;
+  }
   if (entry.entree_dish) {
     menuHtml += `<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #f5f5f5">
       <span style="font-size:18px">🥗</span>
       <div>
         <div style="font-size:10px;font-weight:700;color:#aaa;text-transform:uppercase">Entrée</div>
-        <div style="font-size:14px;font-weight:600">${entry.entree_dish.name}</div>
+        <div style="font-size:14px;font-weight:600">${escapeHtml(entry.entree_dish.name)}</div>
       </div>
     </div>`;
   }
@@ -466,7 +484,7 @@ function openDaySummary(dateStr, entry, settings, onSave) {
       <span style="font-size:18px">🍽️</span>
       <div>
         <div style="font-size:10px;font-weight:700;color:#aaa;text-transform:uppercase">Plat principal</div>
-        <div style="font-size:14px;font-weight:600">${entry.main_dish.name}</div>
+        <div style="font-size:14px;font-weight:600">${escapeHtml(entry.main_dish.name)}</div>
       </div>
     </div>`;
   } else if (entry.free_text) {
@@ -474,7 +492,7 @@ function openDaySummary(dateStr, entry, settings, onSave) {
       <span style="font-size:18px">🍽️</span>
       <div>
         <div style="font-size:10px;font-weight:700;color:#aaa;text-transform:uppercase">Plat</div>
-        <div style="font-size:14px;font-weight:600">${entry.free_text}</div>
+        <div style="font-size:14px;font-weight:600">${escapeHtml(entry.free_text)}</div>
       </div>
     </div>`;
   }
@@ -483,14 +501,14 @@ function openDaySummary(dateStr, entry, settings, onSave) {
       <span style="font-size:18px">🍰</span>
       <div>
         <div style="font-size:10px;font-weight:700;color:#aaa;text-transform:uppercase">Dessert</div>
-        <div style="font-size:14px;font-weight:600">${entry.dessert_dish.name}</div>
+        <div style="font-size:14px;font-weight:600">${escapeHtml(entry.dessert_dish.name)}</div>
       </div>
     </div>`;
   }
 
   const cookedStatus = entry.cooked
     ? `<div style="display:flex;align-items:center;gap:6px;margin-top:12px;padding:8px 12px;background:#d5ead8;border-radius:10px;font-size:13px;color:#2d6a4f;font-weight:600">
-        ✅ Repas réalisé${entry.cooked_by ? " par " + entry.cooked_by : ""}
+        ✅ Repas réalisé${entry.cooked_by ? " par " + escapeHtml(String(entry.cooked_by)) : ""}
       </div>`
     : "";
 
@@ -506,6 +524,7 @@ function openDaySummary(dateStr, entry, settings, onSave) {
       </div>
       <div class="modal-footer" style="gap:8px">
         <button class="btn btn-danger btn-sm" id="btn-day-delete" style="padding:8px 12px;font-size:13px">🗑 Effacer</button>
+        ${settings.lunch_enabled ? '<button class="btn btn-ghost btn-sm" id="btn-day-lunch" style="padding:8px 12px;font-size:13px">🌞 Midi</button>' : ""}
         <button class="btn btn-primary flex-1" id="btn-day-modify">✏️ Modifier le repas</button>
       </div>
     </div>`;
@@ -518,6 +537,14 @@ function openDaySummary(dateStr, entry, settings, onSave) {
     overlay.remove();
     openDayPicker(dateStr, entry, settings, onSave);
   };
+
+  const lunchBtn = overlay.querySelector("#btn-day-lunch");
+  if (lunchBtn) {
+    lunchBtn.onclick = () => {
+      overlay.remove();
+      renderLunchPicker(dateStr, entry, onSave);
+    };
+  }
 
   overlay.querySelector("#btn-day-delete").onclick = async () => {
     if (!confirm("Effacer le repas de ce jour ?")) return;
