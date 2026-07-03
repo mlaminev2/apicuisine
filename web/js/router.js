@@ -4,6 +4,7 @@ import { renderNavbar } from "./components/navbar.js";
 import { renderLogin } from "./views/login.js";
 import { renderRegister } from "./views/register.js";
 import { renderHome } from "./views/home.js";
+import { renderRemplir } from "./views/remplir.js";
 import { renderCalendar } from "./views/calendar.js";
 import { renderBase } from "./views/base.js";
 import { renderShopping } from "./views/shopping.js";
@@ -56,6 +57,7 @@ async function route() {
     return;
   }
   if (hash.startsWith("#/accueil")) { await renderHome(root); return; }
+  if (hash.startsWith("#/remplir")) { await renderRemplir(root); return; }
   if (hash.startsWith("#/calendrier")) { await renderCalendar(root); return; }
   if (hash.startsWith("#/base")) { await renderBase(root); return; }
   if (hash.startsWith("#/courses")) { await renderShopping(root, params); return; }

@@ -1,10 +1,11 @@
-const CACHE = "menus-v33";
+const CACHE = "menus-v34";
 const SHELL = ["/", "/css/styles.css", "/js/api.js", "/js/state.js", "/js/utils.js", "/js/router.js",
   "/js/sw-register.js",
   "/js/components/navbar.js", "/js/components/toast.js", "/js/components/modal.js",
-  "/js/views/login.js", "/js/views/home.js", "/js/views/calendar.js", "/js/views/picker.js",
+  "/js/views/login.js", "/js/views/home.js", "/js/views/remplir.js", "/js/views/calendar.js", "/js/views/picker.js",
   "/js/views/base.js", "/js/views/shopping.js", "/js/views/tracking.js", "/js/views/settings.js",
   "/js/views/import.js", "/js/views/recette.js",
+  "/fonts/bricolage-grotesque-latin.woff2", "/fonts/hanken-grotesk-latin.woff2",
   "/manifest.webmanifest", "/icons/icon-192.png", "/icons/icon-512.png"];
 
 self.addEventListener("install", (e) => {

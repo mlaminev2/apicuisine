@@ -43,8 +43,20 @@ function makeSection(title, key, { open = false, badge = "" } = {}) {
 }
 
 export async function renderSettings(root) {
-  root.innerHTML = `<div class="page-header"><h1>Réglages</h1></div><div id="settings-body" style="padding:12px"></div>`;
+  root.innerHTML = `<div class="page-header"><h1>Réglages</h1></div><div id="settings-body" style="padding:0 0 12px"></div>`;
   const body = document.getElementById("settings-body");
+
+  // Carte profil (style maquette)
+  const initial = (state.memberName || "?").trim().charAt(0).toUpperCase();
+  const profile = document.createElement("div");
+  profile.className = "settings-profile";
+  profile.innerHTML = `
+    <div class="settings-avatar">${escapeHtml(initial)}</div>
+    <div style="flex:1">
+      <div class="settings-profile-name">${escapeHtml(state.memberName || "Membre")}</div>
+      <div class="settings-profile-sub" id="profile-sub">${state.isOwner ? "Propriétaire du foyer" : "Membre du foyer"}</div>
+    </div>`;
+  body.appendChild(profile);
 
   // Bouton déconnexion rendu immédiatement — toujours visible même si l'API échoue
   const secLogout = document.createElement("div");
@@ -66,6 +78,10 @@ export async function renderSettings(root) {
   } catch (err) {
     body.insertAdjacentHTML("afterbegin", `<div class="text-muted" style="margin-bottom:16px">${err.message}</div>`);
     return;
+  }
+  const profileSub = document.getElementById("profile-sub");
+  if (profileSub && members?.length) {
+    profileSub.textContent = `Foyer de ${members.length} membre${members.length > 1 ? "s" : ""}${state.isOwner ? " · propriétaire" : ""}`;
   }
 
   // ── Section roulement ──

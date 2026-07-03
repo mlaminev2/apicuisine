@@ -3,7 +3,9 @@ import { showToast } from "../components/toast.js";
 import { CAT_LABELS, CAT_CSS, isoWeekOf, mergeShoppingItems, escapeHtml } from "../utils.js";
 
 const CATEGORIES = ["pomme_de_terre", "riz", "pates", "entree", "autre", "sucree", "africain"];
-let activeCategory = "pomme_de_terre";
+let activeCategory = "tous";
+let searchQuery = "";
+let allDishes = [];
 let trackingData = [];
 
 function _safeUrl(url) {
@@ -26,13 +28,23 @@ function _sourceMeta(dish) {
 
 export async function renderBase(root) {
   root.innerHTML = `
-    <div class="page-header"><h1>🍽️ Plats</h1>
-      <button id="btn-add-dish" class="btn btn-sm" style="background:white;color:var(--accent-dark)">+ Ajouter</button>
+    <div class="page-header"><h1>Mes plats</h1>
+      <button id="btn-add-dish" style="background:var(--terra);color:#fff;border-radius:999px" aria-label="Ajouter un plat">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 6v12M6 12h12"/></svg>
+      </button>
+    </div>
+    <div class="plats-search">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.2-3.2"/></svg>
+      <input id="dish-search" placeholder="Rechercher un plat…" autocomplete="off" />
     </div>
     <div class="cat-tabs" id="cat-tabs"></div>
-    <div id="dish-list-container" class="stagger-in"></div>`;
+    <div id="dish-list-container"></div>`;
 
   document.getElementById("btn-add-dish").onclick = () => showDishForm(null);
+  document.getElementById("dish-search").oninput = (e) => {
+    searchQuery = e.target.value.toLowerCase().trim();
+    renderDishList(document.getElementById("dish-list-container"));
+  };
   renderCatTabs();
   loadDishes();
 }
@@ -41,11 +53,17 @@ function renderCatTabs() {
   const tabs = document.getElementById("cat-tabs");
   if (!tabs) return;
   tabs.innerHTML = "";
+  const allBtn = document.createElement("button");
+  const total = allDishes.filter((d) => d.active).length;
+  allBtn.className = "cat-tab" + (activeCategory === "tous" ? " active" : "");
+  allBtn.textContent = total ? `Tous · ${total}` : "Tous";
+  allBtn.onclick = () => { activeCategory = "tous"; renderCatTabs(); renderDishList(document.getElementById("dish-list-container")); };
+  tabs.appendChild(allBtn);
   for (const cat of CATEGORIES) {
     const btn = document.createElement("button");
     btn.className = `cat-tab ${CAT_CSS[cat]}` + (cat === activeCategory ? " active" : "");
     btn.textContent = CAT_LABELS[cat];
-    btn.onclick = () => { activeCategory = cat; renderCatTabs(); loadDishes(); };
+    btn.onclick = () => { activeCategory = cat; renderCatTabs(); renderDishList(document.getElementById("dish-list-container")); };
     tabs.appendChild(btn);
   }
 }
@@ -56,92 +74,59 @@ async function loadDishes() {
   container.innerHTML = `<div class="loader-wrap"><div class="spinner"></div><span>Chargement…</span></div>`;
   try {
     const [dishes, tracking] = await Promise.all([
-      api.getDishes({ category: activeCategory }),
+      api.getDishes({}),
       api.getTracking(),
     ]);
+    allDishes = dishes;
     trackingData = tracking;
-    renderDishList(container, dishes);
+    renderCatTabs();
+    renderDishList(container);
   } catch (err) {
     container.innerHTML = `<div class="text-muted p-16">${err.message}</div>`;
   }
 }
 
-function renderDishList(container, dishes) {
+function renderDishList(container) {
+  if (!container) return;
   container.innerHTML = "";
+  let dishes = allDishes.filter((d) => d.active);
+  if (activeCategory !== "tous") dishes = dishes.filter((d) => d.category === activeCategory);
+  if (searchQuery) dishes = dishes.filter((d) => d.name.toLowerCase().includes(searchQuery));
+
   if (!dishes.length) {
-    container.innerHTML = `<div class="text-muted p-16">Aucun plat dans cette catégorie.</div>`;
+    container.innerHTML = `<div class="empty-state"><span class="empty-icon">🍽️</span>Aucun plat trouvé.</div>`;
     return;
   }
 
-  for (const dish of dishes.filter((d) => d.active)) {
-    container.appendChild(makeDishCard(dish));
-  }
+  const grid = document.createElement("div");
+  grid.className = "plats-grid stagger-in";
+  dishes.forEach((dish, i) => grid.appendChild(makePlatCard(dish, i)));
+  container.appendChild(grid);
 }
 
-function makeDishCard(dish) {
+function makePlatCard(dish, index) {
   const t = trackingData.find((x) => x.dish.id === dish.id);
   const count = t ? t.count : 0;
 
-  const card = document.createElement("div");
-  card.style.cssText = `
-    display:flex;align-items:stretch;background:white;border-radius:14px;
-    margin:6px 12px;box-shadow:0 1px 6px rgba(0,0,0,.09);overflow:hidden;cursor:pointer;
-    transition:box-shadow .15s;${!dish.active ? "opacity:.5;" : ""}`;
-  card.onmouseenter = () => { card.style.boxShadow = "0 3px 14px rgba(0,0,0,.14)"; };
-  card.onmouseleave = () => { card.style.boxShadow = "0 1px 6px rgba(0,0,0,.09)"; };
+  const card = document.createElement("button");
+  card.className = "plat-card" + (dish.active ? "" : " inactive");
 
-  // Thumbnail
-  const thumb = document.createElement("div");
-  thumb.style.cssText = "width:86px;flex-shrink:0;background:#f0f0f0;position:relative;overflow:hidden";
-  if (dish.thumbnail_url) {
-    const img = document.createElement("img");
-    img.src = dish.thumbnail_url;
-    img.style.cssText = "width:100%;height:100%;object-fit:cover";
-    img.onerror = () => { img.remove(); thumb.style.cssText += ";display:flex;align-items:center;justify-content:center;font-size:28px"; thumb.textContent = "🍽"; };
-    thumb.appendChild(img);
-  } else {
-    thumb.style.cssText += ";display:flex;align-items:center;justify-content:center;font-size:28px";
-    thumb.textContent = "🍽";
-  }
+  const safeThumb = _safeUrl(dish.thumbnail_url);
+  const phClass = index % 3 === 1 ? " ph-2" : index % 3 === 2 ? " ph-3" : "";
+  const thumbHtml = safeThumb
+    ? `<img class="plat-thumb" src="${escapeHtml(safeThumb)}" alt="" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'plat-thumb${phClass}'}))">`
+    : `<div class="plat-thumb${phClass}"></div>`;
 
-  // Content
-  const content = document.createElement("div");
-  content.style.cssText = "flex:1;padding:10px 12px;display:flex;flex-direction:column;justify-content:center;gap:3px;min-width:0";
+  const meta = [CAT_LABELS[dish.category] || dish.category];
+  meta.push(count > 0 ? `×${count}` : "jamais cuisiné ⭐");
 
-  const src = _sourceMeta(dish);
-  if (src) {
-    const srcRow = document.createElement("div");
-    srcRow.style.cssText = "display:flex;align-items:center;gap:4px;font-size:11px";
-    srcRow.innerHTML = `<span>${src.icon}</span><span style="font-weight:700;color:${src.color}">${src.name}</span>`;
-    content.appendChild(srcRow);
-  }
-
-  const title = document.createElement("div");
-  title.style.cssText = "font-size:14px;font-weight:700;color:#1a1a1a;line-height:1.3;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical";
-  title.textContent = dish.name;
-  if (dish.source_tag) {
-    const tag = document.createElement("span");
-    tag.className = "badge badge-tag";
-    tag.textContent = dish.source_tag;
-    tag.style.cssText = "margin-left:4px;font-size:10px;vertical-align:middle";
-    title.appendChild(tag);
-  }
-  content.appendChild(title);
-
-  if (dish.author) {
-    const author = document.createElement("div");
-    author.style.cssText = "font-size:11px;color:#999;margin-top:1px";
-    author.textContent = "par " + dish.author;
-    content.appendChild(author);
-  }
-
-  // Count badge (top-right)
-  const badge = document.createElement("div");
-  badge.style.cssText = "align-self:flex-start;margin:10px 10px 0 0;font-size:13px;font-weight:700;flex-shrink:0;min-width:28px;text-align:center";
-  badge.textContent = count > 0 ? `×${count}` : "⭐";
-  badge.title = count > 0 ? `Cuisiné ${count} fois` : "Jamais cuisiné — à prioriser";
-
-  card.append(thumb, content, badge);
+  card.innerHTML = `
+    ${thumbHtml}
+    ${dish.source_tag ? `<span class="plat-fav" title="${escapeHtml(dish.source_tag)}">🔖</span>` : ""}
+    <div class="plat-body">
+      <div class="plat-name">${escapeHtml(dish.name)}</div>
+      <div class="plat-meta">${escapeHtml(meta.join(" · "))}</div>
+    </div>`;
   card.onclick = () => openDishModal(dish);
   return card;
 }
@@ -170,8 +155,8 @@ function openDishModal(dish) {
 
   overlay.innerHTML = `
     <div class="modal-box">
-      <div class="modal-header">
-        <h2>${escapeHtml(dish.name)}</h2>
+      <div class="modal-header" style="border-bottom:none;padding:8px 16px 0">
+        <h2 style="font-size:14px;color:var(--muted)">${escapeHtml(CAT_LABELS[dish.category] || "Recette")}</h2>
         <button class="btn-close">✕</button>
       </div>
       <div class="modal-body" id="dish-modal-body">
@@ -203,7 +188,10 @@ function openDishModal(dish) {
   overlay.querySelector("#btn-add-to-shop")?.addEventListener("click", async () => {
     const checked = [...overlay.querySelectorAll(".recipe-ingr-cb")]
       .filter((cb) => cb.checked)
-      .map((cb) => cb.closest("label").querySelector(".ingr-text").textContent.trim());
+      .map((cb) => {
+        const label = cb.closest("label");
+        return (label.dataset.ingr || label.querySelector(".ingr-text").textContent).trim();
+      });
     if (!checked.length) { showToast("Coche au moins un ingrédient", "error"); return; }
     const { year, week } = isoWeekOf(new Date());
     const btn = overlay.querySelector("#btn-add-to-shop");
@@ -279,44 +267,61 @@ function openDishModal(dish) {
 
 function renderRecipeView(dish) {
   const src = _sourceMeta(dish);
+  const safeThumb = _safeUrl(dish.thumbnail_url);
+  const t = trackingData.find((x) => x.dish.id === dish.id);
+  const count = t ? t.count : 0;
   let html = "";
 
-  if (dish.thumbnail_url || dish.author || src) {
-    const safeThumb = _safeUrl(dish.thumbnail_url);
-    html += `<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid #f0f0f0">`;
-    if (safeThumb) html += `<img src="${escapeHtml(safeThumb)}" style="width:72px;height:72px;object-fit:cover;border-radius:10px;flex-shrink:0" onerror="this.style.display='none'">`;
-    html += `<div style="min-width:0">`;
-    if (src) html += `<div style="font-size:11px;font-weight:700;color:${src.color};margin-bottom:2px">${src.icon} ${src.name}</div>`;
-    html += `<div style="font-size:13px;font-weight:700;color:#222;line-height:1.3">${escapeHtml(dish.name)}</div>`;
-    if (dish.author) html += `<div style="font-size:11px;color:#999;margin-top:2px">par ${escapeHtml(dish.author)}</div>`;
-    html += `</div></div>`;
-  }
+  // Héro : photo (ou motif) + catégorie + titre
+  html += `
+    <div class="recette-hero">
+      ${safeThumb ? `<img src="${escapeHtml(safeThumb)}" alt="" onerror="this.remove()">` : ""}
+      <div class="recette-hero-grad"></div>
+      <div class="recette-hero-body">
+        <span class="bento-pill">${escapeHtml(CAT_LABELS[dish.category] || dish.category)}</span>
+        <div class="recette-hero-title">${escapeHtml(dish.name)}</div>
+        ${dish.author ? `<div style="font-size:12px;opacity:.9;margin-top:2px">par ${escapeHtml(dish.author)}${src ? " · " + src.name : ""}</div>` : (src ? `<div style="font-size:12px;opacity:.9;margin-top:2px">${src.icon} ${src.name}</div>` : "")}
+      </div>
+    </div>`;
+
+  // Rangée méta
+  html += `
+    <div class="recette-meta" style="margin-top:14px">
+      <div class="recette-meta-card"><div class="v">${count > 0 ? "×" + count : "⭐"}</div><div class="l">${count > 0 ? "Cuisiné" : "Jamais cuisiné"}</div></div>
+      <div class="recette-meta-card"><div class="v">${dish.ingredients.length}</div><div class="l">Ingrédient${dish.ingredients.length > 1 ? "s" : ""}</div></div>
+      <div class="recette-meta-card"><div class="v">${dish.instructions.length}</div><div class="l">Étape${dish.instructions.length > 1 ? "s" : ""}</div></div>
+    </div>`;
 
   if (dish.ingredients.length) {
     html += `
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-        <div style="font-weight:700;color:var(--shopping-header);font-size:14px">📦 Ingrédients</div>
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div class="recette-section-title">Ingrédients</div>
         <div style="display:flex;gap:4px">
           <button id="btn-check-ingr-all" class="btn btn-sm btn-ghost" style="font-size:11px;padding:3px 8px">Tout ✓</button>
           <button id="btn-uncheck-ingr-all" class="btn btn-sm btn-ghost" style="font-size:11px;padding:3px 8px">Tout ✗</button>
         </div>
       </div>
-      <div style="display:flex;flex-direction:column;gap:3px;margin-bottom:16px;border:1px solid #eee;border-radius:10px;padding:8px">
-        ${dish.ingredients.map((ing) => `
-          <label class="recipe-ingr-row" style="display:flex;align-items:center;gap:8px;padding:5px 6px;cursor:pointer;border-radius:6px"
-            onmouseenter="this.style.background='#f5f5f5'" onmouseleave="this.style.background=''">
+      <div style="display:flex;flex-direction:column">
+        ${dish.ingredients.map((ing) => {
+          const sep = ing.indexOf(" — ");
+          const name = sep === -1 ? ing : ing.slice(0, sep);
+          const qty = sep === -1 ? "" : ing.slice(sep + 3);
+          return `
+          <label class="recipe-ingr-row recette-ingr-row" data-ingr="${escapeHtml(ing)}" style="cursor:pointer;align-items:center;gap:10px;display:flex">
             <input type="checkbox" checked class="recipe-ingr-cb"
-              style="width:16px;height:16px;accent-color:var(--shopping-header);flex-shrink:0">
-            <span class="ingr-text" style="font-size:13px;flex:1">${escapeHtml(ing)}</span>
-          </label>`).join("")}
+              style="width:17px;height:17px;accent-color:var(--terra);flex-shrink:0">
+            <span class="ingr-text" style="flex:1">${escapeHtml(name)}</span>
+            ${qty ? `<span class="q">${escapeHtml(qty)}</span>` : ""}
+          </label>`;
+        }).join("")}
       </div>`;
   }
 
   if (dish.instructions.length) {
     html += `
-      <div style="font-weight:700;color:var(--accent-dark);margin-bottom:6px;font-size:14px">📋 Instructions</div>
+      <div class="recette-section-title">Préparation</div>
       <ol style="padding-left:18px;display:flex;flex-direction:column;gap:6px;margin-bottom:8px">
-        ${dish.instructions.map((s) => `<li style="font-size:13px;line-height:1.5;color:#333">${escapeHtml(s)}</li>`).join("")}
+        ${dish.instructions.map((s) => `<li style="font-size:13.5px;line-height:1.5;color:var(--ink-soft)">${escapeHtml(s)}</li>`).join("")}
       </ol>`;
   }
 

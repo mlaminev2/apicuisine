@@ -16,26 +16,26 @@ export async function renderShopping(root, params) {
   viewAll = false;
 
   root.innerHTML = `
-    <div class="shopping-header">
-      <button id="shop-prev" style="color:white;font-size:20px">‹</button>
-      <div style="flex:1;text-align:center">
-        <div id="shop-title" style="font-weight:700;font-size:16px">Semaine ${currentWeek}</div>
-        <div id="shop-year" style="font-size:12px;opacity:.85">${currentYear}</div>
+    <div class="page-header" style="padding-bottom:2px">
+      <div style="flex:1">
+        <h1>Courses</h1>
+        <div style="font-size:13px;color:var(--muted);margin-top:2px;font-weight:600">
+          <span id="shop-title">Semaine ${currentWeek}</span> <span id="shop-year">· ${currentYear}</span>
+        </div>
       </div>
-      <button id="shop-next" style="color:white;font-size:20px">›</button>
-      <button id="shop-toggle-all"
-        style="font-size:11px;background:rgba(255,255,255,.2);color:white;padding:4px 8px;border-radius:8px;white-space:nowrap">
-        🗂 Tout
-      </button>
-      <button id="shop-uncheck"
-        style="font-size:11px;background:rgba(255,255,255,.2);color:white;padding:4px 8px;border-radius:8px;white-space:nowrap">
-        ☐ Décocher
-      </button>
+      <button id="shop-prev">‹</button>
+      <button id="shop-next">›</button>
+      <button id="shop-toggle-all" style="width:auto;padding:0 12px;font-size:12px">🗂 Tout</button>
+      <button id="shop-uncheck" style="width:auto;padding:0 12px;font-size:12px">☐</button>
     </div>
     <div id="shop-week-pills"
-      style="display:none;gap:8px;padding:10px 16px;overflow-x:auto;background:white;border-bottom:1px solid #eee;-webkit-overflow-scrolling:touch;white-space:nowrap">
+      style="display:none;gap:8px;padding:10px 16px 2px;overflow-x:auto;-webkit-overflow-scrolling:touch;white-space:nowrap">
     </div>
-    <div id="shopping-items" class="stagger-in"></div>
+    <div class="shop-progress-card" id="shop-progress" style="display:none">
+      <div class="shop-progress-label" id="shop-progress-label"></div>
+      <div class="shop-progress-bar"><div class="shop-progress-fill" id="shop-progress-fill" style="width:0%"></div></div>
+    </div>
+    <div id="shopping-items" class="stagger-in" style="padding-top:8px"></div>
     <datalist id="shop-item-suggestions"></datalist>
     <div class="shopping-add" id="shop-add-row" style="flex-wrap:wrap;gap:6px">
       <input id="shop-new-item" list="shop-item-suggestions" placeholder="Article…" style="flex:2;min-width:120px" autocomplete="off" />
@@ -109,18 +109,20 @@ function syncViewMode() {
   if (!toggleBtn) return;
 
   if (viewAll) {
-    toggleBtn.style.cssText = "font-size:11px;background:rgba(255,255,255,.55);color:var(--shopping-header);padding:4px 8px;border-radius:8px;white-space:nowrap;font-weight:700";
+    toggleBtn.style.cssText = "width:auto;padding:0 12px;font-size:12px;background:var(--terra);color:#fff";
     toggleBtn.textContent = "📅 Semaine";
     addRow.style.display = "none";
     prevBtn.style.visibility = "hidden";
     nextBtn.style.visibility = "hidden";
     uncheckBtn.style.display = "none";
     document.getElementById("shop-week-pills").style.display = "none";
+    const prog = document.getElementById("shop-progress");
+    if (prog) prog.style.display = "none";
     document.getElementById("shop-title").textContent = "Toutes les semaines";
     document.getElementById("shop-year").textContent = "";
     loadAll();
   } else {
-    toggleBtn.style.cssText = "font-size:11px;background:rgba(255,255,255,.2);color:white;padding:4px 8px;border-radius:8px;white-space:nowrap";
+    toggleBtn.style.cssText = "width:auto;padding:0 12px;font-size:12px";
     toggleBtn.textContent = "🗂 Tout";
     addRow.style.display = "";
     prevBtn.style.visibility = "";
@@ -272,13 +274,24 @@ async function loadShopping() {
   }
 }
 
+function _updateProgress() {
+  const card = document.getElementById("shop-progress");
+  if (!card) return;
+  if (viewAll || !items.length) { card.style.display = "none"; return; }
+  const done = items.filter((i) => i.checked).length;
+  card.style.display = "";
+  document.getElementById("shop-progress-label").textContent = `${done} sur ${items.length} pris`;
+  document.getElementById("shop-progress-fill").style.width = Math.round((done / items.length) * 100) + "%";
+}
+
 function renderItems() {
   const container = document.getElementById("shopping-items");
   if (!container) return;
   container.innerHTML = "";
+  _updateProgress();
 
   if (!items.length) {
-    container.innerHTML = `<div class="text-muted p-16">Liste vide. Ajoutez des articles ci-dessous.</div>`;
+    container.innerHTML = `<div class="empty-state"><span class="empty-icon">🛒</span>Liste vide. Ajoutez des articles ci-dessous.</div>`;
     return;
   }
 
@@ -298,16 +311,14 @@ function renderItems() {
 
   for (const { cat, items: groupItems } of groups) {
     const header = document.createElement("div");
-    header.style.cssText = `
-      display:flex;align-items:center;gap:8px;padding:6px 16px;
-      background:#f8f8f8;border-bottom:1px solid #eee;`;
+    header.className = "shop-cat-title";
+    header.style.cssText = "display:flex;align-items:center;gap:8px;padding-top:10px";
     const dot = document.createElement("span");
-    dot.style.cssText = `width:10px;height:10px;border-radius:50%;background:${cat.color};flex-shrink:0`;
+    dot.style.cssText = `width:9px;height:9px;border-radius:50%;background:${cat.color};flex-shrink:0`;
     const name = document.createElement("span");
-    name.style.cssText = "font-size:11px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.4px";
     name.textContent = cat.name;
     const count = document.createElement("span");
-    count.style.cssText = "font-size:10px;color:#aaa;margin-left:auto";
+    count.style.cssText = "font-size:11px;color:#c4b3a3;margin-left:auto;letter-spacing:0;text-transform:none";
     const done = groupItems.filter((x) => x.item.checked).length;
     count.textContent = `${done}/${groupItems.length}`;
     header.append(dot, name, count);
@@ -391,7 +402,7 @@ function updateHeader() {
   const title = document.getElementById("shop-title");
   const year = document.getElementById("shop-year");
   if (title) title.textContent = `Semaine ${currentWeek}`;
-  if (year) year.textContent = currentYear;
+  if (year) year.textContent = `· ${currentYear}`;
 }
 
 async function loadWeekPills() {
@@ -450,7 +461,7 @@ function renderAllItems() {
   for (const week of allWeeksData) {
     const done = week.items.filter((i) => i.checked).length;
     const wh = document.createElement("div");
-    wh.style.cssText = `background:var(--shopping-header);color:white;padding:8px 16px;font-weight:700;font-size:13px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:1`;
+    wh.style.cssText = `background:var(--ink);color:white;padding:9px 16px;font-weight:700;font-size:13px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:1;border-radius:12px;margin:10px 16px 8px`;
     wh.innerHTML = `<span>📅 Semaine ${week.iso_week} · ${week.iso_year}</span><span style="opacity:.8;font-size:12px;font-weight:400">${done}/${week.items.length}</span>`;
     container.appendChild(wh);
 
@@ -467,8 +478,9 @@ function renderAllItems() {
       const groups = groupByCategory(week.items);
       for (const { cat, items: groupItems } of groups) {
         const header = document.createElement("div");
-        header.style.cssText = `display:flex;align-items:center;gap:8px;padding:5px 16px;background:#f8f8f8;border-bottom:1px solid #eee`;
-        header.innerHTML = `<span style="width:8px;height:8px;border-radius:50%;background:${escapeHtml(cat.color)};flex-shrink:0;display:inline-block"></span><span style="font-size:10px;font-weight:700;color:#666;text-transform:uppercase">${escapeHtml(cat.name)}</span>`;
+        header.className = "shop-cat-title";
+        header.style.cssText = "display:flex;align-items:center;gap:8px;padding-top:6px";
+        header.innerHTML = `<span style="width:8px;height:8px;border-radius:50%;background:${escapeHtml(cat.color)};flex-shrink:0;display:inline-block"></span><span>${escapeHtml(cat.name)}</span>`;
         container.appendChild(header);
 
         for (const { item, originalIdx } of groupItems) {
