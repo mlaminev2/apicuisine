@@ -3,6 +3,7 @@ import { api } from "./api.js";
 import { renderNavbar } from "./components/navbar.js";
 import { renderLogin } from "./views/login.js";
 import { renderRegister } from "./views/register.js";
+import { renderHome } from "./views/home.js";
 import { renderCalendar } from "./views/calendar.js";
 import { renderBase } from "./views/base.js";
 import { renderShopping } from "./views/shopping.js";
@@ -25,7 +26,7 @@ function animateViewEntry(path) {
 }
 
 async function route() {
-  const hash = location.hash || (state.isLoggedIn() ? "#/calendrier" : "#/login");
+  const hash = location.hash || (state.isLoggedIn() ? "#/accueil" : "#/login");
   renderNavbar();
 
   if (!state.isLoggedIn() && !hash.startsWith("#/login") && !hash.startsWith("#/inscription") && !hash.startsWith("#/oauth-callback")) {
@@ -45,7 +46,7 @@ async function route() {
         const res = await api.oauthExchange(params.code);
         state.setAuth(res.token, res.household_id, res.member_id, res.member_name, res.is_owner);
         // replace() : l'URL contenant le code ne reste pas dans l'historique
-        location.replace("#/calendrier");
+        location.replace("#/accueil");
       } catch {
         location.replace("#/login?oauth_error=exchange_failed");
       }
@@ -54,6 +55,7 @@ async function route() {
     }
     return;
   }
+  if (hash.startsWith("#/accueil")) { await renderHome(root); return; }
   if (hash.startsWith("#/calendrier")) { await renderCalendar(root); return; }
   if (hash.startsWith("#/base")) { await renderBase(root); return; }
   if (hash.startsWith("#/courses")) { await renderShopping(root, params); return; }
@@ -62,7 +64,7 @@ async function route() {
   if (hash.startsWith("#/importer")) { await renderImport(root); return; }
   if (hash.startsWith("#/reglages")) { await renderSettings(root); return; }
 
-  location.hash = "#/calendrier";
+  location.hash = "#/accueil";
 }
 
 window.addEventListener("hashchange", route);

@@ -1,6 +1,7 @@
 import { state } from "../state.js";
 
 const TABS = [
+  { hash: "#/accueil", icon: "🏠", label: "Accueil" },
   { hash: "#/calendrier", icon: "📅", label: "Calendrier" },
   { hash: "#/base", icon: "🍽️", label: "Plats" },
   { hash: "#/courses", icon: "🛒", label: "Courses" },
@@ -15,7 +16,7 @@ export function renderNavbar() {
   nav.setAttribute("role", "navigation");
   nav.setAttribute("aria-label", "Navigation principale");
   nav.innerHTML = "";
-  const current = location.hash || "#/calendrier";
+  const current = location.hash || "#/accueil";
   for (const tab of TABS) {
     const btn = document.createElement("button");
     const active = current.startsWith(tab.hash);

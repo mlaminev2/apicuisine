@@ -1,8 +1,8 @@
-const CACHE = "menus-v30";
+const CACHE = "menus-v32";
 const SHELL = ["/", "/css/styles.css", "/js/api.js", "/js/state.js", "/js/utils.js", "/js/router.js",
   "/js/sw-register.js",
   "/js/components/navbar.js", "/js/components/toast.js", "/js/components/modal.js",
-  "/js/views/login.js", "/js/views/calendar.js", "/js/views/picker.js",
+  "/js/views/login.js", "/js/views/home.js", "/js/views/calendar.js", "/js/views/picker.js",
   "/js/views/base.js", "/js/views/shopping.js", "/js/views/tracking.js", "/js/views/settings.js",
   "/js/views/import.js", "/js/views/recette.js",
   "/manifest.webmanifest", "/icons/icon-192.png", "/icons/icon-512.png"];

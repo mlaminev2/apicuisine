@@ -73,7 +73,7 @@ export async function renderRegister(root) {
     try {
       const res = await api.register(name, email, password, color, invite_code);
       state.setAuth(res.token, res.household_id, res.member_id, res.member_name, res.is_owner);
-      location.hash = "#/calendrier";
+      location.hash = "#/accueil";
     } catch (err) {
       errorEl.textContent = err.message;
     }
