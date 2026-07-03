@@ -110,6 +110,17 @@ export async function renderSettings(root) {
     </label>`;
   sec1Body.appendChild(lunchRow);
 
+  // Plusieurs plats par jour toggle
+  const multiRow = document.createElement("div");
+  multiRow.className = "settings-row";
+  multiRow.innerHTML = `
+    <label>Plusieurs plats par jour</label>
+    <label class="toggle">
+      <input type="checkbox" id="multi-toggle" ${sett.multi_dish_enabled ? "checked" : ""} />
+      <span class="toggle-slider"></span>
+    </label>`;
+  sec1Body.appendChild(multiRow);
+
   const saveBtn = document.createElement("button");
   saveBtn.className = "btn btn-primary btn-full mt-8";
   saveBtn.textContent = "Enregistrer les réglages";
@@ -118,8 +129,14 @@ export async function renderSettings(root) {
     sec1Body.querySelectorAll("select[data-dow]").forEach((s) => { map[s.dataset.dow] = s.value; });
     const dessertEnabled = document.getElementById("dessert-toggle").checked;
     const lunchEnabled = document.getElementById("lunch-toggle").checked;
+    const multiEnabled = document.getElementById("multi-toggle").checked;
     try {
-      await api.putSettings({ weekday_category_map: map, dessert_enabled: dessertEnabled, lunch_enabled: lunchEnabled });
+      await api.putSettings({
+        weekday_category_map: map,
+        dessert_enabled: dessertEnabled,
+        lunch_enabled: lunchEnabled,
+        multi_dish_enabled: multiEnabled,
+      });
       showToast("Réglages enregistrés ✓");
     } catch (err) { showToast(err.message, "error"); }
   };

@@ -55,7 +55,7 @@ export async function renderHome(root) {
 
   // ── Carte Aujourd'hui ──
   const entry = byDate[todayStr];
-  const hasEvening = entry && (entry.main_dish || entry.free_text || entry.entree_dish || entry.dessert_dish);
+  const hasEvening = entry && (entry.main_dish || entry.free_text || entry.entree_dish || entry.dessert_dish || entry.extra_dishes?.length);
   const hasLunch = settings.lunch_enabled && entry && (entry.lunch_dish || entry.lunch_free_text);
 
   let todayHtml = "";
@@ -66,6 +66,7 @@ export async function renderHome(root) {
     if (entry.entree_dish) todayHtml += _mealLine("🥗", "Entrée", entry.entree_dish.name);
     if (entry.main_dish) todayHtml += _mealLine("🍽️", "Plat", entry.main_dish.name);
     else if (entry.free_text) todayHtml += _mealLine("🍽️", "Plat", entry.free_text);
+    for (const extra of entry.extra_dishes || []) todayHtml += _mealLine("➕", "Aussi", extra.name);
     if (entry.dessert_dish) todayHtml += _mealLine("🍰", "Dessert", entry.dessert_dish.name);
     todayHtml += entry.cooked
       ? `<div class="home-cooked done">✅ Repas réalisé</div>`

@@ -145,6 +145,13 @@ function buildDayCell(dateStr, dayNum, dow, planMap, todayStr, settings) {
     }
     if (dishEl.textContent) cell.appendChild(dishEl);
 
+    for (const extra of entry.extra_dishes || []) {
+      const extraEl = document.createElement("div");
+      extraEl.className = "day-dish extra";
+      extraEl.textContent = "+ " + extra.name;
+      cell.appendChild(extraEl);
+    }
+
     if (entry.dessert_dish) {
       const dessEl = document.createElement("div");
       dessEl.className = "day-dish dessert";
@@ -169,7 +176,7 @@ function buildDayCell(dateStr, dayNum, dow, planMap, todayStr, settings) {
   }
 
   cell.addEventListener("click", () => {
-    if (entry && (entry.main_dish || entry.free_text || entry.entree_dish || entry.dessert_dish)) {
+    if (entry && (entry.main_dish || entry.free_text || entry.entree_dish || entry.dessert_dish || entry.extra_dishes?.length)) {
       openDaySummary(dateStr, entry, settings, draw);
     } else {
       openDayPicker(dateStr, entry, settings, draw);
@@ -339,7 +346,9 @@ async function fillWeek(anyDateOfWeek, btn) {
     }
     if (!confirm(`Proposer un plat pour ${days.length} jour(s) vide(s) de la semaine ${week} ? (les moins cuisinés en premier)`)) return;
 
-    const used = new Set(entries.filter((e) => e.main_dish).map((e) => e.main_dish.id));
+    const used = new Set(
+      entries.flatMap((e) => [e.main_dish?.id, ...(e.extra_dishes || []).map((x) => x.id)]).filter(Boolean)
+    );
     let filled = 0;
     for (const { iso, entry } of days) {
       let prio = [];
@@ -378,7 +387,7 @@ async function clearWeek(anyDateOfWeek, btn) {
   btn.disabled = true;
   try {
     const entries = await api.getPlan(from, to);
-    const planned = entries.filter((e) => e.main_dish || e.free_text || e.entree_dish || e.dessert_dish);
+    const planned = entries.filter((e) => e.main_dish || e.free_text || e.entree_dish || e.dessert_dish || e.extra_dishes?.length);
     if (!planned.length) {
       showToast("La semaine est déjà vide");
       return;
@@ -418,7 +427,7 @@ async function addWeekIngredients(anyDateOfWeek, btn) {
     const ingredients = [];
     let dishCount = 0;
     for (const e of entries) {
-      for (const dish of [e.lunch_dish, e.entree_dish, e.main_dish, e.dessert_dish]) {
+      for (const dish of [e.lunch_dish, e.entree_dish, e.main_dish, ...(e.extra_dishes || []), e.dessert_dish]) {
         if (dish?.ingredients?.length) {
           dishCount++;
           ingredients.push(...dish.ingredients);
@@ -448,7 +457,7 @@ async function openDayPicker(dateStr, entry, settings, onSave) {
   const dow = (d.getDay() + 6) % 7;
   const catMap = settings.weekday_category_map;
   const category = catMap[String(dow)] || DEFAULT_CATS[dow];
-  await renderPicker(dateStr, category, entry, settings.dessert_enabled, onSave, settings.lunch_enabled);
+  await renderPicker(dateStr, category, entry, settings.dessert_enabled, onSave, settings.lunch_enabled, settings.multi_dish_enabled);
 }
 
 function openDaySummary(dateStr, entry, settings, onSave) {
@@ -493,6 +502,15 @@ function openDaySummary(dateStr, entry, settings, onSave) {
       <div>
         <div style="font-size:10px;font-weight:700;color:#aaa;text-transform:uppercase">Plat</div>
         <div style="font-size:14px;font-weight:600">${escapeHtml(entry.free_text)}</div>
+      </div>
+    </div>`;
+  }
+  for (const extra of entry.extra_dishes || []) {
+    menuHtml += `<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #f5f5f5">
+      <span style="font-size:18px">➕</span>
+      <div>
+        <div style="font-size:10px;font-weight:700;color:#aaa;text-transform:uppercase">Aussi</div>
+        <div style="font-size:14px;font-weight:600">${escapeHtml(extra.name)}</div>
       </div>
     </div>`;
   }

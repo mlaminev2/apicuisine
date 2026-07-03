@@ -113,3 +113,39 @@ def test_plan_lunch_untouched_when_absent(client, household, auth_headers, sessi
         "/api/plan/2026-07-22", json={"main_dish_id": d.id}, headers=auth_headers
     )
     assert res.json()["lunch_free_text"] == "Restes"
+
+
+def test_plan_extra_dishes(client, household, auth_headers, session):
+    d1 = make_dish(session, household.id, "Plat principal")
+    d2 = make_dish(session, household.id, "Accompagnement")
+    d3 = make_dish(session, household.id, "Deuxieme plat")
+    res = client.put(
+        "/api/plan/2026-07-23",
+        json={"main_dish_id": d1.id, "extra_dish_ids": [d2.id, d3.id]},
+        headers=auth_headers,
+    )
+    assert res.status_code == 200
+    assert res.json()["extra_dish_ids"] == [d2.id, d3.id]
+    assert [d["name"] for d in res.json()["extra_dishes"]] == ["Accompagnement", "Deuxieme plat"]
+
+    # Vider les plats supplémentaires via [] ne touche pas au principal
+    res = client.put(
+        "/api/plan/2026-07-23", json={"extra_dish_ids": []}, headers=auth_headers
+    )
+    assert res.json()["extra_dishes"] == []
+    assert res.json()["main_dish_id"] == d1.id
+
+
+def test_plan_extra_dishes_untouched_when_absent(client, household, auth_headers, session):
+    d1 = make_dish(session, household.id, "Principal")
+    d2 = make_dish(session, household.id, "Extra")
+    client.put(
+        "/api/plan/2026-07-24",
+        json={"main_dish_id": d1.id, "extra_dish_ids": [d2.id]},
+        headers=auth_headers,
+    )
+    # Un PUT sans la clé extra_dish_ids laisse les plats supplémentaires intacts
+    res = client.put(
+        "/api/plan/2026-07-24", json={"free_text": "Autre"}, headers=auth_headers
+    )
+    assert res.json()["extra_dish_ids"] == [d2.id]

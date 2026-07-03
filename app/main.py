@@ -105,17 +105,22 @@ def _migrate():
         for col, definition in [
             ("lunch_dish_id", "INTEGER REFERENCES dish(id)"),
             ("lunch_free_text", "TEXT"),
+            ("extra_dishes", "TEXT NOT NULL DEFAULT '[]'"),
         ]:
             try:
                 conn.execute(text(f"ALTER TABLE plan_entry ADD COLUMN {col} {definition}"))
                 conn.commit()
             except Exception:
                 pass
-        try:
-            conn.execute(text("ALTER TABLE settings ADD COLUMN lunch_enabled BOOLEAN NOT NULL DEFAULT 0"))
-            conn.commit()
-        except Exception:
-            pass
+        for col, definition in [
+            ("lunch_enabled", "BOOLEAN NOT NULL DEFAULT 0"),
+            ("multi_dish_enabled", "BOOLEAN NOT NULL DEFAULT 0"),
+        ]:
+            try:
+                conn.execute(text(f"ALTER TABLE settings ADD COLUMN {col} {definition}"))
+                conn.commit()
+            except Exception:
+                pass
         for col, definition in [
             ("email", "TEXT"),
             ("password_hash", "TEXT"),

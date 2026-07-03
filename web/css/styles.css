@@ -130,6 +130,7 @@ a { color: inherit; text-decoration: none; }
   flex: initial; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
   border-bottom: 1px dashed #eee; padding-bottom: 2px;
 }
+.day-dish.extra { color: #777; flex: initial; }
 
 /* Vue semaine : cellules plus grandes, textes lisibles */
 .calendar-grid.week-view .day-cell { min-height: 130px; }
@@ -137,6 +138,7 @@ a { color: inherit; text-decoration: none; }
 .calendar-grid.week-view .day-dish.entree { font-size: 11px; white-space: normal; }
 .calendar-grid.week-view .day-dish.dessert { font-size: 11px; }
 .calendar-grid.week-view .day-dish.lunch { font-size: 11px; white-space: normal; }
+.calendar-grid.week-view .day-dish.extra { font-size: 12px; }
 
 /* Bouton d'accès au menu du midi dans le picker du soir */
 .btn-lunch-link {

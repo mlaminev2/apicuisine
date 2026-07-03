@@ -79,6 +79,7 @@ class PlanEntry(SQLModel, table=True):
     free_text: Optional[str] = Field(default=None)
     lunch_dish_id: Optional[int] = Field(default=None, foreign_key="dish.id")
     lunch_free_text: Optional[str] = Field(default=None)
+    extra_dishes: str = Field(default="[]")  # ids JSON des plats supplémentaires du soir
     planned_by: Optional[int] = Field(default=None, foreign_key="member.id")
     cooked: bool = Field(default=False)
     cooked_by: Optional[int] = Field(default=None, foreign_key="member.id")
@@ -105,4 +106,5 @@ class Settings(SQLModel, table=True):
     )
     dessert_enabled: bool = Field(default=True)
     lunch_enabled: bool = Field(default=False)
+    multi_dish_enabled: bool = Field(default=False)
     updated_at: datetime = Field(default_factory=_utcnow)

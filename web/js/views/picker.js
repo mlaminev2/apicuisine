@@ -4,7 +4,7 @@ import { openModal } from "../components/modal.js";
 import { showToast } from "../components/toast.js";
 import { CAT_LABELS, DAYS_FULL_FR, isoWeekOf, mergeShoppingItems, escapeHtml } from "../utils.js";
 
-export async function renderPicker(dateStr, category, currentEntry, dessertEnabled, onSave, lunchEnabled = false) {
+export async function renderPicker(dateStr, category, currentEntry, dessertEnabled, onSave, lunchEnabled = false, multiEnabled = false) {
   const d = new Date(dateStr + "T00:00:00");
   const dayName = DAYS_FULL_FR[(d.getDay() + 6) % 7];
   const dateLabel = `${dayName} ${d.getDate().toString().padStart(2, "0")}/${(d.getMonth() + 1).toString().padStart(2, "0")}`;
@@ -30,6 +30,7 @@ export async function renderPicker(dateStr, category, currentEntry, dessertEnabl
   let selectedMainId = currentEntry?.main_dish_id || null;
   let selectedDessertId = currentEntry?.dessert_dish_id || null;
   let selectedEntreeId = currentEntry?.entree_dish_id || null;
+  let selectedExtraIds = new Set(multiEnabled ? (currentEntry?.extra_dish_ids || []) : []);
   let freeText = currentEntry?.free_text || "";
   let query = "";
 
@@ -41,13 +42,17 @@ export async function renderPicker(dateStr, category, currentEntry, dessertEnabl
     saveBtn.textContent = "Enregistrer";
     saveBtn.onclick = async () => {
       try {
-        await api.putPlan(dateStr, {
+        const payload = {
           main_dish_id: selectedMainId || null,
           dessert_dish_id: selectedDessertId || null,
           entree_dish_id: selectedEntreeId || null,
           free_text: freeText || null,
           planned_by: state.memberId,
-        });
+        };
+        // N'envoyer les plats supplémentaires que si l'option est active,
+        // pour ne pas effacer des données existantes quand elle est coupée.
+        if (multiEnabled) payload.extra_dish_ids = [...selectedExtraIds];
+        await api.putPlan(dateStr, payload);
         showToast("Menu enregistré ✓");
         close();
         onSave && onSave();
@@ -115,7 +120,9 @@ export async function renderPicker(dateStr, category, currentEntry, dessertEnabl
     // Priority label
     const priLabel = document.createElement("div");
     priLabel.className = "priority-label";
-    priLabel.textContent = "⬇ Moins cuisinés en premier";
+    priLabel.textContent = multiEnabled
+      ? "⬇ Moins cuisinés en premier — touchez plusieurs plats pour les cumuler"
+      : "⬇ Moins cuisinés en premier";
     body.appendChild(priLabel);
 
     // Dish list container
@@ -140,7 +147,7 @@ export async function renderPicker(dateStr, category, currentEntry, dessertEnabl
     freeInput.value = freeText;
     freeInput.oninput = (e) => {
       freeText = e.target.value;
-      if (freeText) selectedMainId = null;
+      if (freeText) { selectedMainId = null; selectedExtraIds.clear(); }
       renderList();
     };
     body.appendChild(freeInput);
@@ -155,7 +162,7 @@ export async function renderPicker(dateStr, category, currentEntry, dessertEnabl
       chip.textContent = label;
       chip.onclick = () => {
         freeText = freeText === label ? "" : label;
-        if (freeText) selectedMainId = null;
+        if (freeText) { selectedMainId = null; selectedExtraIds.clear(); }
         freeInput.value = freeText;
         quickRow.querySelectorAll(".quick-chip").forEach((c) => {
           c.classList.toggle("active", c.textContent === freeText);
@@ -207,10 +214,19 @@ export async function renderPicker(dateStr, category, currentEntry, dessertEnabl
 
     for (const p of filtered) {
       const item = document.createElement("div");
-      item.className = "dish-item" + (selectedMainId === p.dish.id ? " selected" : "");
+      const isMain = selectedMainId === p.dish.id;
+      const isExtra = selectedExtraIds.has(p.dish.id);
+      item.className = "dish-item" + (isMain || isExtra ? " selected" : "");
       const nameEl = document.createElement("span");
       nameEl.className = "dish-name";
       nameEl.textContent = p.dish.name;
+
+      if (multiEnabled && (isMain || isExtra) && (selectedExtraIds.size > 0)) {
+        const orderBadge = document.createElement("span");
+        orderBadge.className = "badge badge-tag";
+        orderBadge.textContent = isMain ? "principal" : "+";
+        item.appendChild(orderBadge);
+      }
 
       const badge = document.createElement("span");
       if (p.never_cooked) {
@@ -231,7 +247,23 @@ export async function renderPicker(dateStr, category, currentEntry, dessertEnabl
       }
 
       item.onclick = () => {
-        selectedMainId = selectedMainId === p.dish.id ? null : p.dish.id;
+        if (multiEnabled) {
+          // Multi-sélection : 1er plat = principal, les suivants s'ajoutent
+          if (selectedMainId === p.dish.id) {
+            selectedMainId = null;
+            // Le premier plat supplémentaire devient principal
+            const [next] = selectedExtraIds;
+            if (next !== undefined) { selectedMainId = next; selectedExtraIds.delete(next); }
+          } else if (selectedExtraIds.has(p.dish.id)) {
+            selectedExtraIds.delete(p.dish.id);
+          } else if (!selectedMainId) {
+            selectedMainId = p.dish.id;
+          } else {
+            selectedExtraIds.add(p.dish.id);
+          }
+        } else {
+          selectedMainId = selectedMainId === p.dish.id ? null : p.dish.id;
+        }
         freeText = "";
         renderList();
       };

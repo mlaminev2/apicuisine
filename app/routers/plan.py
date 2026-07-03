@@ -1,3 +1,4 @@
+import json
 from datetime import date, datetime, timezone
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -22,6 +23,11 @@ def _enrich(entry: PlanEntry, session: Session) -> PlanEntryRead:
     dessert = session.get(Dish, entry.dessert_dish_id) if entry.dessert_dish_id else None
     entree = session.get(Dish, entry.entree_dish_id) if getattr(entry, "entree_dish_id", None) else None
     lunch = session.get(Dish, entry.lunch_dish_id) if getattr(entry, "lunch_dish_id", None) else None
+    try:
+        extra_ids = json.loads(getattr(entry, "extra_dishes", "[]") or "[]")
+    except ValueError:
+        extra_ids = []
+    extras = [d for d in (session.get(Dish, i) for i in extra_ids) if d]
 
     def to_dish_read(d: Optional[Dish]) -> Optional[DishRead]:
         if not d:
@@ -51,6 +57,7 @@ def _enrich(entry: PlanEntry, session: Session) -> PlanEntryRead:
         free_text=entry.free_text,
         lunch_dish_id=getattr(entry, "lunch_dish_id", None),
         lunch_free_text=getattr(entry, "lunch_free_text", None),
+        extra_dish_ids=[d.id for d in extras],
         planned_by=entry.planned_by,
         cooked=entry.cooked,
         cooked_by=entry.cooked_by,
@@ -60,6 +67,7 @@ def _enrich(entry: PlanEntry, session: Session) -> PlanEntryRead:
         dessert_dish=to_dish_read(dessert),
         entree_dish=to_dish_read(entree),
         lunch_dish=to_dish_read(lunch),
+        extra_dishes=[to_dish_read(d) for d in extras],
     )
 
 
@@ -112,6 +120,8 @@ def upsert_plan(
         entry.lunch_dish_id = body.lunch_dish_id
     if "lunch_free_text" in sent:
         entry.lunch_free_text = body.lunch_free_text
+    if "extra_dish_ids" in sent:
+        entry.extra_dishes = json.dumps(body.extra_dish_ids or [])
     if body.planned_by is not None:
         entry.planned_by = body.planned_by
     entry.updated_at = datetime.now(timezone.utc)
