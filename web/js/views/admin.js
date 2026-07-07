@@ -140,7 +140,7 @@ export async function renderAdmin(root) {
     const row = document.createElement("div");
     row.className = "card home-card";
     row.style.cssText = "cursor:default;padding:12px 14px";
-    const quota = m.is_owner || m.is_premium
+    const quota = m.premium_active
       ? "imports illimités"
       : `imports : ${m.imports_this_month}/${p.import_limit}`;
     row.innerHTML = `

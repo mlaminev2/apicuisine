@@ -4,7 +4,7 @@ from pathlib import Path
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, func, select
 
-from app.auth import get_current_admin
+from app.auth import get_current_admin, member_has_premium
 from app.config import settings as app_config
 from app.db import get_session
 from app.models import (
@@ -106,6 +106,7 @@ def admin_stats(
                 "household_name": hh_names.get(m.household_id, "?"),
                 "is_owner": m.is_owner,
                 "is_premium": getattr(m, "is_premium", False),
+                "premium_active": member_has_premium(m, session),
                 "imports_this_month": (
                     m.import_count if getattr(m, "import_month", None) == this_month else 0
                 ),

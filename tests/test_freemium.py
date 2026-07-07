@@ -113,6 +113,37 @@ def test_premium_grant_works_even_freemium_off(client, household, auth_headers, 
     assert client.get("/api/access", headers=member_headers).json()["premium_active"] is True
 
 
+def test_premium_is_per_account_not_per_household(client, household, auth_headers):
+    """Être propriétaire de SON foyer ne donne aucun droit premium : quand le
+    freemium plateforme est actif, un inscrit lambda (owner de son foyer vide)
+    est limité comme les autres, sauf si l'admin lui accorde le premium."""
+    from app.config import settings as app_config
+    previous = app_config.super_admin_email
+    app_config.super_admin_email = "owner@test.local"  # l'owner du foyer 1 = admin plateforme
+    try:
+        # Freemium activé sur la plateforme
+        client.put("/api/admin/freemium", json={"enabled": True}, headers=auth_headers)
+
+        # Un nouvel utilisateur crée SON foyer (il en est propriétaire)…
+        r = client.post("/api/register", json={
+            "name": "Solo", "email": "solo-owner@test.local", "password": "password123"
+        })
+        assert r.json()["is_owner"] is True
+        solo = {"Authorization": f"Bearer {r.json()['token']}"}
+
+        # …mais n'a PAS le premium pour autant : quota limité
+        access = client.get("/api/access", headers=solo).json()
+        assert access["premium_active"] is False
+        assert access["imports_remaining"] == app_config.import_free_limit
+
+        # L'admin plateforme lui accorde le premium par compte → illimité
+        client.put(f"/api/admin/members/{r.json()['member_id']}/premium",
+                   json={"is_premium": True}, headers=auth_headers)
+        assert client.get("/api/access", headers=solo).json()["premium_active"] is True
+    finally:
+        app_config.super_admin_email = previous
+
+
 def test_non_owner_cannot_manage_freemium(client, household, auth_headers, member_headers):
     res = client.put("/api/settings", json={"freemium_enabled": True}, headers=member_headers)
     assert res.status_code == 403

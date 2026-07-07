@@ -13,8 +13,8 @@ export async function renderImport(root) {
       if ((access.imports_remaining ?? 1) <= 0) {
         renderPaywall(root, "Importer des recettes",
           `Vous avez utilisé vos <strong>${access.import_limit} imports gratuits</strong> du mois.<br>
-           Demandez l'accès premium au propriétaire du foyer pour importer sans limite<br>
-           (Réglages → Membres du foyer → « Passer premium »).`);
+           L'accès premium (imports illimités) est accordé par compte,<br>
+           par l'administrateur de la plateforme.`);
         return;
       }
       quotaBanner = `

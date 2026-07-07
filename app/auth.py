@@ -4,7 +4,7 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import JWTError, jwt
 from passlib.context import CryptContext
-from sqlmodel import Session
+from sqlmodel import Session, select
 from app.config import settings
 from app.db import get_session
 from app.models import Household, Member, Settings as HouseholdSettings
@@ -113,16 +113,22 @@ def get_current_owner(
     return member
 
 
-def member_has_premium(member: Member, session: Session) -> bool:
-    """Le membre a-t-il acces aux fonctionnalites premium ?
+def platform_freemium_enabled(session: Session) -> bool:
+    """Le freemium est un etat de PLATEFORME : la reference est le premier foyer
+    (celui de l'administrateur). Les nouveaux foyers le suivent automatiquement."""
+    first = session.exec(
+        select(HouseholdSettings).order_by(HouseholdSettings.household_id)
+    ).first()
+    return bool(getattr(first, "freemium_enabled", False)) if first else False
 
-    Vrai si le freemium est desactive, si le membre est proprietaire,
-    ou s'il a recu une autorisation premium du proprietaire.
-    """
-    if member.is_owner or getattr(member, "is_premium", False):
+
+def member_has_premium(member: Member, session: Session) -> bool:
+    """Le premium est un droit PAR COMPTE : super admin, ou compte auquel
+    l'administrateur a accorde is_premium. Etre proprietaire d'un foyer ne
+    donne aucun droit particulier."""
+    if is_super_admin(member) or getattr(member, "is_premium", False):
         return True
-    sett = session.get(HouseholdSettings, member.household_id)
-    return not (getattr(sett, "freemium_enabled", False) if sett else False)
+    return not platform_freemium_enabled(session)
 
 
 def require_premium(

@@ -135,9 +135,9 @@ export function mergeShoppingItems(existing, newItems) {
  * et que le membre n'a pas reçu d'autorisation premium du propriétaire.
  */
 export function renderPaywall(root, featureLabel, message = null) {
-  const defaultMsg = `Cette fonctionnalité est réservée aux membres <strong>premium</strong>.<br>
-        Demandez au propriétaire du foyer de vous accorder l'accès<br>
-        (Réglages → Membres du foyer → « Passer premium »).`;
+  const defaultMsg = `Cette fonctionnalité est réservée aux comptes <strong>premium</strong>.<br>
+        L'accès premium est accordé par compte, par l'administrateur<br>
+        de la plateforme.`;
   root.innerHTML = `
     <div class="page-header">
       <button id="paywall-back" aria-label="Retour">‹</button>
