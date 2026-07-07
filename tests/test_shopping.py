@@ -59,3 +59,26 @@ def test_ingredient_key_ignores_emojis(client, household, auth_headers):
     client.put("/api/ingredient-map", json={"ingredient_key": "Brioche dorée 🥐", "category_id": boulangerie}, headers=auth_headers)
     r = client.put("/api/shopping/2026/41", json={"items": [{"text": "Brioche dorée — 2", "checked": False}]}, headers=auth_headers)
     assert r.json()["items"][0]["category_id"] == boulangerie
+
+
+def test_read_realigns_stale_categories(client, household, auth_headers, session):
+    """Une liste déjà stockée avec de vieilles catégories est réalignée
+    dès la lecture sur les assignations de l'utilisateur."""
+    import json as _json
+    from app.models import ShoppingList as SL
+
+    cats = client.get("/api/shopping-categories", headers=auth_headers).json()
+    hygiene = next(c["id"] for c in cats if "Hygiène" in c["name"])
+    autres = next(c["id"] for c in cats if "Autres" in c["name"])
+
+    # Liste stockée à l'ancienne : Déodorant figé en « Autres »
+    sl = SL(household_id=household.id, iso_year=2026, iso_week=42,
+            items=_json.dumps([{"text": "Déodorant", "checked": False, "category_id": autres}]))
+    session.add(sl)
+    session.commit()
+    # L'utilisateur a assigné Hygiène à cet ingrédient
+    client.put("/api/ingredient-map", json={"ingredient_key": "Déodorant", "category_id": hygiene}, headers=auth_headers)
+
+    # Une simple LECTURE de la liste la corrige
+    r = client.get("/api/shopping/2026/42", headers=auth_headers)
+    assert r.json()["items"][0]["category_id"] == hygiene

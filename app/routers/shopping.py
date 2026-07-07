@@ -16,6 +16,29 @@ def _to_read(sl: ShoppingList) -> ShoppingListRead:
     return ShoppingListRead(iso_year=sl.iso_year, iso_week=sl.iso_week, items=items)
 
 
+def _realign_categories(sl: ShoppingList, household_id: int, session: Session) -> None:
+    """Réaligne les articles stockés sur les catégories assignées par
+    l'utilisateur (ingredient_map). Persiste la correction si besoin, pour que
+    les vieilles listes se remettent d'aplomb à la lecture."""
+    if not sl.id:
+        return
+    items = json.loads(sl.items)
+    changed = False
+    for d in items:
+        mapped = lookup_mapped_category(d.get("text", ""), household_id, session)
+        if mapped is not None and d.get("category_id") != mapped:
+            d["category_id"] = mapped
+            changed = True
+        elif d.get("category_id") is None:
+            d["category_id"] = resolve_category_id(d.get("text", ""), household_id, session)
+            changed = True
+    if changed:
+        sl.items = json.dumps(items)
+        session.add(sl)
+        session.commit()
+        session.refresh(sl)
+
+
 @router.get("/shopping", response_model=list[ShoppingWeekSummary])
 def list_shopping_weeks(
     household: Household = Depends(get_current_household),
@@ -48,6 +71,7 @@ def get_all_shopping(
     result = []
     for sl in sorted(lists, key=lambda x: (x.iso_year, x.iso_week), reverse=True):
         if json.loads(sl.items):
+            _realign_categories(sl, household.id, session)
             result.append(_to_read(sl))
     return result
 
@@ -70,6 +94,7 @@ def get_shopping(
         sl = ShoppingList(
             household_id=household.id, iso_year=iso_year, iso_week=iso_week
         )
+    _realign_categories(sl, household.id, session)
     return _to_read(sl)
 
 
