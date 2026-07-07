@@ -18,16 +18,33 @@ def _parse_date(date_str: str) -> date:
         raise HTTPException(status_code=422, detail="Format de date invalide (attendu : YYYY-MM-DD)")
 
 
-def _enrich(entry: PlanEntry, session: Session) -> PlanEntryRead:
-    main_dish = session.get(Dish, entry.main_dish_id) if entry.main_dish_id else None
-    dessert = session.get(Dish, entry.dessert_dish_id) if entry.dessert_dish_id else None
-    entree = session.get(Dish, entry.entree_dish_id) if getattr(entry, "entree_dish_id", None) else None
-    lunch = session.get(Dish, entry.lunch_dish_id) if getattr(entry, "lunch_dish_id", None) else None
+def _entry_dish_ids(entry: PlanEntry) -> list[int]:
+    ids = [entry.main_dish_id, entry.dessert_dish_id,
+           getattr(entry, "entree_dish_id", None), getattr(entry, "lunch_dish_id", None)]
+    try:
+        ids.extend(json.loads(getattr(entry, "extra_dishes", "[]") or "[]"))
+    except ValueError:
+        pass
+    return [i for i in ids if i]
+
+
+def _enrich(entry: PlanEntry, session: Session, dish_map: dict | None = None) -> PlanEntryRead:
+    def _dish(dish_id):
+        if not dish_id:
+            return None
+        if dish_map is not None:
+            return dish_map.get(dish_id)
+        return session.get(Dish, dish_id)
+
+    main_dish = _dish(entry.main_dish_id)
+    dessert = _dish(entry.dessert_dish_id)
+    entree = _dish(getattr(entry, "entree_dish_id", None))
+    lunch = _dish(getattr(entry, "lunch_dish_id", None))
     try:
         extra_ids = json.loads(getattr(entry, "extra_dishes", "[]") or "[]")
     except ValueError:
         extra_ids = []
-    extras = [d for d in (session.get(Dish, i) for i in extra_ids) if d]
+    extras = [d for d in (_dish(i) for i in extra_ids) if d]
 
     def to_dish_read(d: Optional[Dish]) -> Optional[DishRead]:
         if not d:
@@ -87,7 +104,13 @@ def list_plan(
     except ValueError:
         raise HTTPException(status_code=422, detail="Format de date invalide (attendu : YYYY-MM-DD)")
     entries = session.exec(stmt).all()
-    return [_enrich(e, session) for e in entries]
+    # Chargement groupé : une seule requête pour tous les plats du calendrier
+    ids = {i for e in entries for i in _entry_dish_ids(e)}
+    dish_map = (
+        {d.id: d for d in session.exec(select(Dish).where(Dish.id.in_(ids))).all()}
+        if ids else {}
+    )
+    return [_enrich(e, session, dish_map) for e in entries]
 
 
 @router.put("/plan/{date_str}", response_model=PlanEntryRead)

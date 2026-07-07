@@ -26,6 +26,15 @@ class RegisterRequest(BaseModel):
     invite_code: Optional[str] = Field(default=None, max_length=20)
 
 
+class ForgotPasswordRequest(BaseModel):
+    email: str = Field(max_length=200)
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str = Field(max_length=2000)
+    new_password: str = Field(min_length=8, max_length=128)
+
+
 class PasswordChangeRequest(BaseModel):
     current_password: str = Field(max_length=128)
     new_password: str = Field(min_length=8, max_length=128)

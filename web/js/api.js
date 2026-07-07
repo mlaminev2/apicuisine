@@ -20,7 +20,7 @@ async function request(method, path, body = null) {
   }
 
   // Token expiré ou révoqué → logout automatique
-  const noAutoLogout = ["/api/login", "/api/register", "/api/password", "/api/auth/exchange"];
+  const noAutoLogout = ["/api/login", "/api/register", "/api/password", "/api/password/forgot", "/api/password/reset", "/api/auth/exchange"];
   if (res.status === 401 && !noAutoLogout.includes(path)) {
     state.clearAuth();
     location.hash = "#/login";
@@ -45,6 +45,8 @@ export const api = {
   oauthExchange: (code) => request("POST", "/api/auth/exchange", { code }),
   changePassword: (current_password, new_password) =>
     request("POST", "/api/password", { current_password, new_password }),
+  forgotPassword: (email) => request("POST", "/api/password/forgot", { email }),
+  resetPassword: (token, new_password) => request("POST", "/api/password/reset", { token, new_password }),
   getMembers: () => request("GET", "/api/members"),
   deleteMember: (id) => request("DELETE", `/api/members/${id}`),
   getAccess: () => request("GET", "/api/access"),

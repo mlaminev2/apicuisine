@@ -8,6 +8,14 @@ def _utcnow() -> datetime:
     return datetime.now(timezone.utc)
 
 
+class AuthThrottle(SQLModel, table=True):
+    """Tentatives d'authentification (rate-limit persistant, partagé entre workers)."""
+    __tablename__ = "auth_throttle"
+    id: Optional[int] = Field(default=None, primary_key=True)
+    key: str = Field(index=True)   # ex. "login:1.2.3.4"
+    ts: float = Field(index=True)  # epoch seconds
+
+
 class Household(SQLModel, table=True):
     __tablename__ = "household"
     id: Optional[int] = Field(default=None, primary_key=True)

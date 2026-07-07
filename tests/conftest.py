@@ -26,11 +26,6 @@ def client_fixture(session):
     def get_session_override():
         yield session
 
-    # Les compteurs de rate-limit sont globaux au process : on repart à zéro
-    from app.routers.auth import _login_attempts, _register_attempts
-    _login_attempts.clear()
-    _register_attempts.clear()
-
     app.dependency_overrides[get_session] = get_session_override
     with TestClient(app) as client:
         yield client

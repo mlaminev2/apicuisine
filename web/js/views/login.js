@@ -29,6 +29,9 @@ export async function renderLogin(root) {
         </div>
         <div class="error-msg" id="login-error">${oauthError}</div>
         <button class="btn btn-primary btn-full" type="submit">Se connecter</button>
+        <p style="text-align:center;margin-top:10px;font-size:13px">
+          <a href="#/motdepasse-oublie" style="color:var(--accent-header);font-weight:600">Mot de passe oublié ?</a>
+        </p>
         <p class="login-hint" style="text-align:center;margin-top:12px">
           Pas encore de compte ?
           <a href="#/inscription" style="color:var(--accent-header);font-weight:600">Créer un compte</a>

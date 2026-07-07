@@ -6,6 +6,7 @@ import { renderRegister } from "./views/register.js";
 import { renderHome } from "./views/home.js";
 import { renderRemplir } from "./views/remplir.js";
 import { renderAdmin } from "./views/admin.js";
+import { renderForgot, renderReset } from "./views/password.js";
 import { renderCalendar } from "./views/calendar.js";
 import { renderBase } from "./views/base.js";
 import { renderShopping } from "./views/shopping.js";
@@ -31,7 +32,7 @@ async function route() {
   const hash = location.hash || (state.isLoggedIn() ? "#/accueil" : "#/login");
   renderNavbar();
 
-  if (!state.isLoggedIn() && !hash.startsWith("#/login") && !hash.startsWith("#/inscription") && !hash.startsWith("#/oauth-callback")) {
+  if (!state.isLoggedIn() && !hash.startsWith("#/login") && !hash.startsWith("#/inscription") && !hash.startsWith("#/oauth-callback") && !hash.startsWith("#/motdepasse-oublie") && !hash.startsWith("#/reinitialisation")) {
     location.hash = "#/login";
     return;
   }
@@ -42,6 +43,8 @@ async function route() {
 
   if (hash.startsWith("#/login")) { await renderLogin(root); return; }
   if (hash.startsWith("#/inscription")) { await renderRegister(root); return; }
+  if (hash.startsWith("#/motdepasse-oublie")) { renderForgot(root); return; }
+  if (hash.startsWith("#/reinitialisation")) { renderReset(root, params); return; }
   if (hash.startsWith("#/oauth-callback")) {
     if (params.code) {
       try {

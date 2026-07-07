@@ -40,3 +40,21 @@ jobs:
           for f in $(find web/js -name '*.js'); do
             node --check "$f"
           done
+
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Installer les dépendances
+        run: |
+          pip install -r requirements.txt playwright
+          playwright install --with-deps chromium
+
+      - name: Test E2E (navigateur réel)
+        run: RUN_E2E=1 pytest tests/e2e -q

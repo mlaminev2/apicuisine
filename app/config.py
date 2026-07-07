@@ -20,6 +20,15 @@ class Settings(BaseSettings):
     # Tout autre inscrit sans code d'invitation demarre un foyer vide.
     full_base_emails: str = ""
 
+    # Email transactionnel (reinitialisation de mot de passe)
+    # Hostinger : smtp.hostinger.com port 465, identifiants de la boite mail
+    smtp_host: str = ""
+    smtp_port: int = 465
+    smtp_user: str = ""
+    smtp_password: str = ""
+    smtp_from: str = ""
+    app_base_url: str = "http://localhost:8000"
+
     # Google OAuth (optionnel)
     google_client_id: str = ""
     google_client_secret: str = ""

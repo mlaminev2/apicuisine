@@ -34,6 +34,18 @@ def create_token(member_id: int, token_version: int = 0) -> str:
     return jwt.encode(data, settings.secret_key, algorithm=ALGORITHM)
 
 
+def create_reset_token(member: Member) -> str:
+    """Jeton de réinitialisation : 30 minutes, à usage unique (le changement de
+    mot de passe incrémente token_version, ce qui l'invalide)."""
+    data = {
+        "sub": str(member.id),
+        "ver": member.token_version,
+        "purpose": "pwreset",
+        "exp": datetime.now(timezone.utc) + timedelta(minutes=30),
+    }
+    return jwt.encode(data, settings.secret_key, algorithm=ALGORITHM)
+
+
 def invite_code_valid(household: Household) -> bool:
     """Un code d'invitation expire INVITE_CODE_TTL_DAYS après sa création."""
     if not household.invite_code:
@@ -68,6 +80,11 @@ def _member_from_payload(payload: dict, session: Session) -> Member:
     if payload.get("ver", 0) != member.token_version:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Session révoquée"
+        )
+    # Les jetons à usage spécial (réinitialisation) ne sont pas des sessions
+    if payload.get("purpose"):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Token invalide"
         )
     return member
 
