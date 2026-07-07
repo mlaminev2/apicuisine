@@ -185,12 +185,14 @@ export async function renderPicker(dateStr, category, currentEntry, dessertEnabl
 
     // Entrée / Apéro / Sauce : listes déroulantes optionnelles
     const optDefs = [
-      { icon: "🥗", label: "Entrée", cssVar: "--cat-entree", list: entreeList,
-        get: () => selectedEntreeId, set: (v) => { selectedEntreeId = v; } },
       { icon: "🥂", label: "Apéro", cssVar: "--cat-apero", list: aperoList,
         get: () => selectedAperoId, set: (v) => { selectedAperoId = v; } },
+      { icon: "🥗", label: "Entrée", cssVar: "--cat-entree", list: entreeList,
+        get: () => selectedEntreeId, set: (v) => { selectedEntreeId = v; } },
       { icon: "🥣", label: "Sauce", cssVar: "--cat-sauce", list: sauceList,
         get: () => selectedSauceId, set: (v) => { selectedSauceId = v; } },
+      { icon: "🍰", label: "Dessert", cssVar: "--cat-sucree", list: dessertEnabled ? dessertList : [],
+        get: () => selectedDessertId, set: (v) => { selectedDessertId = v; } },
     ].filter((d) => d.list.length > 0);
     if (optDefs.length) {
       const optLabel = document.createElement("div");
@@ -221,20 +223,6 @@ export async function renderPicker(dateStr, category, currentEntry, dessertEnabl
         row.append(lab, sel);
         body.appendChild(row);
       }
-    }
-
-    // Dessert
-    if (dessertEnabled && dessertList.length > 0) {
-      const dessLabel = document.createElement("div");
-      dessLabel.className = "priority-label";
-      dessLabel.style.cssText = "color:var(--cat-sucree)";
-      dessLabel.textContent = "🍰 Dessert (optionnel) :";
-      body.appendChild(dessLabel);
-      const dessContainer = document.createElement("div");
-      dessContainer.className = "dish-list dessert-list";
-      dessContainer.id = "picker-dessert-list";
-      body.appendChild(dessContainer);
-      renderDessert(dessContainer);
     }
 
     renderList();
@@ -378,19 +366,6 @@ export async function renderPicker(dateStr, category, currentEntry, dessertEnabl
     };
   }
 
-  function renderDessert(container) {
-    container.innerHTML = "";
-    for (const dish of dessertList) {
-      const item = document.createElement("div");
-      item.className = "dish-item" + (selectedDessertId === dish.id ? " selected" : "");
-      item.innerHTML = `<span class="dish-name">${escapeHtml(dish.name)}</span>`;
-      item.onclick = () => {
-        selectedDessertId = selectedDessertId === dish.id ? null : dish.id;
-        renderDessert(container);
-      };
-      container.appendChild(item);
-    }
-  }
 }
 
 /**
