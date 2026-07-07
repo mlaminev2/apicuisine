@@ -178,14 +178,39 @@ a { color: inherit; text-decoration: none; }
 .day-dish.apero { color: var(--cat-apero); }
 .day-dish.sauce { color: var(--cat-sauce); }
 
-/* Vue semaine : cellules plus grandes, textes lisibles */
-.calendar-grid.week-view .day-cell { min-height: 130px; }
-.calendar-grid.week-view .day-dish { font-size: 13px; }
-.calendar-grid.week-view .day-dish.entree { font-size: 11px; white-space: normal; }
-.calendar-grid.week-view .day-dish.dessert { font-size: 11px; }
-.calendar-grid.week-view .day-dish.lunch { font-size: 11px; white-space: normal; }
-.calendar-grid.week-view .day-dish.extra { font-size: 12px; }
-.calendar-grid.week-view .day-dish.apero, .calendar-grid.week-view .day-dish.sauce { font-size: 11px; white-space: normal; }
+/* Vue semaine : liste verticale des 7 jours, du lundi au dimanche */
+.week-list { display: flex; flex-direction: column; gap: 8px; margin: 4px 12px 12px; }
+.week-day-row {
+  display: flex; align-items: stretch; gap: 10px;
+  background: #FFFDF9; border: 1px solid var(--line); border-radius: 14px;
+  padding: 10px 12px; cursor: pointer;
+  transition: background var(--t-fast), transform var(--t-fast) var(--ease-out);
+}
+.week-day-row:hover { background: #f7efe2; }
+.week-day-row:active { transform: scale(.99); }
+.week-day-row.weekend { background: var(--cream-dashed); }
+.week-day-row.today { border-color: var(--terra); box-shadow: inset 0 0 0 1px var(--terra); }
+
+.week-day-head {
+  flex: 0 0 62px; display: flex; flex-direction: column; align-items: center;
+  justify-content: center; text-align: center; gap: 1px;
+  border-right: 1px solid var(--line); padding-right: 10px;
+}
+.week-day-name { font-size: 12px; font-weight: 700; color: var(--ink-soft); text-transform: uppercase; }
+.week-day-num { font-family: var(--font-display); font-weight: 800; font-size: 20px; line-height: 1; }
+.week-day-row.today .week-day-num { color: var(--terra); }
+.week-day-cat { font-size: 9px; font-weight: 600; color: var(--muted); }
+
+.week-day-content { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+.week-day-content .day-dish { font-size: 14px; }
+.week-day-content .day-dish.entree,
+.week-day-content .day-dish.apero,
+.week-day-content .day-dish.sauce,
+.week-day-content .day-dish.lunch { font-size: 12px; white-space: normal; }
+.week-day-content .day-dish.dessert,
+.week-day-content .day-dish.extra { font-size: 12px; }
+.week-day-content .day-cooked { align-self: flex-start; margin: 4px 0 0; }
+.week-day-empty { font-size: 13px; color: var(--muted); font-weight: 600; }
 
 /* Bouton d'accès au menu du midi dans le picker du soir */
 .btn-lunch-link {
@@ -196,7 +221,8 @@ a { color: inherit; text-decoration: none; }
 .btn-lunch-link:hover { background: #faeecb; }
 .day-cooked { font-size: 14px; align-self: flex-end; margin-top: auto; }
 
-.week-row-actions { background: #f7f1e7; grid-column: 1 / -1; padding: 5px 8px; display: flex; justify-content: flex-end; gap: 6px; }
+.week-row-actions { background: #f7f1e7; grid-column: 1 / -1; padding: 5px 8px; display: flex; justify-content: flex-end; gap: 6px; flex-wrap: wrap; }
+.week-list .week-row-actions { background: transparent; padding: 2px 0; border-radius: 0; }
 .btn-week-shop { font-size: 12px; font-weight: 700; background: var(--ink); color: white; padding: 4px 11px; border-radius: 999px; }
 .btn-week-ingr { background: var(--terra); }
 .btn-week-fill { background: var(--terra); }

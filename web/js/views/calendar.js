@@ -106,6 +106,86 @@ function buildHeaderRow(grid, catMap) {
   }
 }
 
+function _hasContent(entry) {
+  return entry && (entry.main_dish || entry.free_text || entry.entree_dish || entry.apero_dish || entry.sauce_dish || entry.dessert_dish || entry.extra_dishes?.length);
+}
+
+// Ajoute les lignes de plats du jour (midi, apéro, entrée, plat, extras, sauce,
+// dessert) puis la coche « fait » dans le conteneur fourni. Partagé entre la
+// cellule du mois et la ligne de la vue semaine.
+function appendDishLines(container, dateStr, entry, settings) {
+  if (!entry) return;
+
+  if (settings.lunch_enabled && (entry.lunch_dish || entry.lunch_free_text)) {
+    const lunchEl = document.createElement("div");
+    lunchEl.className = "day-dish lunch";
+    lunchEl.textContent = "🌞 " + (entry.lunch_dish?.name || entry.lunch_free_text);
+    container.appendChild(lunchEl);
+  }
+  if (entry.entree_dish) {
+    const entEl = document.createElement("div");
+    entEl.className = "day-dish entree";
+    entEl.textContent = "🥗 " + entry.entree_dish.name;
+    container.appendChild(entEl);
+  }
+  if (entry.apero_dish) {
+    const apEl = document.createElement("div");
+    apEl.className = "day-dish apero";
+    apEl.textContent = "🥂 " + entry.apero_dish.name;
+    container.appendChild(apEl);
+  }
+  if (entry.sauce_dish) {
+    const saEl = document.createElement("div");
+    saEl.className = "day-dish sauce";
+    saEl.textContent = "🥣 " + entry.sauce_dish.name;
+    container.appendChild(saEl);
+  }
+
+  const dishEl = document.createElement("div");
+  if (entry.main_dish) {
+    dishEl.className = "day-dish";
+    dishEl.textContent = entry.main_dish.name;
+  } else if (entry.free_text) {
+    dishEl.className = "day-dish free-text";
+    dishEl.textContent = entry.free_text;
+  }
+  if (dishEl.textContent) container.appendChild(dishEl);
+
+  for (const extra of entry.extra_dishes || []) {
+    const extraEl = document.createElement("div");
+    extraEl.className = "day-dish extra";
+    extraEl.textContent = "+ " + extra.name;
+    container.appendChild(extraEl);
+  }
+
+  if (entry.dessert_dish) {
+    const dessEl = document.createElement("div");
+    dessEl.className = "day-dish dessert";
+    dessEl.textContent = "🍰 " + entry.dessert_dish.name;
+    container.appendChild(dessEl);
+  }
+
+  const cookedEl = document.createElement("div");
+  cookedEl.className = "day-cooked";
+  cookedEl.textContent = entry.cooked ? "✅" : (entry.main_dish || entry.free_text ? "⬜" : "");
+  if (cookedEl.textContent) {
+    cookedEl.title = entry.cooked ? "Marquer non fait" : "Marquer fait";
+    cookedEl.onclick = async (e) => {
+      e.stopPropagation();
+      try {
+        await api.patchPlan(dateStr, { cooked: !entry.cooked, cooked_by: state.memberId });
+        draw();
+      } catch (err) { showToast(err.message, "error"); }
+    };
+    container.appendChild(cookedEl);
+  }
+}
+
+function _openDay(dateStr, entry, settings) {
+  if (_hasContent(entry)) openDaySummary(dateStr, entry, settings, draw);
+  else openDayPicker(dateStr, entry, settings, draw);
+}
+
 function buildDayCell(dateStr, dayNum, dow, planMap, todayStr, settings) {
   const entry = planMap[dateStr];
   const cell = document.createElement("div");
@@ -119,82 +199,47 @@ function buildDayCell(dateStr, dayNum, dow, planMap, todayStr, settings) {
   numEl.textContent = dayNum;
   cell.appendChild(numEl);
 
-  if (entry) {
-    // Menu du midi : ligne discrète, le soir reste l'affichage principal
-    if (settings.lunch_enabled && (entry.lunch_dish || entry.lunch_free_text)) {
-      const lunchEl = document.createElement("div");
-      lunchEl.className = "day-dish lunch";
-      lunchEl.textContent = "🌞 " + (entry.lunch_dish?.name || entry.lunch_free_text);
-      cell.appendChild(lunchEl);
-    }
+  appendDishLines(cell, dateStr, entry, settings);
 
-    if (entry.entree_dish) {
-      const entEl = document.createElement("div");
-      entEl.className = "day-dish entree";
-      entEl.textContent = "🥗 " + entry.entree_dish.name;
-      cell.appendChild(entEl);
-    }
-    if (entry.apero_dish) {
-      const apEl = document.createElement("div");
-      apEl.className = "day-dish apero";
-      apEl.textContent = "🥂 " + entry.apero_dish.name;
-      cell.appendChild(apEl);
-    }
-    if (entry.sauce_dish) {
-      const saEl = document.createElement("div");
-      saEl.className = "day-dish sauce";
-      saEl.textContent = "🥣 " + entry.sauce_dish.name;
-      cell.appendChild(saEl);
-    }
-
-    const dishEl = document.createElement("div");
-    if (entry.main_dish) {
-      dishEl.className = "day-dish";
-      dishEl.textContent = entry.main_dish.name;
-    } else if (entry.free_text) {
-      dishEl.className = "day-dish free-text";
-      dishEl.textContent = entry.free_text;
-    }
-    if (dishEl.textContent) cell.appendChild(dishEl);
-
-    for (const extra of entry.extra_dishes || []) {
-      const extraEl = document.createElement("div");
-      extraEl.className = "day-dish extra";
-      extraEl.textContent = "+ " + extra.name;
-      cell.appendChild(extraEl);
-    }
-
-    if (entry.dessert_dish) {
-      const dessEl = document.createElement("div");
-      dessEl.className = "day-dish dessert";
-      dessEl.textContent = "🍰 " + entry.dessert_dish.name;
-      cell.appendChild(dessEl);
-    }
-
-    const cookedEl = document.createElement("div");
-    cookedEl.className = "day-cooked";
-    cookedEl.textContent = entry.cooked ? "✅" : (entry.main_dish || entry.free_text ? "⬜" : "");
-    if (cookedEl.textContent) {
-      cookedEl.title = entry.cooked ? "Marquer non fait" : "Marquer fait";
-      cookedEl.onclick = async (e) => {
-        e.stopPropagation();
-        try {
-          await api.patchPlan(dateStr, { cooked: !entry.cooked, cooked_by: state.memberId });
-          draw();
-        } catch (err) { showToast(err.message, "error"); }
-      };
-      cell.appendChild(cookedEl);
-    }
-  }
-
-  cell.addEventListener("click", () => {
-    if (entry && (entry.main_dish || entry.free_text || entry.entree_dish || entry.apero_dish || entry.sauce_dish || entry.dessert_dish || entry.extra_dishes?.length)) {
-      openDaySummary(dateStr, entry, settings, draw);
-    } else {
-      openDayPicker(dateStr, entry, settings, draw);
-    }
-  });
+  cell.addEventListener("click", () => _openDay(dateStr, entry, settings));
   return cell;
+}
+
+// Ligne d'un jour dans la vue semaine (liste verticale) : en-tête à gauche
+// (jour, date, catégorie), plats à droite.
+function buildWeekDayRow(dateStr, date, dow, planMap, todayStr, settings) {
+  const entry = planMap[dateStr];
+  const isWeekend = dow >= 5;
+  const isToday = dateStr === todayStr;
+
+  const row = document.createElement("div");
+  row.className = "week-day-row" + (isWeekend ? " weekend" : "") + (isToday ? " today" : "");
+  row.dataset.date = dateStr;
+
+  const catMap = settings.weekday_category_map || {};
+  const cat = catMap[String(dow)] || DEFAULT_CATS[dow];
+
+  const head = document.createElement("div");
+  head.className = "week-day-head";
+  head.innerHTML = `
+    <span class="week-day-name">${DAYS_FR[dow]}</span>
+    <span class="week-day-num">${date.getDate()}</span>
+    <span class="week-day-cat">${CAT_LABELS[cat] || cat}</span>`;
+  row.appendChild(head);
+
+  const content = document.createElement("div");
+  content.className = "week-day-content";
+  appendDishLines(content, dateStr, entry, settings);
+  if (!_hasContent(entry)) {
+    const empty = document.createElement("div");
+    empty.className = "week-day-empty";
+    empty.textContent = "+ Ajouter un repas";
+    content.appendChild(empty);
+  }
+  row.appendChild(content);
+
+  row.addEventListener("click", () => _openDay(dateStr, entry, settings));
+  return row;
 }
 
 function buildWeekActions(dateStr, hasMeals) {
@@ -296,9 +341,8 @@ async function drawWeek() {
   if (!body) return;
   body.innerHTML = "";
 
-  const grid = document.createElement("div");
-  grid.className = "calendar-grid week-view";
-  buildHeaderRow(grid, settings.weekday_category_map);
+  const list = document.createElement("div");
+  list.className = "week-list";
 
   let hasMeals = false;
   for (let i = 0; i < 7; i++) {
@@ -307,11 +351,11 @@ async function drawWeek() {
     const dateStr = _isoOf(d);
     const e = planMap[dateStr];
     if (e && (e.main_dish || e.free_text)) hasMeals = true;
-    grid.appendChild(buildDayCell(dateStr, d.getDate(), i, planMap, todayStr, settings));
+    list.appendChild(buildWeekDayRow(dateStr, d, i, planMap, todayStr, settings));
   }
-  grid.appendChild(buildWeekActions(currentMonday, hasMeals));
+  list.appendChild(buildWeekActions(currentMonday, hasMeals));
 
-  body.appendChild(grid);
+  body.appendChild(list);
 }
 
 function _weekBounds(anyDateOfWeek) {
