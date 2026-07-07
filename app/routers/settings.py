@@ -93,11 +93,12 @@ def update_settings(
     member: Member = Depends(get_current_member),
     session: Session = Depends(get_session),
 ):
-    # L'activation du freemium est réservée au propriétaire
-    if body.freemium_enabled is not None and not member.is_owner:
+    # Le freemium est un réglage de plateforme : réservé au super admin
+    from app.auth import is_super_admin
+    if body.freemium_enabled is not None and not is_super_admin(member):
         raise HTTPException(
             status_code=403,
-            detail="Seul le propriétaire du foyer peut activer ou désactiver le freemium",
+            detail="Seul l'administrateur de la plateforme peut gérer le freemium",
         )
     sett = session.get(Settings, household.id)
     if not sett:

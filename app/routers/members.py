@@ -3,6 +3,7 @@ from sqlmodel import Session, select, update
 from app.db import get_session
 from app.models import Household, Member, PlanEntry
 from app.auth import (
+    get_current_admin,
     get_current_household,
     get_current_member,
     get_current_owner,
@@ -48,10 +49,10 @@ def my_access(
 def set_member_premium(
     member_id: int,
     body: MemberPremiumUpdate,
-    owner: Member = Depends(get_current_owner),
+    owner: Member = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ):
-    """Accorde ou retire l'autorisation premium d'un membre (propriétaire uniquement)."""
+    """Accorde ou retire l'autorisation premium d'un membre (super admin)."""
     target = session.get(Member, member_id)
     if not target or target.household_id != owner.household_id:
         raise HTTPException(status_code=404, detail="Membre introuvable")
