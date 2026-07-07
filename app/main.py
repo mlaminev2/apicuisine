@@ -14,6 +14,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 from app.seed import run_seed
 from app.routers import (
+    admin,
     auth,
     members,
     dishes,
@@ -58,6 +59,7 @@ async def security_headers(request: Request, call_next):
 
 
 app.include_router(auth.router)
+app.include_router(admin.router)
 app.include_router(members.router)
 app.include_router(dishes.router)
 app.include_router(priority.router)

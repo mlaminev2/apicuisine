@@ -56,6 +56,14 @@ export async function renderSettings(root) {
       <div class="settings-profile-name">${escapeHtml(state.memberName || "Membre")}</div>
       <div class="settings-profile-sub" id="profile-sub">${state.isOwner ? "Propriétaire du foyer" : "Membre du foyer"}</div>
     </div>`;
+  if (state.isOwner) {
+    const adminBtn = document.createElement("button");
+    adminBtn.className = "btn btn-ghost btn-sm";
+    adminBtn.style.cssText = "font-size:12px;flex-shrink:0";
+    adminBtn.textContent = "🛠 Espace admin";
+    adminBtn.onclick = () => { location.hash = "#/admin"; };
+    profile.appendChild(adminBtn);
+  }
   body.appendChild(profile);
 
   // Bouton déconnexion rendu immédiatement — toujours visible même si l'API échoue
