@@ -149,3 +149,22 @@ def test_plan_extra_dishes_untouched_when_absent(client, household, auth_headers
         "/api/plan/2026-07-24", json={"free_text": "Autre"}, headers=auth_headers
     )
     assert res.json()["extra_dish_ids"] == [d2.id]
+
+
+def test_plan_apero_sauce(client, household, auth_headers, session):
+    """Apéro et sauce du jour : sélection puis désélection via null explicite."""
+    ap = make_dish(session, household.id, "Samoussas", "apero")
+    sa = make_dish(session, household.id, "Sauce yassa", "sauce")
+    res = client.put(
+        "/api/plan/2026-07-25",
+        json={"apero_dish_id": ap.id, "sauce_dish_id": sa.id},
+        headers=auth_headers,
+    )
+    assert res.status_code == 200
+    assert res.json()["apero_dish"]["name"] == "Samoussas"
+    assert res.json()["sauce_dish"]["name"] == "Sauce yassa"
+
+    # Désélection (« — Aucun — » dans la liste déroulante)
+    res = client.put("/api/plan/2026-07-25", json={"apero_dish_id": None}, headers=auth_headers)
+    assert res.json()["apero_dish"] is None
+    assert res.json()["sauce_dish"]["name"] == "Sauce yassa"  # non envoyé → intact

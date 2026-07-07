@@ -171,6 +171,12 @@ a { color: inherit; text-decoration: none; }
   border-bottom: 1px dashed #eee3d2; padding-bottom: 2px;
 }
 .day-dish.extra { color: var(--muted-2); flex: initial; }
+.day-dish.apero, .day-dish.sauce {
+  font-size: 7px; margin-top: 1px; line-height: 1.2;
+  flex: initial; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+}
+.day-dish.apero { color: var(--cat-apero); }
+.day-dish.sauce { color: var(--cat-sauce); }
 
 /* Vue semaine : cellules plus grandes, textes lisibles */
 .calendar-grid.week-view .day-cell { min-height: 130px; }
@@ -179,6 +185,7 @@ a { color: inherit; text-decoration: none; }
 .calendar-grid.week-view .day-dish.dessert { font-size: 11px; }
 .calendar-grid.week-view .day-dish.lunch { font-size: 11px; white-space: normal; }
 .calendar-grid.week-view .day-dish.extra { font-size: 12px; }
+.calendar-grid.week-view .day-dish.apero, .calendar-grid.week-view .day-dish.sauce { font-size: 11px; white-space: normal; }
 
 /* Bouton d'accès au menu du midi dans le picker du soir */
 .btn-lunch-link {
@@ -375,6 +382,14 @@ a { color: inherit; text-decoration: none; }
 }
 .quick-chip:active { transform: scale(.94); }
 .quick-chip.active { background: var(--terra); border-color: var(--terra); color: white; }
+
+/* Listes déroulantes Entrée / Apéro / Sauce du sélecteur */
+.picker-opt-row { display: flex; align-items: center; gap: 10px; }
+.picker-opt-label { font-size: 12.5px; font-weight: 700; width: 74px; flex-shrink: 0; }
+.picker-select {
+  flex: 1; min-width: 0; border: 1.5px solid #ddd0bd; background: #fff;
+  border-radius: 13px; padding: 9px 12px; font-size: 14px; color: var(--ink);
+}
 
 /* Listes optionnelles du sélecteur : hauteur maîtrisée, défilement interne */
 .entree-list { max-height: 96px; }

@@ -134,6 +134,18 @@ function buildDayCell(dateStr, dayNum, dow, planMap, todayStr, settings) {
       entEl.textContent = "🥗 " + entry.entree_dish.name;
       cell.appendChild(entEl);
     }
+    if (entry.apero_dish) {
+      const apEl = document.createElement("div");
+      apEl.className = "day-dish apero";
+      apEl.textContent = "🥂 " + entry.apero_dish.name;
+      cell.appendChild(apEl);
+    }
+    if (entry.sauce_dish) {
+      const saEl = document.createElement("div");
+      saEl.className = "day-dish sauce";
+      saEl.textContent = "🥣 " + entry.sauce_dish.name;
+      cell.appendChild(saEl);
+    }
 
     const dishEl = document.createElement("div");
     if (entry.main_dish) {
@@ -176,7 +188,7 @@ function buildDayCell(dateStr, dayNum, dow, planMap, todayStr, settings) {
   }
 
   cell.addEventListener("click", () => {
-    if (entry && (entry.main_dish || entry.free_text || entry.entree_dish || entry.dessert_dish || entry.extra_dishes?.length)) {
+    if (entry && (entry.main_dish || entry.free_text || entry.entree_dish || entry.apero_dish || entry.sauce_dish || entry.dessert_dish || entry.extra_dishes?.length)) {
       openDaySummary(dateStr, entry, settings, draw);
     } else {
       openDayPicker(dateStr, entry, settings, draw);
@@ -387,7 +399,7 @@ async function clearWeek(anyDateOfWeek, btn) {
   btn.disabled = true;
   try {
     const entries = await api.getPlan(from, to);
-    const planned = entries.filter((e) => e.main_dish || e.free_text || e.entree_dish || e.dessert_dish || e.extra_dishes?.length);
+    const planned = entries.filter((e) => e.main_dish || e.free_text || e.entree_dish || e.apero_dish || e.sauce_dish || e.dessert_dish || e.extra_dishes?.length);
     if (!planned.length) {
       showToast("La semaine est déjà vide");
       return;
@@ -427,7 +439,7 @@ async function addWeekIngredients(anyDateOfWeek, btn) {
     const ingredients = [];
     let dishCount = 0;
     for (const e of entries) {
-      for (const dish of [e.lunch_dish, e.entree_dish, e.main_dish, ...(e.extra_dishes || []), e.dessert_dish]) {
+      for (const dish of [e.lunch_dish, e.apero_dish, e.entree_dish, e.main_dish, ...(e.extra_dishes || []), e.sauce_dish, e.dessert_dish]) {
         if (dish?.ingredients?.length) {
           dishCount++;
           ingredients.push(...dish.ingredients);
@@ -479,12 +491,17 @@ function openDaySummary(dateStr, entry, settings, onSave) {
       </div>
     </div>`;
   }
-  if (entry.entree_dish) {
+  const optRows = [
+    ["🥂", "Apéro", entry.apero_dish],
+    ["🥗", "Entrée", entry.entree_dish],
+  ];
+  for (const [icon, label, dish] of optRows) {
+    if (!dish) continue;
     menuHtml += `<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #f5f5f5">
-      <span style="font-size:18px">🥗</span>
+      <span style="font-size:18px">${icon}</span>
       <div>
-        <div style="font-size:10px;font-weight:700;color:#aaa;text-transform:uppercase">Entrée</div>
-        <div style="font-size:14px;font-weight:600">${escapeHtml(entry.entree_dish.name)}</div>
+        <div style="font-size:10px;font-weight:700;color:#aaa;text-transform:uppercase">${label}</div>
+        <div style="font-size:14px;font-weight:600">${escapeHtml(dish.name)}</div>
       </div>
     </div>`;
   }
@@ -511,6 +528,15 @@ function openDaySummary(dateStr, entry, settings, onSave) {
       <div>
         <div style="font-size:10px;font-weight:700;color:#aaa;text-transform:uppercase">Aussi</div>
         <div style="font-size:14px;font-weight:600">${escapeHtml(extra.name)}</div>
+      </div>
+    </div>`;
+  }
+  if (entry.sauce_dish) {
+    menuHtml += `<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #f5f5f5">
+      <span style="font-size:18px">🥣</span>
+      <div>
+        <div style="font-size:10px;font-weight:700;color:#aaa;text-transform:uppercase">Sauce</div>
+        <div style="font-size:14px;font-weight:600">${escapeHtml(entry.sauce_dish.name)}</div>
       </div>
     </div>`;
   }

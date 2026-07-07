@@ -20,7 +20,8 @@ def _parse_date(date_str: str) -> date:
 
 def _entry_dish_ids(entry: PlanEntry) -> list[int]:
     ids = [entry.main_dish_id, entry.dessert_dish_id,
-           getattr(entry, "entree_dish_id", None), getattr(entry, "lunch_dish_id", None)]
+           getattr(entry, "entree_dish_id", None), getattr(entry, "lunch_dish_id", None),
+           getattr(entry, "apero_dish_id", None), getattr(entry, "sauce_dish_id", None)]
     try:
         ids.extend(json.loads(getattr(entry, "extra_dishes", "[]") or "[]"))
     except ValueError:
@@ -39,6 +40,8 @@ def _enrich(entry: PlanEntry, session: Session, dish_map: dict | None = None) ->
     main_dish = _dish(entry.main_dish_id)
     dessert = _dish(entry.dessert_dish_id)
     entree = _dish(getattr(entry, "entree_dish_id", None))
+    apero = _dish(getattr(entry, "apero_dish_id", None))
+    sauce = _dish(getattr(entry, "sauce_dish_id", None))
     lunch = _dish(getattr(entry, "lunch_dish_id", None))
     try:
         extra_ids = json.loads(getattr(entry, "extra_dishes", "[]") or "[]")
@@ -71,6 +74,8 @@ def _enrich(entry: PlanEntry, session: Session, dish_map: dict | None = None) ->
         main_dish_id=entry.main_dish_id,
         dessert_dish_id=entry.dessert_dish_id,
         entree_dish_id=getattr(entry, "entree_dish_id", None),
+        apero_dish_id=getattr(entry, "apero_dish_id", None),
+        sauce_dish_id=getattr(entry, "sauce_dish_id", None),
         free_text=entry.free_text,
         lunch_dish_id=getattr(entry, "lunch_dish_id", None),
         lunch_free_text=getattr(entry, "lunch_free_text", None),
@@ -83,6 +88,8 @@ def _enrich(entry: PlanEntry, session: Session, dish_map: dict | None = None) ->
         main_dish=to_dish_read(main_dish),
         dessert_dish=to_dish_read(dessert),
         entree_dish=to_dish_read(entree),
+        apero_dish=to_dish_read(apero),
+        sauce_dish=to_dish_read(sauce),
         lunch_dish=to_dish_read(lunch),
         extra_dishes=[to_dish_read(d) for d in extras],
     )
@@ -132,13 +139,19 @@ def upsert_plan(
         entry.main_dish_id = body.main_dish_id
     if body.dessert_dish_id is not None:
         entry.dessert_dish_id = body.dessert_dish_id
-    if body.entree_dish_id is not None:
-        entry.entree_dish_id = body.entree_dish_id
     if body.free_text is not None:
         entry.free_text = body.free_text
     # Les champs du midi utilisent exclude_unset : envoyer explicitement null
     # permet de vider le menu du midi sans toucher au reste du jour.
     sent = body.model_dump(exclude_unset=True)
+    # Entrée / apéro / sauce : listes déroulantes avec « Aucun » → null explicite
+    # pour pouvoir désélectionner (exclude_unset préserve les PUT partiels).
+    if "entree_dish_id" in sent:
+        entry.entree_dish_id = body.entree_dish_id
+    if "apero_dish_id" in sent:
+        entry.apero_dish_id = body.apero_dish_id
+    if "sauce_dish_id" in sent:
+        entry.sauce_dish_id = body.sauce_dish_id
     if "lunch_dish_id" in sent:
         entry.lunch_dish_id = body.lunch_dish_id
     if "lunch_free_text" in sent:

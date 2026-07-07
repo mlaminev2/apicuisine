@@ -119,6 +119,8 @@ class PlanEntryUpdate(BaseModel):
     main_dish_id: Optional[int] = None
     dessert_dish_id: Optional[int] = None
     entree_dish_id: Optional[int] = None
+    apero_dish_id: Optional[int] = None
+    sauce_dish_id: Optional[int] = None
     free_text: Optional[str] = Field(default=None, max_length=500)
     lunch_dish_id: Optional[int] = None
     lunch_free_text: Optional[str] = Field(default=None, max_length=500)
@@ -138,6 +140,8 @@ class PlanEntryRead(BaseModel):
     main_dish_id: Optional[int]
     dessert_dish_id: Optional[int]
     entree_dish_id: Optional[int] = None
+    apero_dish_id: Optional[int] = None
+    sauce_dish_id: Optional[int] = None
     free_text: Optional[str]
     lunch_dish_id: Optional[int] = None
     lunch_free_text: Optional[str] = None
@@ -150,6 +154,8 @@ class PlanEntryRead(BaseModel):
     main_dish: Optional[DishRead] = None
     dessert_dish: Optional[DishRead] = None
     entree_dish: Optional[DishRead] = None
+    apero_dish: Optional[DishRead] = None
+    sauce_dish: Optional[DishRead] = None
     lunch_dish: Optional[DishRead] = None
     extra_dishes: list[DishRead] = []
 

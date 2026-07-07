@@ -68,7 +68,9 @@ export async function renderHome(root) {
     if (settings.lunch_enabled && (entry.lunch_dish || entry.lunch_free_text)) {
       subParts.push("🌞 " + (entry.lunch_dish?.name || entry.lunch_free_text));
     }
+    if (entry.apero_dish) subParts.push("🥂 " + entry.apero_dish.name);
     if (entry.entree_dish) subParts.push("🥗 " + entry.entree_dish.name);
+    if (entry.sauce_dish) subParts.push("🥣 " + entry.sauce_dish.name);
     for (const x of entry.extra_dishes || []) subParts.push("+ " + x.name);
     if (entry.dessert_dish) subParts.push("🍰 " + entry.dessert_dish.name);
     if (entry.cooked) subParts.push("✅ réalisé");

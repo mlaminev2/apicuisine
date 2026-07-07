@@ -108,6 +108,8 @@ def _migrate():
             ("lunch_dish_id", "INTEGER REFERENCES dish(id)"),
             ("lunch_free_text", "TEXT"),
             ("extra_dishes", "TEXT NOT NULL DEFAULT '[]'"),
+            ("apero_dish_id", "INTEGER REFERENCES dish(id)"),
+            ("sauce_dish_id", "INTEGER REFERENCES dish(id)"),
         ]:
             try:
                 conn.execute(text(f"ALTER TABLE plan_entry ADD COLUMN {col} {definition}"))

@@ -88,6 +88,8 @@ class PlanEntry(SQLModel, table=True):
     main_dish_id: Optional[int] = Field(default=None, foreign_key="dish.id")
     dessert_dish_id: Optional[int] = Field(default=None, foreign_key="dish.id")
     entree_dish_id: Optional[int] = Field(default=None, foreign_key="dish.id")
+    apero_dish_id: Optional[int] = Field(default=None, foreign_key="dish.id")
+    sauce_dish_id: Optional[int] = Field(default=None, foreign_key="dish.id")
     free_text: Optional[str] = Field(default=None, sa_type=Text)
     lunch_dish_id: Optional[int] = Field(default=None, foreign_key="dish.id")
     lunch_free_text: Optional[str] = Field(default=None, sa_type=Text)

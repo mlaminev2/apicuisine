@@ -14,6 +14,8 @@ export async function renderPicker(dateStr, category, currentEntry, dessertEnabl
   let priorityList = [];
   let dessertList = [];
   let entreeList = [];
+  let aperoList = [];
+  let sauceList = [];
   try {
     priorityList = await api.getPriority(dateStr);
   } catch {}
@@ -24,12 +26,18 @@ export async function renderPicker(dateStr, category, currentEntry, dessertEnabl
     } catch {}
   }
   try {
-    entreeList = await api.getDishes({ category: "entree", active: true });
+    [entreeList, aperoList, sauceList] = await Promise.all([
+      api.getDishes({ category: "entree", active: true }),
+      api.getDishes({ category: "apero", active: true }),
+      api.getDishes({ category: "sauce", active: true }),
+    ]);
   } catch {}
 
   let selectedMainId = currentEntry?.main_dish_id || null;
   let selectedDessertId = currentEntry?.dessert_dish_id || null;
   let selectedEntreeId = currentEntry?.entree_dish_id || null;
+  let selectedAperoId = currentEntry?.apero_dish_id || null;
+  let selectedSauceId = currentEntry?.sauce_dish_id || null;
   let selectedExtraIds = new Set(multiEnabled ? (currentEntry?.extra_dish_ids || []) : []);
   let freeText = currentEntry?.free_text || "";
   let query = "";
@@ -46,6 +54,8 @@ export async function renderPicker(dateStr, category, currentEntry, dessertEnabl
           main_dish_id: selectedMainId || null,
           dessert_dish_id: selectedDessertId || null,
           entree_dish_id: selectedEntreeId || null,
+          apero_dish_id: selectedAperoId || null,
+          sauce_dish_id: selectedSauceId || null,
           free_text: freeText || null,
           planned_by: state.memberId,
         };
@@ -173,18 +183,44 @@ export async function renderPicker(dateStr, category, currentEntry, dessertEnabl
     }
     body.appendChild(quickRow);
 
-    // Entrée
-    if (entreeList.length > 0) {
-      const entLabel = document.createElement("div");
-      entLabel.className = "priority-label";
-      entLabel.style.cssText = "color:var(--cat-entree)";
-      entLabel.textContent = "🥗 Entrée (optionnel) :";
-      body.appendChild(entLabel);
-      const entContainer = document.createElement("div");
-      entContainer.className = "dish-list entree-list";
-      entContainer.id = "picker-entree-list";
-      body.appendChild(entContainer);
-      renderEntree(entContainer);
+    // Entrée / Apéro / Sauce : listes déroulantes optionnelles
+    const optDefs = [
+      { icon: "🥗", label: "Entrée", cssVar: "--cat-entree", list: entreeList,
+        get: () => selectedEntreeId, set: (v) => { selectedEntreeId = v; } },
+      { icon: "🥂", label: "Apéro", cssVar: "--cat-apero", list: aperoList,
+        get: () => selectedAperoId, set: (v) => { selectedAperoId = v; } },
+      { icon: "🥣", label: "Sauce", cssVar: "--cat-sauce", list: sauceList,
+        get: () => selectedSauceId, set: (v) => { selectedSauceId = v; } },
+    ].filter((d) => d.list.length > 0);
+    if (optDefs.length) {
+      const optLabel = document.createElement("div");
+      optLabel.className = "priority-label";
+      optLabel.textContent = "En plus du plat (optionnel) :";
+      body.appendChild(optLabel);
+      for (const def of optDefs) {
+        const row = document.createElement("div");
+        row.className = "picker-opt-row";
+        const lab = document.createElement("span");
+        lab.className = "picker-opt-label";
+        lab.style.color = `var(${def.cssVar})`;
+        lab.textContent = `${def.icon} ${def.label}`;
+        const sel = document.createElement("select");
+        sel.className = "picker-select";
+        const none = document.createElement("option");
+        none.value = "";
+        none.textContent = "— Aucun —";
+        sel.appendChild(none);
+        for (const dish of def.list) {
+          const opt = document.createElement("option");
+          opt.value = String(dish.id);
+          opt.textContent = dish.name;
+          if (def.get() === dish.id) opt.selected = true;
+          sel.appendChild(opt);
+        }
+        sel.onchange = () => { def.set(sel.value ? parseInt(sel.value) : null); };
+        row.append(lab, sel);
+        body.appendChild(row);
+      }
     }
 
     // Dessert
@@ -340,20 +376,6 @@ export async function renderPicker(dateStr, category, currentEntry, dessertEnabl
         btn.disabled = false;
       }
     };
-  }
-
-  function renderEntree(container) {
-    container.innerHTML = "";
-    for (const dish of entreeList) {
-      const item = document.createElement("div");
-      item.className = "dish-item" + (selectedEntreeId === dish.id ? " selected" : "");
-      item.innerHTML = `<span class="dish-name">${escapeHtml(dish.name)}</span>`;
-      item.onclick = () => {
-        selectedEntreeId = selectedEntreeId === dish.id ? null : dish.id;
-        renderEntree(container);
-      };
-      container.appendChild(item);
-    }
   }
 
   function renderDessert(container) {
