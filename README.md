@@ -46,18 +46,19 @@ ruff check . && ruff format .   # lint + formatage
 
 ## Déploiement en ligne (synchro hors-maison)
 
-### Render.com (gratuit)
+### Hostinger (VPS + MySQL)
 
-1. Créez un compte sur [render.com](https://render.com)
-2. "New Web Service" → connectez votre repo GitHub
-3. Build command : `pip install -r requirements.txt && python create_icons.py`
-4. Start command : `python -m app.seed && uvicorn app.main:app --host 0.0.0.0 --port $PORT`
-5. Ajoutez un **Disk** (volume persistant) monté sur `/data`
-6. Variables d'environnement : `SECRET_KEY`, `DATABASE_URL=sqlite:////data/menu.db`
+Guide complet pas à pas : **[DEPLOY-HOSTINGER.md](DEPLOY-HOSTINGER.md)**
+(VPS Docker, base MySQL Hostinger ou SQLite, HTTPS avec votre domaine).
 
-### Railway / Fly.io
+La base de données se choisit via `DATABASE_URL` :
+- SQLite (défaut) : `sqlite:////data/menu.db`
+- MySQL Hostinger : `mysql+pymysql://user:motdepasse@hote:3306/base?charset=utf8mb4`
 
-Utilisez le `Dockerfile` fourni. Montez un volume persistant sur `/data`.
+### Autres hébergeurs (Railway / Fly.io / Render…)
+
+Utilisez le `Dockerfile` fourni. Montez un volume persistant sur `/data`
+(ou pointez `DATABASE_URL` vers un MySQL).
 
 ## Structure du projet
 

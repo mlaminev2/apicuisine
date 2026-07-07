@@ -1,6 +1,6 @@
 import json
 from datetime import datetime, timezone
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
 from app.db import get_session
 from app.models import (
@@ -13,7 +13,7 @@ from app.models import (
     ShoppingCategory,
     ShoppingList,
 )
-from app.auth import get_current_household
+from app.auth import get_current_household, get_current_member
 from app.schemas import SettingsRead, SettingsUpdate
 
 router = APIRouter(prefix="/api", tags=["settings"])
@@ -25,6 +25,7 @@ def _to_read(s: Settings) -> SettingsRead:
         dessert_enabled=s.dessert_enabled,
         lunch_enabled=getattr(s, "lunch_enabled", False),
         multi_dish_enabled=getattr(s, "multi_dish_enabled", False),
+        freemium_enabled=getattr(s, "freemium_enabled", False),
     )
 
 
@@ -80,6 +81,7 @@ def export_data(
             "dessert_enabled": sett.dessert_enabled if sett else True,
             "lunch_enabled": getattr(sett, "lunch_enabled", False) if sett else False,
             "multi_dish_enabled": getattr(sett, "multi_dish_enabled", False) if sett else False,
+            "freemium_enabled": getattr(sett, "freemium_enabled", False) if sett else False,
         },
     }
 
@@ -88,8 +90,15 @@ def export_data(
 def update_settings(
     body: SettingsUpdate,
     household: Household = Depends(get_current_household),
+    member: Member = Depends(get_current_member),
     session: Session = Depends(get_session),
 ):
+    # L'activation du freemium est réservée au propriétaire
+    if body.freemium_enabled is not None and not member.is_owner:
+        raise HTTPException(
+            status_code=403,
+            detail="Seul le propriétaire du foyer peut activer ou désactiver le freemium",
+        )
     sett = session.get(Settings, household.id)
     if not sett:
         sett = Settings(household_id=household.id)
@@ -101,6 +110,8 @@ def update_settings(
         sett.lunch_enabled = body.lunch_enabled
     if body.multi_dish_enabled is not None:
         sett.multi_dish_enabled = body.multi_dish_enabled
+    if body.freemium_enabled is not None:
+        sett.freemium_enabled = body.freemium_enabled
     sett.updated_at = datetime.now(timezone.utc)
     session.add(sett)
     session.commit()

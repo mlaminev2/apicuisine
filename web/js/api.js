@@ -47,6 +47,8 @@ export const api = {
     request("POST", "/api/password", { current_password, new_password }),
   getMembers: () => request("GET", "/api/members"),
   deleteMember: (id) => request("DELETE", `/api/members/${id}`),
+  getAccess: () => request("GET", "/api/access"),
+  setMemberPremium: (id, is_premium) => request("PUT", `/api/members/${id}/premium`, { is_premium }),
   getInvite: () => request("GET", "/api/invite"),
   createInvite: () => request("POST", "/api/invite"),
   deleteInvite: () => request("DELETE", "/api/invite"),

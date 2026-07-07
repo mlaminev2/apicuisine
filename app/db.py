@@ -3,10 +3,17 @@ from pathlib import Path
 from sqlmodel import SQLModel, create_engine, Session
 from app.config import settings
 
-engine = create_engine(
-    settings.database_url,
-    connect_args={"check_same_thread": False},
-)
+def _engine_kwargs(url: str) -> dict:
+    """Options de connexion selon le moteur : SQLite en local, MySQL chez
+    l'hebergeur (Hostinger...). pool_pre_ping/pool_recycle evitent les erreurs
+    "MySQL server has gone away" quand l'hebergeur coupe les connexions
+    inactives."""
+    if url.startswith("sqlite"):
+        return {"connect_args": {"check_same_thread": False}}
+    return {"pool_pre_ping": True, "pool_recycle": 280, "pool_size": 5, "max_overflow": 5}
+
+
+engine = create_engine(settings.database_url, **_engine_kwargs(settings.database_url))
 
 
 def _ensure_sqlite_dir() -> None:

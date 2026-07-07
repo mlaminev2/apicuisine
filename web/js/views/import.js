@@ -1,16 +1,36 @@
 import { api } from "../api.js";
 import { showToast } from "../components/toast.js";
-import { CAT_LABELS, isoWeekOf, escapeHtml } from "../utils.js";
+import { CAT_LABELS, isoWeekOf, escapeHtml, renderPaywall } from "../utils.js";
 
 const CATEGORIES = ["pomme_de_terre", "riz", "pates", "entree", "autre", "sucree", "africain"];
 
 export async function renderImport(root) {
+  // Freemium : import limité par mois pour les membres gratuits, illimité en premium
+  let quotaBanner = "";
+  try {
+    const access = await api.getAccess();
+    if (!access.premium_active) {
+      if ((access.imports_remaining ?? 1) <= 0) {
+        renderPaywall(root, "Importer des recettes",
+          `Vous avez utilisé vos <strong>${access.import_limit} imports gratuits</strong> du mois.<br>
+           Demandez l'accès premium au propriétaire du foyer pour importer sans limite<br>
+           (Réglages → Membres du foyer → « Passer premium »).`);
+        return;
+      }
+      quotaBanner = `
+        <div style="margin:0 16px;background:#fdf3df;border:1.5px dashed #e0c36b;border-radius:13px;padding:10px 13px;font-size:13px;font-weight:600;color:#a97b12">
+          💎 ${access.imports_remaining} import${access.imports_remaining > 1 ? "s" : ""} gratuit${access.imports_remaining > 1 ? "s" : ""} restant${access.imports_remaining > 1 ? "s" : ""} ce mois-ci — premium = illimité
+        </div>`;
+    }
+  } catch {}
+
   const { year: isoYear, week: isoWeek } = isoWeekOf(new Date());
 
   root.innerHTML = `
-    <div class="page-header" style="background:var(--accent-dark)">
-      <h1>🔗 Importer une recette</h1>
+    <div class="page-header">
+      <h1>Importer une recette</h1>
     </div>
+    ${quotaBanner}
 
     <div style="padding:16px;display:flex;flex-direction:column;gap:14px" id="import-body">
 

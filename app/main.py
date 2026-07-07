@@ -115,6 +115,7 @@ def _migrate():
         for col, definition in [
             ("lunch_enabled", "BOOLEAN NOT NULL DEFAULT 0"),
             ("multi_dish_enabled", "BOOLEAN NOT NULL DEFAULT 0"),
+            ("freemium_enabled", "BOOLEAN NOT NULL DEFAULT 0"),
         ]:
             try:
                 conn.execute(text(f"ALTER TABLE settings ADD COLUMN {col} {definition}"))
@@ -149,6 +150,9 @@ def _migrate():
             ("oauth_provider", "TEXT"),
             ("oauth_sub", "TEXT"),
             ("token_version", "INTEGER NOT NULL DEFAULT 0"),
+            ("is_premium", "BOOLEAN NOT NULL DEFAULT 0"),
+            ("import_count", "INTEGER NOT NULL DEFAULT 0"),
+            ("import_month", "TEXT"),
         ]:
             try:
                 conn.execute(text(f"ALTER TABLE member ADD COLUMN {col} {definition}"))

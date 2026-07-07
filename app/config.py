@@ -9,6 +9,9 @@ class Settings(BaseSettings):
     port: int = 8000
     secret_key: str = "dev-secret-key-change-in-production"
 
+    # Freemium : nombre d'imports de recettes gratuits par mois et par membre
+    import_free_limit: int = 3
+
     # Google OAuth (optionnel)
     google_client_id: str = ""
     google_client_secret: str = ""

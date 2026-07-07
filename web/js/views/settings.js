@@ -158,12 +158,62 @@ export async function renderSettings(root) {
   };
   sec1Body.appendChild(saveBtn);
 
+  // ── Section freemium (propriétaire uniquement) ──
+  if (state.isOwner) {
+    const { sec: secF, body: secFBody } = makeSection("💎 Freemium", "freemium", {
+      badge: sett.freemium_enabled ? "actif" : "inactif",
+    });
+    const info = document.createElement("div");
+    info.className = "text-muted";
+    info.style.cssText = "font-size:12.5px;line-height:1.5;padding:6px 0 4px";
+    info.textContent = "Quand le freemium est actif : « Remplir la semaine » est réservé aux membres premium, et l'import de recettes est limité à quelques imports gratuits par mois (illimité en premium). Vous accordez le premium membre par membre dans « Membres du foyer » — à tout moment, même freemium coupé. Le propriétaire garde toujours tous les accès.";
+    secFBody.appendChild(info);
+
+    const fRow = document.createElement("div");
+    fRow.className = "settings-row";
+    fRow.innerHTML = `
+      <label>Freemium activé</label>
+      <label class="toggle">
+        <input type="checkbox" id="freemium-toggle" ${sett.freemium_enabled ? "checked" : ""} />
+        <span class="toggle-slider"></span>
+      </label>`;
+    secFBody.appendChild(fRow);
+    fRow.querySelector("#freemium-toggle").onchange = async (e) => {
+      try {
+        await api.putSettings({ freemium_enabled: e.target.checked });
+        showToast(e.target.checked ? "💎 Freemium activé" : "Freemium désactivé");
+        renderSettings(root);
+      } catch (err) {
+        e.target.checked = !e.target.checked;
+        showToast(err.message, "error");
+      }
+    };
+    body.appendChild(secF);
+  }
+
   // ── Section membres ──
   const { sec: sec2, body: sec2Body } = makeSection("👥 Membres du foyer", "membres", { badge: String(members.length) });
   for (const m of members) {
     const row = document.createElement("div");
     row.className = "settings-row";
-    row.innerHTML = `<span class="member-dot" style="background:${escapeHtml(m.color)}"></span><span style="flex:1">${escapeHtml(m.name)}</span>${m.is_owner ? '<span style="font-size:11px;color:#888">Propriétaire</span>' : ""}`;
+    row.innerHTML = `<span class="member-dot" style="background:${escapeHtml(m.color)}"></span><span style="flex:1">${escapeHtml(m.name)}${!m.is_owner && m.is_premium ? ' <span title="Membre premium">💎</span>' : ""}</span>${m.is_owner ? '<span style="font-size:11px;color:#888">Propriétaire</span>' : ""}`;
+    if (state.isOwner && !m.is_owner) {
+      // Autorisation premium du membre — accordable à tout moment, même freemium
+      // désactivé (le compte garde alors tous les accès si vous l'activez plus tard)
+      const premBtn = document.createElement("button");
+      premBtn.className = "btn btn-sm " + (m.is_premium ? "btn-primary" : "btn-ghost");
+      premBtn.style.cssText = "font-size:11px;padding:4px 10px";
+      premBtn.textContent = m.is_premium ? "💎 Premium" : "Passer premium";
+      premBtn.title = m.is_premium ? "Retirer l'accès premium" : "Accorder l'accès premium";
+      premBtn.onclick = async () => {
+        try {
+          await api.setMemberPremium(m.id, !m.is_premium);
+          showToast(m.is_premium ? `Premium retiré à ${m.name}` : `💎 ${m.name} est maintenant premium`);
+          renderSettings(root);
+        } catch (err) { showToast(err.message, "error"); }
+      };
+      row.appendChild(premBtn);
+    }
     if (state.isOwner && !m.is_owner) {
       const delBtn = document.createElement("button");
       delBtn.textContent = "🗑";

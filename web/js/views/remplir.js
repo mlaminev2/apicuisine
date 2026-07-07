@@ -1,7 +1,7 @@
 import { api } from "../api.js";
 import { state } from "../state.js";
 import { showToast } from "../components/toast.js";
-import { CAT_LABELS, DAYS_FR, toIsoDate, today, isoWeekOf, escapeHtml } from "../utils.js";
+import { CAT_LABELS, DAYS_FR, toIsoDate, today, isoWeekOf, escapeHtml, renderPaywall } from "../utils.js";
 
 const THEMES = ["pomme_de_terre", "riz", "pates", "autre", "africain"];
 
@@ -11,6 +11,12 @@ let selectedThemes = new Set(THEMES);
 let proposals = [];   // { iso, dow, dish } | { iso, dow, dish: null }
 
 export async function renderRemplir(root) {
+  // Fonctionnalité premium quand le freemium est actif
+  try {
+    const access = await api.getAccess();
+    if (!access.premium_active) { renderPaywall(root, "Remplir la semaine"); return; }
+  } catch {}
+
   proposals = [];
   root.innerHTML = `
     <div class="page-header">

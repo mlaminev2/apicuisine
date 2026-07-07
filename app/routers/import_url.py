@@ -14,9 +14,11 @@ from sqlmodel import Session, select
 from pydantic import BaseModel, Field
 from app.db import get_session
 from app.models import Household, Dish, ShoppingList
-from app.auth import get_current_household
+from app.auth import check_import_quota, consume_import_quota, get_current_household, get_current_member
+from app.models import Member
 
-router = APIRouter(prefix="/api", tags=["import"])
+# Import de recettes : illimite en premium, sinon quota mensuel gratuit
+router = APIRouter(prefix="/api", tags=["import"], dependencies=[Depends(check_import_quota)])
 
 YOUTUBE_OEMBED = "https://www.youtube.com/oembed?url={url}&format=json"
 TIKTOK_OEMBED = "https://www.tiktok.com/oembed?url={url}"
@@ -911,6 +913,7 @@ def extract_text_endpoint(
 def save_import(
     body: SaveImportRequest,
     household: Household = Depends(get_current_household),
+    member: Member = Depends(get_current_member),
     session: Session = Depends(get_session),
 ):
     if body.category not in _VALID_CATEGORIES:
@@ -931,6 +934,7 @@ def save_import(
     session.add(dish)
     session.commit()
     session.refresh(dish)
+    consume_import_quota(member, session)
 
     items_added = 0
     if body.shopping_items:

@@ -126,4 +126,27 @@ export function mergeShoppingItems(existing, newItems) {
   return result;
 }
 
+/**
+ * Écran « fonctionnalité premium » affiché quand le freemium est actif
+ * et que le membre n'a pas reçu d'autorisation premium du propriétaire.
+ */
+export function renderPaywall(root, featureLabel, message = null) {
+  const defaultMsg = `Cette fonctionnalité est réservée aux membres <strong>premium</strong>.<br>
+        Demandez au propriétaire du foyer de vous accorder l'accès<br>
+        (Réglages → Membres du foyer → « Passer premium »).`;
+  root.innerHTML = `
+    <div class="page-header">
+      <button id="paywall-back" aria-label="Retour">‹</button>
+      <h1>Fonctionnalité premium</h1>
+    </div>
+    <div style="max-width:420px;margin:24px auto;padding:0 16px;text-align:center">
+      <div style="font-size:52px;margin-bottom:12px">💎</div>
+      <div style="font-family:var(--font-display);font-weight:800;font-size:20px;margin-bottom:8px">${featureLabel}</div>
+      <div style="font-size:14px;color:var(--muted-2);line-height:1.55">${message || defaultMsg}</div>
+      <button class="btn btn-primary btn-full" id="paywall-home" style="margin-top:20px;max-width:240px;margin-left:auto;margin-right:auto">Retour à l'accueil</button>
+    </div>`;
+  root.querySelector("#paywall-back").onclick = () => { history.back(); };
+  root.querySelector("#paywall-home").onclick = () => { location.hash = "#/accueil"; };
+}
+
 window._utils = { isoWeekOf, monthGrid, toIsoDate, today, el, mergeShoppingItems };

@@ -1,5 +1,6 @@
 from datetime import datetime, date, timezone
 from typing import Optional
+from sqlalchemy import Text
 from sqlmodel import Field, SQLModel, UniqueConstraint
 
 
@@ -26,6 +27,9 @@ class Member(SQLModel, table=True):
     email: Optional[str] = Field(default=None, unique=True, index=True)
     password_hash: Optional[str] = Field(default=None)
     is_owner: bool = Field(default=False)
+    is_premium: bool = Field(default=False)  # accès premium accordé par le propriétaire
+    import_count: int = Field(default=0)               # imports consommés sur le mois courant
+    import_month: Optional[str] = Field(default=None)  # mois du compteur, format "YYYY-MM"
     oauth_provider: Optional[str] = Field(default=None)   # "google" | "apple"
     oauth_sub: Optional[str] = Field(default=None)        # identifiant unique chez le provider
     token_version: int = Field(default=0)  # incrémenté pour révoquer tous les tokens émis
@@ -41,10 +45,10 @@ class Dish(SQLModel, table=True):
     source_tag: Optional[str] = Field(default=None)
     seed_order: int = Field(default=0)
     active: bool = Field(default=True)
-    ingredients: str = Field(default="[]")
-    instructions: str = Field(default="[]")
-    source_url: Optional[str] = Field(default=None)
-    thumbnail_url: Optional[str] = Field(default=None)
+    ingredients: str = Field(default="[]", sa_type=Text)
+    instructions: str = Field(default="[]", sa_type=Text)
+    source_url: Optional[str] = Field(default=None, sa_type=Text)
+    thumbnail_url: Optional[str] = Field(default=None, sa_type=Text)
     author: Optional[str] = Field(default=None)
     created_at: datetime = Field(default_factory=_utcnow)
 
@@ -76,10 +80,10 @@ class PlanEntry(SQLModel, table=True):
     main_dish_id: Optional[int] = Field(default=None, foreign_key="dish.id")
     dessert_dish_id: Optional[int] = Field(default=None, foreign_key="dish.id")
     entree_dish_id: Optional[int] = Field(default=None, foreign_key="dish.id")
-    free_text: Optional[str] = Field(default=None)
+    free_text: Optional[str] = Field(default=None, sa_type=Text)
     lunch_dish_id: Optional[int] = Field(default=None, foreign_key="dish.id")
-    lunch_free_text: Optional[str] = Field(default=None)
-    extra_dishes: str = Field(default="[]")  # ids JSON des plats supplémentaires du soir
+    lunch_free_text: Optional[str] = Field(default=None, sa_type=Text)
+    extra_dishes: str = Field(default="[]", sa_type=Text)  # ids JSON des plats supplémentaires du soir
     planned_by: Optional[int] = Field(default=None, foreign_key="member.id")
     cooked: bool = Field(default=False)
     cooked_by: Optional[int] = Field(default=None, foreign_key="member.id")
@@ -94,7 +98,7 @@ class ShoppingList(SQLModel, table=True):
     household_id: int = Field(foreign_key="household.id")
     iso_year: int
     iso_week: int
-    items: str = Field(default="[]")
+    items: str = Field(default="[]", sa_type=Text)
     updated_at: datetime = Field(default_factory=_utcnow)
 
 
@@ -102,9 +106,11 @@ class Settings(SQLModel, table=True):
     __tablename__ = "settings"
     household_id: int = Field(foreign_key="household.id", primary_key=True)
     weekday_category_map: str = Field(
-        default='{"0":"pomme_de_terre","1":"riz","2":"pates","3":"pomme_de_terre","4":"riz","5":"autre","6":"africain"}'
+        default='{"0":"pomme_de_terre","1":"riz","2":"pates","3":"pomme_de_terre","4":"riz","5":"autre","6":"africain"}',
+        sa_type=Text,
     )
     dessert_enabled: bool = Field(default=True)
     lunch_enabled: bool = Field(default=False)
     multi_dish_enabled: bool = Field(default=False)
+    freemium_enabled: bool = Field(default=False)
     updated_at: datetime = Field(default_factory=_utcnow)

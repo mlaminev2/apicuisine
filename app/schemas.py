@@ -37,7 +37,21 @@ class MemberRead(BaseModel):
     color: str
     email: str
     is_owner: bool
+    is_premium: bool = False
     created_at: datetime
+
+
+class MemberPremiumUpdate(BaseModel):
+    is_premium: bool
+
+
+class AccessRead(BaseModel):
+    freemium_enabled: bool
+    is_owner: bool
+    is_premium: bool
+    premium_active: bool  # le membre courant a-t-il accès aux fonctions premium ?
+    import_limit: Optional[int] = None      # null = illimité
+    imports_remaining: Optional[int] = None  # null = illimité
 
 
 class InviteRead(BaseModel):
@@ -189,6 +203,7 @@ class SettingsRead(BaseModel):
     dessert_enabled: bool
     lunch_enabled: bool
     multi_dish_enabled: bool
+    freemium_enabled: bool
 
 
 class SettingsUpdate(BaseModel):
@@ -196,3 +211,4 @@ class SettingsUpdate(BaseModel):
     dessert_enabled: Optional[bool] = None
     lunch_enabled: Optional[bool] = None
     multi_dish_enabled: Optional[bool] = None
+    freemium_enabled: Optional[bool] = None
