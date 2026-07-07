@@ -1,3 +1,4 @@
+import re as _re
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
@@ -50,19 +51,37 @@ def get_or_seed_categories(household_id: int, session: Session) -> list[Shopping
     return list(cats)
 
 
-def resolve_category_id(text: str, household_id: int, session: Session) -> Optional[int]:
-    """Return category_id for an ingredient text; auto-seeds categories if needed."""
-    # Strip quantity suffix: "poulet — 500g" → use "poulet" as the stable key
+def _ingredient_key(text: str) -> str:
+    """Clé stable d'un ingrédient : sans quantité, minuscules, sans émojis."""
     name_part = text.split(" — ")[0].strip() if " — " in text else text
     key = name_part.lower().strip()
-    mapping = session.exec(
-        select(IngredientMap).where(
-            IngredientMap.household_id == household_id,
-            IngredientMap.ingredient_key == key,
-        )
-    ).first()
-    if mapping:
-        return mapping.category_id
+    # retire émojis et symboles (« pain 🥖 » et « Pain » doivent partager la même clé)
+    key = _re.sub(r"[^\w\sàâäéèêëîïôöùûüç'’-]", "", key, flags=_re.UNICODE)
+    return _re.sub(r"\s+", " ", key).strip()
+
+
+def lookup_mapped_category(text: str, household_id: int, session: Session) -> Optional[int]:
+    """Catégorie explicitement assignée à cet ingrédient, s'il y en a une.
+    Cherche la clé normalisée puis, pour compatibilité, la clé historique brute."""
+    raw_key = (text.split(" — ")[0] if " — " in text else text).lower().strip()
+    for key in dict.fromkeys([_ingredient_key(text), raw_key]):
+        mapping = session.exec(
+            select(IngredientMap).where(
+                IngredientMap.household_id == household_id,
+                IngredientMap.ingredient_key == key,
+            )
+        ).first()
+        if mapping:
+            return mapping.category_id
+    return None
+
+
+def resolve_category_id(text: str, household_id: int, session: Session) -> Optional[int]:
+    """Return category_id for an ingredient text; auto-seeds categories if needed."""
+    mapped = lookup_mapped_category(text, household_id, session)
+    if mapped is not None:
+        return mapped
+    key = _ingredient_key(text)
 
     cats = get_or_seed_categories(household_id, session)
     type_key = guess_type_key(text)
@@ -198,7 +217,7 @@ def upsert_ingredient_map(
     household: Household = Depends(get_current_household),
     session: Session = Depends(get_session),
 ):
-    key = body.ingredient_key.lower().strip()
+    key = _ingredient_key(body.ingredient_key)
     entry = session.exec(
         select(IngredientMap).where(
             IngredientMap.household_id == household.id,

@@ -6,7 +6,7 @@ from app.db import get_session
 from app.models import Household, ShoppingList
 from app.auth import get_current_household
 from app.schemas import ShoppingListRead, ShoppingListUpdate, ShoppingItem, ShoppingWeekSummary
-from app.routers.categories import resolve_category_id
+from app.routers.categories import lookup_mapped_category, resolve_category_id
 
 router = APIRouter(prefix="/api", tags=["shopping"])
 
@@ -95,7 +95,12 @@ def upsert_shopping(
     enriched = []
     for item in body.items:
         d = item.model_dump()
-        if d.get("category_id") is None:
+        # La catégorie assignée par l'utilisateur (pastille) fait foi, même si
+        # l'article existant portait une vieille catégorie devinée.
+        mapped = lookup_mapped_category(item.text, household.id, session)
+        if mapped is not None:
+            d["category_id"] = mapped
+        elif d.get("category_id") is None:
             d["category_id"] = resolve_category_id(item.text, household.id, session)
         enriched.append(d)
     sl.items = json.dumps(enriched)
