@@ -229,86 +229,97 @@ a { color: inherit; text-decoration: none; }
 .btn-week-clear { background: #9a4f3c; }
 .btn-week-shop:disabled { opacity: .5; }
 
-/* ── Accueil — dashboard Bento ── */
-.bento-head { padding: 18px 20px 12px; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
-.bento-kicker { font-size: 12.5px; font-weight: 700; letter-spacing: .08em; color: var(--muted); text-transform: uppercase; }
-.bento-title { font-family: var(--font-display); font-weight: 800; font-size: 25px; line-height: 1.04; margin-top: 4px; letter-spacing: -0.01em; text-transform: capitalize; }
-.bento-settings {
+/* ── Accueil « Cocotte » (design 1a) ── */
+.home2 { display: flex; flex-direction: column; max-width: 560px; margin: 0 auto; width: 100%; }
+.home2-header { padding: 20px 20px 10px; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.home2-kicker { font-size: 12.5px; font-weight: 700; letter-spacing: .08em; color: var(--muted); text-transform: uppercase; }
+.home2-date {
+  font-family: var(--font-display); font-weight: 800; font-size: 27px; line-height: 1.04;
+  margin-top: 5px; letter-spacing: -0.01em; text-transform: capitalize;
+}
+.home2-settings {
   width: 46px; height: 46px; border-radius: 15px; background: var(--cream-deep);
   display: flex; align-items: center; justify-content: center; color: var(--ink-soft); flex-shrink: 0;
 }
-.bento-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 4px 16px 16px; max-width: 560px; margin: 0 auto; width: 100%; }
+#home2-body { display: flex; flex-direction: column; padding-bottom: 8px; }
 
-/* Héro « aujourd'hui » */
-.bento-hero {
-  grid-column: span 2; position: relative; height: 184px;
-  border-radius: var(--radius-lg); overflow: hidden; cursor: pointer;
-  background: repeating-linear-gradient(135deg, #E7D3C0 0 12px, #EAD9C8 12px 24px);
+/* Héro : grande photo du plat du jour */
+.home2-hero {
+  margin: 8px 16px 0; border-radius: 26px; overflow: hidden; background: #fff;
+  border: 1px solid var(--line); box-shadow: 0 22px 44px -24px rgba(120,70,40,.5);
 }
-.bento-hero-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-.bento-hero-grad { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,0) 34%, rgba(30,16,8,.74) 100%); }
-.bento-hero-arrow {
-  position: absolute; top: 12px; right: 12px; width: 38px; height: 38px; border-radius: 50%;
-  background: rgba(255,255,255,.92); display: flex; align-items: center; justify-content: center; color: var(--terra);
-}
-.bento-hero-body { position: absolute; left: 15px; right: 15px; bottom: 14px; color: #fff; }
-.bento-pill {
-  display: inline-block; font-size: 10.5px; font-weight: 800; letter-spacing: .08em;
+.home2-hero-photo { position: relative; height: 198px; background-size: cover; background-position: center; }
+.home2-hero-grad { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,0) 40%, rgba(30,16,8,.72) 100%); }
+.home2-hero-photo.empty { display: flex; align-items: flex-end; }
+.home2-hero-body { position: absolute; left: 16px; right: 16px; bottom: 14px; color: #fff; }
+.home2-hero-photo.empty .home2-hero-body { position: static; padding: 16px; color: var(--ink); }
+.home2-hero-pill {
+  display: inline-block; font-size: 10.5px; font-weight: 800; letter-spacing: .09em;
   text-transform: uppercase; background: var(--terra); color: #fff; padding: 4px 9px; border-radius: 999px;
 }
-.bento-hero-title { font-family: var(--font-display); font-weight: 800; font-size: 24px; line-height: 1.08; margin-top: 8px; }
-.bento-hero-sub { font-size: 12px; opacity: .9; margin-top: 2px; font-weight: 600; }
-.bento-hero.empty { background: var(--cream-dashed); border: 1.5px dashed #d8c4b0; }
-.bento-hero.empty .bento-hero-grad { display: none; }
-.bento-hero-empty-body { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; color: var(--muted); }
-.bento-hero-empty-body .bento-hero-cta { background: var(--terra); color: #fff; font-weight: 700; font-size: 13px; padding: 9px 16px; border-radius: 999px; }
+.home2-hero-title { font-family: var(--font-display); font-weight: 800; font-size: 24px; line-height: 1.08; margin-top: 9px; }
+.home2-hero-meta { font-size: 12.5px; opacity: .92; margin-top: 3px; font-weight: 600; }
+.home2-hero-actions { display: flex; gap: 10px; padding: 12px; }
+.home2-hero-cta { flex: 1; border: none; background: var(--terra); color: #fff; font-weight: 700; font-size: 15px; padding: 13px; border-radius: 14px; }
+.home2-hero-cta:active { transform: scale(.98); }
+.home2-hero-swap {
+  width: 52px; border: 1px solid var(--line-strong); background: var(--cream); border-radius: 14px;
+  color: var(--ink-soft); display: flex; align-items: center; justify-content: center;
+}
 
-/* Tuiles bento */
-.bento-card {
-  background: #fff; border: 1px solid var(--line); border-radius: var(--radius-lg);
-  padding: 15px; height: 134px; display: flex; flex-direction: column; justify-content: space-between;
-  cursor: pointer; text-align: left;
-  transition: transform var(--t-fast) var(--ease-out), box-shadow var(--t-fast);
-}
-.bento-card:active { transform: scale(.97); }
-.bento-card.tinted { background: var(--terra-soft); border-color: rgba(196,99,60,.18); }
-.bento-card.solid { background: var(--terra); border-color: var(--terra); color: #fff; }
-.bento-card.span2 { grid-column: span 2; height: auto; }
-.bento-card-top { display: flex; align-items: center; justify-content: space-between; }
-.bento-icon {
-  width: 40px; height: 40px; border-radius: 12px; background: var(--cream-deep);
-  display: flex; align-items: center; justify-content: center; color: var(--terra);
-}
-.bento-card.tinted .bento-icon { background: #fff; }
-.bento-count { font-size: 11px; font-weight: 800; color: #fff; background: var(--terra); padding: 3px 9px; border-radius: 999px; }
-.bento-card-name { font-weight: 800; font-size: 16px; }
-.bento-card-sub { font-size: 12px; color: var(--muted); font-weight: 600; }
-.bento-card.tinted .bento-card-sub { color: #b07048; }
-.bento-card.solid .bento-card-sub { color: rgba(255,255,255,.85); }
+/* En-tête de section */
+.home2-section-head { display: flex; align-items: center; justify-content: space-between; padding: 22px 20px 10px; }
+.home2-section-title { font-family: var(--font-display); font-weight: 700; font-size: 18px; }
+.home2-section-link { font-size: 13px; font-weight: 700; color: var(--terra); display: flex; align-items: center; gap: 2px; }
 
-/* Rangée « Cette semaine » */
-.bento-week-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
-.bento-week-head .bento-week-label { font-weight: 700; font-size: 14px; }
-.bento-week-head .bento-week-link { font-size: 12.5px; font-weight: 700; color: var(--terra); }
-.bento-days { display: flex; justify-content: space-between; }
-.bento-day { display: flex; flex-direction: column; align-items: center; gap: 6px; }
-.bento-day-label { font-size: 10px; color: var(--muted); font-weight: 600; }
-.bento-day.today .bento-day-label { color: var(--terra); font-weight: 800; }
-.bento-day-num {
-  width: 32px; height: 32px; border-radius: 50%; background: var(--cream-deep);
-  display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700;
+/* Carrousel « Cette semaine » */
+.week-scroll { display: flex; gap: 11px; overflow-x: auto; padding: 2px 16px 4px; -webkit-overflow-scrolling: touch; }
+.week-daycard {
+  flex: 0 0 118px; background: #fff; border: 1px solid var(--line); border-radius: 18px;
+  padding: 10px; text-align: left; cursor: pointer;
+  transition: transform var(--t-fast) var(--ease-out);
 }
-.bento-day.filled .bento-day-num { background: #EAD9C8; }
-.bento-day.today .bento-day-num { background: var(--terra); color: #fff; font-weight: 800; }
-.bento-day.future .bento-day-num { background: var(--cream-dashed); border: 1.5px dashed #d8c4b0; color: #b0a394; }
+.week-daycard:active { transform: scale(.97); }
+.week-daycard.today { background: var(--terra-soft); border: 2px solid var(--terra); padding: 9px; }
+.week-daycard-head { display: flex; align-items: baseline; justify-content: space-between; }
+.week-daycard-day { font-weight: 800; font-size: 12px; letter-spacing: .05em; }
+.week-daycard.today .week-daycard-day { color: var(--terra); }
+.week-daycard-date { font-size: 12px; color: var(--muted); }
+.week-daycard-auj { font-size: 10px; font-weight: 800; color: #fff; background: var(--terra); padding: 2px 6px; border-radius: 999px; }
+.week-daycard-cat { font-size: 11px; color: var(--muted); margin: 1px 0 8px; }
+.week-daycard.today .week-daycard-cat { color: #b07048; }
+.week-daycard-thumb { height: 54px; border-radius: 11px; background-size: cover; background-position: center; }
+.week-daycard-name { font-size: 12px; font-weight: 600; margin-top: 8px; line-height: 1.15; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.week-daycard.today .week-daycard-name { font-weight: 700; }
 
-/* Pile de vignettes (Mes plats) */
-.bento-stack { display: flex; }
-.bento-stack .stack-thumb {
-  width: 34px; height: 34px; border-radius: 9px; border: 2px solid #fff; object-fit: cover;
-  background: repeating-linear-gradient(135deg, #E7D3C0 0 8px, #EAD9C8 8px 16px);
+/* Bandeau « Remplir la semaine » */
+.home2-fill {
+  display: flex; align-items: center; gap: 13px; background: var(--terra); color: #fff;
+  border-radius: 18px; padding: 15px 16px; margin: 20px 16px 0; text-align: left; width: calc(100% - 32px);
 }
-.bento-stack .stack-thumb + .stack-thumb { margin-left: -12px; }
+.home2-fill:active { transform: scale(.99); }
+.home2-fill-txt { flex: 1; }
+.home2-fill-title { font-weight: 700; font-size: 15px; }
+.home2-fill-sub { font-size: 12px; opacity: .85; margin-top: 1px; }
+
+/* Duo Courses / Importer */
+.home2-duo { display: flex; gap: 11px; margin: 11px 16px 0; }
+.home2-tile { flex: 1; background: #fff; border: 1px solid var(--line); border-radius: 18px; padding: 14px; text-align: left; cursor: pointer; }
+.home2-tile:active { transform: scale(.97); }
+.home2-tile-icon { position: relative; width: 38px; height: 38px; border-radius: 11px; background: var(--cream-deep); display: flex; align-items: center; justify-content: center; color: var(--terra); }
+.home2-tile-badge { position: absolute; top: -6px; right: -6px; font-size: 11px; font-weight: 800; color: #fff; background: var(--terra); border-radius: 999px; padding: 1px 7px; }
+.home2-tile-name { font-weight: 700; font-size: 14px; margin-top: 10px; }
+.home2-tile-sub { font-size: 12px; color: var(--muted); }
+
+/* Mes plats */
+.home2-plats { display: flex; align-items: center; gap: 13px; background: #fff; border: 1px solid var(--line); border-radius: 18px; padding: 12px; margin: 14px 16px 6px; text-align: left; cursor: pointer; width: calc(100% - 32px); }
+.home2-plats:active { transform: scale(.99); }
+.home2-stack { display: flex; }
+.home2-stack-thumb { width: 38px; height: 38px; border-radius: 10px; border: 2px solid #fff; background-size: cover; background-position: center; }
+.home2-stack-thumb + .home2-stack-thumb { margin-left: -14px; }
+.home2-plats-txt { flex: 1; }
+.home2-plats-title { font-weight: 700; font-size: 15px; }
+.home2-plats-sub { font-size: 12px; color: var(--muted); }
 
 /* ── Boutons génériques ── */
 .btn {
