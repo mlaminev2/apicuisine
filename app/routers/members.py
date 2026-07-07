@@ -7,6 +7,7 @@ from app.auth import (
     get_current_member,
     get_current_owner,
     import_quota_state,
+    is_super_admin,
     member_has_premium,
 )
 from app.config import settings as app_config
@@ -37,6 +38,7 @@ def my_access(
         is_owner=member.is_owner,
         is_premium=getattr(member, "is_premium", False),
         premium_active=member_has_premium(member, session),
+        is_admin=is_super_admin(member),
         import_limit=None if unlimited else app_config.import_free_limit,
         imports_remaining=None if unlimited else remaining,
     )

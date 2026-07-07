@@ -38,3 +38,25 @@ def test_admin_backups_owner_only(client, household, auth_headers, member_header
     res = client.get("/api/admin/backups", headers=auth_headers)
     assert res.status_code == 200
     assert "backups" in res.json()
+
+
+@pytest.fixture(name="super_admin_email")
+def super_admin_email_fixture():
+    """Restreint l'espace admin à un email précis, puis restaure."""
+    from app.config import settings as app_config
+    previous = app_config.super_admin_email
+    app_config.super_admin_email = "membre-admin@test.local"
+    yield
+    app_config.super_admin_email = previous
+
+
+def test_super_admin_email_overrides_owner(client, household, auth_headers, member_headers, super_admin_email):
+    # Le propriétaire n'a PAS le bon email → refusé
+    res = client.get("/api/admin/stats", headers=auth_headers)
+    assert res.status_code == 403
+    assert client.get("/api/access", headers=auth_headers).json()["is_admin"] is False
+
+    # Le compte avec l'email configuré (même simple membre) → accès admin
+    res = client.get("/api/admin/stats", headers=member_headers)
+    assert res.status_code == 200
+    assert client.get("/api/access", headers=member_headers).json()["is_admin"] is True

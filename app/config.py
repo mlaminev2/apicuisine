@@ -12,6 +12,10 @@ class Settings(BaseSettings):
     # Freemium : nombre d'imports de recettes gratuits par mois et par membre
     import_free_limit: int = 3
 
+    # Espace admin : si defini, seul ce compte email y a acces
+    # (sinon, le proprietaire du foyer)
+    super_admin_email: str = ""
+
     # Google OAuth (optionnel)
     google_client_id: str = ""
     google_client_secret: str = ""

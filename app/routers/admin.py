@@ -4,12 +4,12 @@ from pathlib import Path
 from fastapi import APIRouter, Depends
 from sqlmodel import Session, func, select
 
-from app.auth import get_current_owner
+from app.auth import get_current_admin
 from app.config import settings as app_config
 from app.db import get_session
 from app.models import Dish, Member, PlanEntry, Settings, ShoppingList
 
-router = APIRouter(prefix="/api/admin", tags=["admin"], dependencies=[Depends(get_current_owner)])
+router = APIRouter(prefix="/api/admin", tags=["admin"], dependencies=[Depends(get_current_admin)])
 
 
 def _month_bounds(today: date) -> tuple[date, date]:
@@ -21,7 +21,7 @@ def _month_bounds(today: date) -> tuple[date, date]:
 
 @router.get("/stats")
 def admin_stats(
-    owner: Member = Depends(get_current_owner),
+    owner: Member = Depends(get_current_admin),
     session: Session = Depends(get_session),
 ):
     """Tableau de bord du propriétaire : usage du foyer et des membres."""
@@ -96,7 +96,7 @@ def admin_stats(
 
 
 @router.get("/backups")
-def admin_backups(owner: Member = Depends(get_current_owner)):
+def admin_backups(owner: Member = Depends(get_current_admin)):
     """Liste les sauvegardes quotidiennes de la base (SQLite uniquement)."""
     url = app_config.database_url
     if not url.startswith("sqlite:///"):

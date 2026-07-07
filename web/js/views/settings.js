@@ -56,14 +56,6 @@ export async function renderSettings(root) {
       <div class="settings-profile-name">${escapeHtml(state.memberName || "Membre")}</div>
       <div class="settings-profile-sub" id="profile-sub">${state.isOwner ? "Propriétaire du foyer" : "Membre du foyer"}</div>
     </div>`;
-  if (state.isOwner) {
-    const adminBtn = document.createElement("button");
-    adminBtn.className = "btn btn-ghost btn-sm";
-    adminBtn.style.cssText = "font-size:12px;flex-shrink:0";
-    adminBtn.textContent = "🛠 Espace admin";
-    adminBtn.onclick = () => { location.hash = "#/admin"; };
-    profile.appendChild(adminBtn);
-  }
   body.appendChild(profile);
 
   // Bouton déconnexion rendu immédiatement — toujours visible même si l'API échoue
@@ -76,13 +68,13 @@ export async function renderSettings(root) {
   secLogout.appendChild(logoutBtn);
   body.appendChild(secLogout);
 
-  let sett, members, invite = null;
+  let sett, members, access = null, invite = null;
   try {
-    const promises = [api.getSettings(), api.getMembers()];
+    const promises = [api.getSettings(), api.getMembers(), api.getAccess()];
     if (state.isOwner) promises.push(api.getInvite());
     const results = await Promise.all(promises);
-    [sett, members] = results;
-    if (state.isOwner) invite = results[2];
+    [sett, members, access] = results;
+    if (state.isOwner) invite = results[3];
   } catch (err) {
     body.insertAdjacentHTML("afterbegin", `<div class="text-muted" style="margin-bottom:16px">${err.message}</div>`);
     return;
@@ -90,6 +82,15 @@ export async function renderSettings(root) {
   const profileSub = document.getElementById("profile-sub");
   if (profileSub && members?.length) {
     profileSub.textContent = `Foyer de ${members.length} membre${members.length > 1 ? "s" : ""}${state.isOwner ? " · propriétaire" : ""}`;
+  }
+  // Espace admin : réservé au super administrateur (SUPER_ADMIN_EMAIL côté serveur)
+  if (access?.is_admin) {
+    const adminBtn = document.createElement("button");
+    adminBtn.className = "btn btn-ghost btn-sm";
+    adminBtn.style.cssText = "font-size:12px;flex-shrink:0";
+    adminBtn.textContent = "🛠 Espace admin";
+    adminBtn.onclick = () => { location.hash = "#/admin"; };
+    profile.appendChild(adminBtn);
   }
 
   // ── Section roulement ──

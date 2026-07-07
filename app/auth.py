@@ -137,6 +137,26 @@ def require_premium(
     return member
 
 
+def is_super_admin(member: Member) -> bool:
+    """L'espace admin est reserve a l'email SUPER_ADMIN_EMAIL s'il est defini,
+    sinon au proprietaire du foyer."""
+    admin_email = (settings.super_admin_email or "").strip().lower()
+    if admin_email:
+        return (member.email or "").strip().lower() == admin_email
+    return bool(member.is_owner)
+
+
+def get_current_admin(
+    member: Member = Depends(get_current_member),
+) -> Member:
+    if not is_super_admin(member):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Réservé au super administrateur",
+        )
+    return member
+
+
 # ── Quota d'imports gratuits (freemium actif, membre non premium) ─────────────
 
 def _quota_month() -> str:

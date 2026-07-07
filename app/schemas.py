@@ -50,6 +50,7 @@ class AccessRead(BaseModel):
     is_owner: bool
     is_premium: bool
     premium_active: bool  # le membre courant a-t-il accès aux fonctions premium ?
+    is_admin: bool = False  # accès à l'espace admin (super admin)
     import_limit: Optional[int] = None      # null = illimité
     imports_remaining: Optional[int] = None  # null = illimité
 
