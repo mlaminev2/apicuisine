@@ -133,7 +133,7 @@ function makePlatCard(dish, index) {
 
 // ── Modal plat ────────────────────────────────────────────────────────────────
 
-function openDishModal(dish) {
+export function openDishModal(dish) {
   const root = document.getElementById("modal-root");
   const overlay = document.createElement("div");
   overlay.className = "modal-overlay";

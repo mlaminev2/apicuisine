@@ -1,5 +1,6 @@
 import { api } from "../api.js";
 import { state } from "../state.js";
+import { openDishModal } from "./base.js";
 import { CAT_LABELS, toIsoDate, today, isoWeekOf, escapeHtml } from "../utils.js";
 
 const DAYS_ABBR = ["LUN", "MAR", "MER", "JEU", "VEN", "SAM", "DIM"];
@@ -113,7 +114,11 @@ export async function renderHome(root) {
       </div>`;
   }
   body.appendChild(hero);
-  hero.querySelector("#hero-view").onclick = () => { location.hash = "#/calendrier"; };
+  hero.querySelector("#hero-view").onclick = () => {
+    // Ouvre directement la recette du plat du soir ; sinon renvoie au calendrier
+    if (entry?.main_dish) openDishModal(entry.main_dish);
+    else location.hash = "#/calendrier";
+  };
   const swap = hero.querySelector("#hero-swap");
   if (swap) swap.onclick = () => { location.hash = "#/calendrier"; };
 
