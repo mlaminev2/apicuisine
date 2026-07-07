@@ -6,7 +6,7 @@ let sortAsc = true;
 let filterCat = "";
 let data = [];
 
-const CATEGORIES = ["", "pomme_de_terre", "riz", "pates", "entree", "autre", "sucree", "africain"];
+const CATEGORIES = ["", "pomme_de_terre", "riz", "pates", "entree", "autre", "sucree", "africain", "apero", "sauce"];
 
 export async function renderTracking(root) {
   root.innerHTML = `

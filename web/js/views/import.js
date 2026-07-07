@@ -2,7 +2,7 @@ import { api } from "../api.js";
 import { showToast } from "../components/toast.js";
 import { CAT_LABELS, isoWeekOf, escapeHtml, renderPaywall } from "../utils.js";
 
-const CATEGORIES = ["pomme_de_terre", "riz", "pates", "entree", "autre", "sucree", "africain"];
+const CATEGORIES = ["pomme_de_terre", "riz", "pates", "entree", "autre", "sucree", "africain", "apero", "sauce"];
 
 export async function renderImport(root) {
   // Freemium : import limité par mois pour les membres gratuits, illimité en premium

@@ -42,6 +42,8 @@
   --cat-autre: #C4633C;
   --cat-sucree: #C77BA0;
   --cat-africain: #B5651D;
+  --cat-apero: #708D3C;
+  --cat-sauce: #9C6644;
 
   --font-display: "Bricolage Grotesque", "Hanken Grotesk", system-ui, sans-serif;
   --font-body: "Hanken Grotesk", system-ui, -apple-system, sans-serif;
@@ -403,6 +405,8 @@ a { color: inherit; text-decoration: none; }
 .cat-autre.active { background: var(--cat-autre); }
 .cat-sucree.active { background: var(--cat-sucree); }
 .cat-africain.active { background: var(--cat-africain); }
+.cat-apero.active { background: var(--cat-apero); }
+.cat-sauce.active { background: var(--cat-sauce); }
 
 /* Grille 2 colonnes de cartes plats */
 .plats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 8px 16px 16px; }

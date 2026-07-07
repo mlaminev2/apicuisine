@@ -3,7 +3,7 @@ import { state } from "../state.js";
 import { showToast } from "../components/toast.js";
 import { CAT_LABELS, DAYS_FULL_FR, escapeHtml } from "../utils.js";
 
-const CATEGORIES = ["pomme_de_terre", "riz", "pates", "entree", "autre", "sucree", "africain"];
+const CATEGORIES = ["pomme_de_terre", "riz", "pates", "entree", "autre", "sucree", "africain", "apero", "sauce"];
 
 // ── Section dépliante ─────────────────────────────────────────────────────────
 // Retourne { sec, body } ; l'état ouvert/fermé est mémorisé par section.

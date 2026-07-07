@@ -10,6 +10,8 @@ export const CAT_LABELS = {
   autre: "Autre",
   sucree: "Sucrée",
   africain: "Africain",
+  apero: "Apéro",
+  sauce: "Sauce",
 };
 
 export const CAT_CSS = {
@@ -20,6 +22,8 @@ export const CAT_CSS = {
   autre: "cat-autre",
   sucree: "cat-sucree",
   africain: "cat-africain",
+  apero: "cat-apero",
+  sauce: "cat-sauce",
 };
 
 export function isoWeekOf(d) {

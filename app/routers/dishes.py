@@ -11,7 +11,7 @@ from app.schemas import DishCreate, DishUpdate, DishRead
 router = APIRouter(prefix="/api", tags=["dishes"])
 
 VALID_CATEGORIES = frozenset({
-    "pomme_de_terre", "riz", "pates", "entree", "autre", "sucree", "africain",
+    "pomme_de_terre", "riz", "pates", "entree", "autre", "sucree", "africain", "apero", "sauce",
 })
 MAX_UPLOAD_BYTES = 5 * 1024 * 1024  # 5 Mo
 ALLOWED_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}

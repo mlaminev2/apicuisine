@@ -110,7 +110,7 @@ _INSTAGRAM_HOSTS = {"instagram.com", "www.instagram.com"}
 _TIKTOK_HOSTS = {"tiktok.com", "www.tiktok.com", "vm.tiktok.com", "m.tiktok.com"}
 
 _VALID_CATEGORIES = frozenset({
-    "pomme_de_terre", "riz", "pates", "entree", "autre", "sucree", "africain",
+    "pomme_de_terre", "riz", "pates", "entree", "autre", "sucree", "africain", "apero", "sauce",
 })
 _MAX_EXTRACT_TEXT_LEN = 50_000
 
