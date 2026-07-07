@@ -137,6 +137,52 @@ def require_premium(
     return member
 
 
+def is_full_base_email(email: str) -> bool:
+    """Emails rattaches au foyer d'origine (recettes pre-remplies)."""
+    allowed = {e.strip().lower() for e in (settings.full_base_emails or "").split(",") if e.strip()}
+    return (email or "").strip().lower() in allowed
+
+
+def resolve_registration_household(
+    session: Session, email: str, display_name: str, invite_code: Optional[str]
+):
+    """Determine le foyer d'un nouvel inscrit.
+
+    - code d'invitation valide -> rejoint ce foyer (membre simple)
+    - email de la liste FULL_BASE_EMAILS -> foyer d'origine (base complete)
+    - sinon -> creation d'un nouveau foyer vide dont il devient proprietaire
+    Retourne (household, is_owner, erreur | None).
+    """
+    import hmac as _hmac
+    from sqlmodel import select as _select
+    from app.models import Settings as _Settings
+
+    if invite_code:
+        candidates = session.exec(
+            _select(Household).where(Household.invite_code != None)  # noqa: E711
+        ).all()
+        for hh in candidates:
+            if invite_code_valid(hh) and _hmac.compare_digest(invite_code, hh.invite_code):
+                return hh, False, None
+        return None, False, "invalid_invite"
+
+    if is_full_base_email(email):
+        hh = session.exec(_select(Household).order_by(Household.id)).first()
+        if hh:
+            has_owner = session.exec(
+                _select(Member).where(Member.household_id == hh.id, Member.is_owner == True)  # noqa: E712
+            ).first()
+            return hh, has_owner is None, None
+
+    hh = Household(name=f"Foyer de {display_name}"[:80])
+    session.add(hh)
+    session.commit()
+    session.refresh(hh)
+    session.add(_Settings(household_id=hh.id))
+    session.commit()
+    return hh, True, None
+
+
 def is_super_admin(member: Member) -> bool:
     """L'espace admin est reserve a l'email SUPER_ADMIN_EMAIL s'il est defini,
     sinon au proprietaire du foyer."""

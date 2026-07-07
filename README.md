@@ -12,7 +12,7 @@ docker compose up
 
 L'application est disponible sur **http://localhost:8000**
 
-Créez votre compte sur `http://localhost:8000/#/inscription` — la première inscription devient automatiquement propriétaire du foyer.
+Créez votre compte sur `http://localhost:8000/#/inscription`. Sans code d'invitation, chaque inscription crée un nouveau foyer vide dont vous êtes propriétaire ; avec un code, vous rejoignez le foyer de celui qui vous invite. Les emails listés dans `FULL_BASE_EMAILS` rejoignent le foyer d'origine (base de recettes pré-remplie).
 
 ### Sans Docker
 

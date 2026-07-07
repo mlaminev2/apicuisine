@@ -1,4 +1,3 @@
-import hmac
 import logging
 import secrets
 import time
@@ -11,7 +10,7 @@ from fastapi.responses import RedirectResponse
 from pydantic import BaseModel, Field
 from sqlmodel import Session, select
 
-from app.auth import create_token, invite_code_valid
+from app.auth import create_token
 from app.config import settings
 from app.db import get_session
 from app.models import Household, Member
@@ -83,20 +82,15 @@ def _find_or_create(
         logger.info("oauth.login provider=%s member_id=%s", provider, member.id)
         return member, None
 
-    # 3. Nouveau membre → inscription
-    existing_owner = session.exec(
-        select(Member).where(Member.household_id == household.id, Member.is_owner == True)
-    ).first()
+    # 3. Nouveau membre -> multi-foyers : invitation = rejoint ce foyer ;
+    # emails du foyer d'origine = base complete ; sinon nouveau foyer vide.
+    from app.auth import resolve_registration_household
+    target, is_owner, err = resolve_registration_household(session, email, name, invite_code)
+    if err:
+        return None, "invalid_invite"
 
-    if existing_owner:
-        if not invite_code or not invite_code_valid(household):
-            return None, "invite_required"
-        if not hmac.compare_digest(invite_code, household.invite_code):
-            return None, "invalid_invite"
-
-    is_owner = existing_owner is None
     member = Member(
-        household_id=household.id,
+        household_id=target.id,
         name=name,
         email=email,
         password_hash=None,

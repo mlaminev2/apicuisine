@@ -1,4 +1,3 @@
-import hmac
 import logging
 import secrets
 import time
@@ -14,7 +13,7 @@ from app.auth import (
     create_token,
     get_current_member,
     get_current_owner,
-    invite_code_valid,
+    resolve_registration_household,
 )
 from app.schemas import (
     LoginRequest,
@@ -71,27 +70,21 @@ def register(body: RegisterRequest, request: Request, session: Session = Depends
 
     normalized_email = body.email.lower().strip()
 
-    household = session.exec(select(Household)).first()
-    if not household:
-        raise HTTPException(status_code=500, detail="Foyer non initialisé")
-
-    existing_owner = session.exec(
-        select(Member).where(Member.household_id == household.id, Member.is_owner == True)
-    ).first()
-
-    if existing_owner:
-        if not body.invite_code or not invite_code_valid(household) or \
-                not hmac.compare_digest(body.invite_code, household.invite_code):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Code d'invitation invalide, expiré ou requis",
-            )
-
     existing_email = session.exec(select(Member).where(Member.email == normalized_email)).first()
     if existing_email:
         raise HTTPException(status_code=409, detail="Cette adresse email est déjà utilisée")
 
-    is_owner = existing_owner is None
+    # Multi-foyers : invitation → rejoint ce foyer ; emails du foyer d'origine →
+    # base de recettes complète ; sinon nouveau foyer vide dont l'inscrit est propriétaire.
+    household, is_owner, err = resolve_registration_household(
+        session, normalized_email, body.name, body.invite_code
+    )
+    if err:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Code d'invitation invalide ou expiré",
+        )
+
     member = Member(
         household_id=household.id,
         name=body.name,

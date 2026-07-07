@@ -1,4 +1,4 @@
-const CACHE = "menus-v38";
+const CACHE = "menus-v39";
 const SHELL = ["/", "/css/styles.css", "/js/api.js", "/js/state.js", "/js/utils.js", "/js/router.js",
   "/js/sw-register.js",
   "/js/components/navbar.js", "/js/components/toast.js", "/js/components/modal.js",

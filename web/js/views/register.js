@@ -25,7 +25,7 @@ export async function renderRegister(root) {
           <input type="color" id="reg-color" value="#4B8FA6" style="width:48px;height:36px;border:none;cursor:pointer;border-radius:8px" />
         </div>
         <div class="form-group">
-          <label>Code d'invitation <span style="color:#aaa;font-weight:400;font-size:11px">(laisser vide si vous créez le premier compte)</span></label>
+          <label>Code d'invitation <span style="color:#aaa;font-weight:400;font-size:11px">(laisser vide pour créer votre propre foyer)</span></label>
           <input type="text" id="reg-invite" placeholder="Code reçu du propriétaire…" value="${escapeHtml(params.code || "")}" autocomplete="off" />
         </div>
         <div class="error-msg" id="reg-error"></div>

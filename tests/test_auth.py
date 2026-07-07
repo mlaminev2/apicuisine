@@ -35,11 +35,49 @@ def test_list_members(client, household, auth_headers):
     assert any(m["name"] == "Test Owner" for m in res.json())
 
 
-def test_register_requires_invite_when_owner_exists(client, household):
+def test_register_without_invite_creates_empty_household(client, household):
+    """Sans code d'invitation, l'inscrit démarre son propre foyer, vide."""
     res = client.post("/api/register", json={
         "name": "Bob", "email": "bob@test.local", "password": "password123"
     })
-    assert res.status_code == 403
+    assert res.status_code == 201
+    data = res.json()
+    assert data["household_id"] != household.id
+    assert data["is_owner"] is True
+    assert data["household_name"] == "Foyer de Bob"
+    # Sa base de recettes est vide
+    headers = {"Authorization": f"Bearer {data['token']}"}
+    dishes = client.get("/api/dishes", headers=headers).json()
+    assert dishes == []
+
+
+def test_households_are_isolated(client, household, auth_headers, session):
+    """Un plat créé dans un foyer n'est pas visible depuis un autre."""
+    client.post("/api/dishes", json={"name": "Plat du foyer 1", "category": "riz"}, headers=auth_headers)
+    res = client.post("/api/register", json={
+        "name": "Solo", "email": "solo@test.local", "password": "password123"
+    })
+    headers = {"Authorization": f"Bearer {res.json()['token']}"}
+    assert client.get("/api/dishes", headers=headers).json() == []
+    client.post("/api/dishes", json={"name": "Plat du foyer 2", "category": "riz"}, headers=headers)
+    names1 = [d["name"] for d in client.get("/api/dishes", headers=auth_headers).json()]
+    assert "Plat du foyer 2" not in names1
+
+
+def test_full_base_email_joins_seed_household(client, household):
+    """Les emails FULL_BASE_EMAILS rejoignent le foyer d'origine (base complète)."""
+    from app.config import settings as app_config
+    previous = app_config.full_base_emails
+    app_config.full_base_emails = "famille@test.local"
+    try:
+        res = client.post("/api/register", json={
+            "name": "Famille", "email": "famille@test.local", "password": "password123"
+        })
+        assert res.status_code == 201
+        assert res.json()["household_id"] == household.id  # foyer d'origine, pas un nouveau
+        assert res.json()["is_owner"] is False  # un propriétaire existe déjà
+    finally:
+        app_config.full_base_emails = previous
 
 
 def test_register_with_invalid_invite(client, household, auth_headers):

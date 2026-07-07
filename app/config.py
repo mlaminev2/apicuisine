@@ -16,6 +16,10 @@ class Settings(BaseSettings):
     # (sinon, le proprietaire du foyer)
     super_admin_email: str = ""
 
+    # Emails rattaches au foyer d'origine (base de recettes complete).
+    # Tout autre inscrit sans code d'invitation demarre un foyer vide.
+    full_base_emails: str = ""
+
     # Google OAuth (optionnel)
     google_client_id: str = ""
     google_client_secret: str = ""
