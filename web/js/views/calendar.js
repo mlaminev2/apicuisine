@@ -54,7 +54,60 @@ export async function renderCalendar(root) {
     draw();
   };
   updateToggleLabel();
+  attachSwipe(document.getElementById("cal-body"));
   draw();
+}
+
+// Navigation tactile : glisser vers la gauche → période suivante,
+// vers la droite → période précédente. Ignore les gestes verticaux
+// (défilement) et les simples taps.
+function attachSwipe(body) {
+  if (!body) return;
+  let startX = 0, startY = 0, tracking = false, decided = null;
+  const SWIPE_MIN = 55;      // distance horizontale minimale pour valider
+  const SLOP = 12;           // au-delà, on décide de l'axe du geste
+
+  body.addEventListener("touchstart", (e) => {
+    if (e.touches.length !== 1) { tracking = false; return; }
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+    tracking = true;
+    decided = null;
+  }, { passive: true });
+
+  body.addEventListener("touchmove", (e) => {
+    if (!tracking) return;
+    const dx = e.touches[0].clientX - startX;
+    const dy = e.touches[0].clientY - startY;
+    if (decided === null && (Math.abs(dx) > SLOP || Math.abs(dy) > SLOP)) {
+      decided = Math.abs(dx) > Math.abs(dy) ? "h" : "v";
+    }
+    if (decided === "h") {
+      e.preventDefault();  // empêche le scroll pendant un swipe horizontal
+      const grid = body.firstElementChild;
+      if (grid) { grid.style.transition = "none"; grid.style.transform = `translateX(${dx * 0.35}px)`; }
+    }
+  }, { passive: false });
+
+  const end = (e) => {
+    if (!tracking) return;
+    tracking = false;
+    const grid = body.firstElementChild;
+    const dx = (e.changedTouches ? e.changedTouches[0].clientX : startX) - startX;
+    if (decided === "h" && dx <= -SWIPE_MIN) { navigate(1); return; }      // gauche → suivant
+    if (decided === "h" && dx >= SWIPE_MIN) { navigate(-1); return; }      // droite → précédent
+    // Geste insuffisant : retour élastique à la position d'origine
+    if (grid) {
+      grid.style.transition = "transform .18s var(--ease-out)";
+      grid.style.transform = "";
+    }
+  };
+  body.addEventListener("touchend", end);
+  body.addEventListener("touchcancel", () => {
+    tracking = false;
+    const grid = body.firstElementChild;
+    if (grid) grid.style.transform = "";
+  });
 }
 
 function updateToggleLabel() {
