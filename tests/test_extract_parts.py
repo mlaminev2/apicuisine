@@ -246,3 +246,19 @@ Couper le tout et mélanger."""
     assert any(s.startswith("Couper") for s in steps)
     # aucune étape égarée dans les ingrédients
     assert not any(v in " ".join(ingredients).lower() for v in ("râper", "presser", "couper"))
+
+
+def test_style_livre_nom_puis_quantite():
+    """Photo de livre : nom d'ingrédient PUIS quantité, sans section ni puce."""
+    desc = """Gateau au yaourt
+Farine 250 g
+Sucre 150 g
+Beurre 100 g
+Melanger les ingredients secs.
+Cuire 30 minutes a 180 degres."""
+    ingredients, steps = _extract_recipe_parts(desc)
+    assert "Farine 250 g" in ingredients
+    assert "Sucre 150 g" in ingredients
+    assert "Beurre 100 g" in ingredients
+    assert any(s.startswith("Cuire") for s in steps)
+    assert not any("farine 250" in s.lower() for s in steps)

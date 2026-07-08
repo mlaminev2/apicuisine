@@ -192,13 +192,25 @@ export async function renderImport(root) {
       // Accumulation : on ajoute aux ingrédients/étapes déjà présents (2e page, etc.)
       appendIngrRows(result.ingredients || []);
       appendSteps(result.steps || []);
+      // Toujours montrer le texte lu par l'OCR : éditable + ré-extractible,
+      // pour rattraper les photos où le tri automatique est imparfait.
+      if (result.text) {
+        const pasteSec = document.getElementById("import-step-paste");
+        const ta = document.getElementById("import-paste-textarea");
+        pasteSec.style.display = "block";
+        ta.value = (ta.value.trim() ? ta.value.trim() + "
+" : "") + result.text;
+        pasteSec.querySelector("div").textContent = "📷 Texte lu sur la photo";
+        const note = pasteSec.querySelectorAll("div")[1];
+        if (note) note.innerHTML = "Corrige les erreurs de lecture si besoin, puis « Extraire » pour re-répartir ingrédients et étapes.";
+      }
       const ni = (result.ingredients || []).length, ns = (result.steps || []).length;
       if (ni + ns > 0) {
-        showToast(`${ni} ingrédient(s) et ${ns} étape(s) ajoutés ✓`);
-        hint.textContent = "Vérifie/corrige, ou reprends une photo pour ajouter une page. Coche les ingrédients pour les courses.";
+        showToast(`${ni} ingrédient(s) et ${ns} étape(s) lus ✓`);
+        hint.textContent = "Vérifie/corrige, ou reprends une photo pour une autre page. Coche les ingrédients pour les courses.";
       } else {
-        showToast("Rien de lisible détecté — réessaie avec une photo plus nette", "error");
-        hint.innerHTML = `<span style="color:#c0662f;font-weight:600">⚠️ Texte non détecté</span> — photo plus nette / mieux éclairée, ou saisis à la main.`;
+        showToast("Tri automatique incertain — le texte lu est affiché plus bas, corrige puis « Extraire ».", "error");
+        hint.innerHTML = `<span style="color:#c0662f;font-weight:600">⚠️ Tri incertain</span> — utilise le texte lu (section « Texte de la recette » ci-dessous).`;
       }
     } catch (err) {
       showToast(err.message, "error");

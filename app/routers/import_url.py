@@ -664,6 +664,18 @@ def _dedupe(values: list[str]) -> list[str]:
     return unique
 
 
+def _looks_like_ingredient(clean: str, has_unit: bool) -> bool:
+    """Ligne « nom + quantité » typique d'un ingrédient (« Farine 250 g »,
+    « Beurre 100 g »), à distinguer d'une instruction (« Fariner le moule »).
+    Vrai si la ligne est courte, contient une unité de mesure, et n'est pas
+    une phrase (pas de ponctuation finale)."""
+    if not has_unit:
+        return False
+    if clean.rstrip().endswith((".", "!", "?", ":")):
+        return False
+    return len(clean.split()) <= 5
+
+
 def _extract_recipe_parts(description: str) -> tuple[list[str], list[str]]:
     """Sépare ingrédients et étapes en UNE passe avec suivi de section.
 
@@ -733,9 +745,13 @@ def _extract_recipe_parts(description: str) -> tuple[list[str], list[str]]:
         has_unit = bool(_UNIT_RE.search(stripped) or _UNIT_SUFFIX_RE.search(stripped))
 
         if section == "ingredients":
-            # Dans une liste d'ingrédients, une phrase qui commence par un verbe
-            # (ou une longue phrase avec verbe) est une instruction égarée.
-            if starts_with_verb or (has_verb and len(clean) > 40):
+            # « Farine 250 g » reste un ingrédient même si « farine » est aussi
+            # un verbe : on ne déclasse pas les lignes « nom + quantité ».
+            if _looks_like_ingredient(clean, has_unit):
+                ingredients.append(clean)
+            # Sinon, une phrase qui commence par un verbe (ou longue avec verbe)
+            # est une instruction égarée.
+            elif starts_with_verb or (has_verb and len(clean) > 40):
                 if len(clean) > 15:
                     steps.append(clean)
             elif len(stripped) <= 120:
@@ -748,8 +764,12 @@ def _extract_recipe_parts(description: str) -> tuple[list[str], list[str]]:
             continue
 
         # ── Hors section : heuristique, une seule destination par ligne ──
+        # « Nom + quantité » (« Farine 250 g ») = ingrédient, prioritaire sur la
+        # détection de verbe (farine/beurre/sucre sont noms ET verbes).
+        if _looks_like_ingredient(clean, has_unit) and not starts_with_qty:
+            ingredients.append(clean)
         # Étape = commence par un verbe, ou longue phrase contenant un verbe.
-        if starts_with_verb or (has_verb and len(clean) > 40):
+        elif starts_with_verb or (has_verb and len(clean) > 40):
             if 4 < len(stripped) <= 300:
                 steps.append(clean)
         # Ingrédient = commence par une quantité (évite la prose qui contient
@@ -757,6 +777,10 @@ def _extract_recipe_parts(description: str) -> tuple[list[str], list[str]]:
         elif starts_with_qty and has_unit and len(stripped) <= 120:
             ingredients.append(clean)
         elif starts_with_qty and len(stripped) <= 80:
+            ingredients.append(clean)
+        # Style livre / photo : nom d'ingrédient PUIS quantité (« Farine 250 g »,
+        # « Beurre — 100 g »). Ligne courte, avec une unité, sans verbe d'action.
+        elif has_unit and not has_verb and len(stripped) <= 60:
             ingredients.append(clean)
 
     return _dedupe(ingredients)[:35], _dedupe(steps)[:30]
@@ -807,6 +831,7 @@ class ExtractTextRequest(BaseModel):
 class ExtractTextResult(BaseModel):
     ingredients: list[str]
     steps: list[str]
+    text: str = ""  # texte brut source (OCR photo) — vide pour l'extraction de texte collé
 
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
@@ -962,7 +987,7 @@ async def import_photo(
     if not combined:
         raise HTTPException(status_code=422, detail="Aucun texte lisible détecté sur la/les photo(s)")
     ingredients, steps = _parse_recipe_text(combined)
-    return ExtractTextResult(ingredients=ingredients, steps=steps)
+    return ExtractTextResult(ingredients=ingredients, steps=steps, text=combined)
 
 
 @router.post("/import-save", response_model=SaveImportResult)
