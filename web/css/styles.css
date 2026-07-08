@@ -501,6 +501,64 @@ a { color: inherit; text-decoration: none; }
 .recette-ingr-row .q { color: var(--muted); }
 .recette-ingr-row:last-child { border-bottom: none; }
 
+/* ── Importer (design 1a) ── */
+.import2-header { padding: 22px 20px 6px; }
+.import2-title { font-family: var(--font-display); font-weight: 800; font-size: 26px; }
+.import2-sub { font-size: 13px; color: var(--muted); margin-top: 2px; }
+.import2-quota {
+  margin: 6px 16px 0; background: #fdf3df; border: 1.5px dashed #e0c36b; border-radius: 13px;
+  padding: 10px 13px; font-size: 13px; font-weight: 600; color: #a97b12;
+}
+.import2-body { padding: 12px 0 16px; max-width: 560px; margin: 0 auto; width: 100%; }
+
+.import2-linkbox {
+  display: flex; align-items: center; gap: 9px; margin: 4px 16px 0;
+  background: #fff; border: 1.5px solid var(--terra); border-radius: 16px; padding: 11px 12px;
+}
+.import2-linkbox input { flex: 1; min-width: 0; border: none; outline: none; background: none; font-size: 14px; color: var(--ink); }
+.import2-linkbox input::placeholder { color: var(--muted); }
+.import2-go { width: 32px; height: 32px; border-radius: 10px; background: var(--terra); color: #fff; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+
+.import2-caps-label { padding: 16px 20px 6px; font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+.import2-caps { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 16px; }
+.import2-cap {
+  display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600;
+  background: var(--cream-deep); color: #7a6a5c; padding: 7px 12px; border-radius: 999px;
+}
+
+.import2-divider { display: flex; align-items: center; gap: 10px; padding: 16px 20px 8px; }
+.import2-divider::before, .import2-divider::after { content: ""; flex: 1; height: 1px; background: rgba(43,35,32,.1); }
+.import2-divider span { font-size: 12px; color: var(--muted); font-weight: 600; }
+
+.import2-method {
+  display: flex; align-items: center; gap: 13px; width: calc(100% - 32px); margin: 0 16px 10px;
+  background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 14px; text-align: left; cursor: pointer;
+  transition: transform var(--t-fast) var(--ease-out);
+}
+.import2-method:active { transform: scale(.99); }
+.import2-method-icon { width: 44px; height: 44px; border-radius: 13px; background: var(--cream-deep); display: flex; align-items: center; justify-content: center; color: var(--terra); flex-shrink: 0; }
+.import2-method-txt { flex: 1; }
+.import2-method-name { font-weight: 700; font-size: 14.5px; }
+.import2-method-sub { font-size: 12px; color: var(--muted); }
+
+#import-flow { padding: 0 16px; }
+#import-result { margin: 0 16px; }
+
+.import2-recent-title { padding: 20px 20px 2px; font-family: var(--font-display); font-weight: 700; font-size: 15px; }
+.import2-recent-list { display: flex; flex-direction: column; gap: 8px; padding: 8px 16px 0; }
+.import2-recent-item {
+  display: flex; align-items: center; gap: 12px; background: #fff; border: 1px solid var(--line);
+  border-radius: 14px; padding: 9px; text-align: left; cursor: pointer; width: 100%;
+}
+.import2-recent-item:active { transform: scale(.99); }
+.import2-recent-thumb {
+  width: 42px; height: 42px; border-radius: 10px; flex-shrink: 0; background-size: cover; background-position: center;
+  background-color: #EAD9C8; background-image: repeating-linear-gradient(135deg, #E7D3C0 0 8px, #EAD9C8 8px 16px);
+}
+.import2-recent-txt { flex: 1; min-width: 0; }
+.import2-recent-name { font-weight: 700; font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.import2-recent-sub { font-size: 11.5px; color: var(--muted); }
+
 /* ── Courses ── */
 .shopping-header { background: transparent; color: var(--ink); padding: 12px 16px; display: flex; align-items: center; gap: 8px; }
 .shop-progress-card {
