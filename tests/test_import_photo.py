@@ -1,12 +1,12 @@
 import io
 from unittest.mock import patch
 
-import pytest
 
 
 def _png_bytes():
     # PNG 2x2 minimal valide
-    import struct, zlib
+    import struct
+    import zlib
     def chunk(t, d): return struct.pack(">I", len(d)) + t + d + struct.pack(">I", zlib.crc32(t + d))
     ihdr = struct.pack(">IIBBBBB", 2, 2, 8, 2, 0, 0, 0)
     raw = b"\x00\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff"
