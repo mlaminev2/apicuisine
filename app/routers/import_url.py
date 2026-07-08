@@ -94,7 +94,16 @@ _VERBS_FR = (
     r"terminer|termine|terminez|r[eé]partir|r[eé]partis|r[eé]partissez|"
     r"garnir|garnis|garnissez|p[eé]trir|p[eé]tris|p[eé]trissez|"
     r"r[eé]chauffer|r[eé]chauffe|r[eé]chauffez|"
-    r"faire\s+revenir"
+    # verbes de cuisine fréquents qui manquaient (source de confusion)
+    r"couper|coupe|coupez|[eé]mincer|[eé]mince|[eé]mincez|"
+    r"r[aâ]per|r[aâ]pe|r[aâ]pez|presser|presse|pressez|"
+    r"r[eé]duire|r[eé]duis|r[eé]duisez|monter|monte|montez|"
+    r"fondre|fonds|fondez|d[eé]layer|d[eé]laye|d[eé]layez|"
+    r"pocher|poche|pochez|paner|pane|panez|"
+    r"tremper|trempe|trempez|[eé]craser|[eé]crase|[eé]crasez|"
+    r"assembler|assemble|assemblez|napper|nappe|nappez|"
+    r"pr[eé]parer|pr[eé]pare|pr[eé]parez|d[eé]corer|d[eé]core|d[eé]corez|"
+    r"faire\s+revenir|faire\s+cuire|faire\s+fondre|faire\s+dorer|faire\s+chauffer"
 )
 _VERBS_EN = (
     r"add|mix|stir|cook|heat|preheat|place|put|pour|chop|cut|dice|blend|"

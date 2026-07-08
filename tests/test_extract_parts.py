@@ -202,3 +202,47 @@ def test_clean_social_title():
 def test_vide():
     assert _extract_recipe_parts("") == ([], [])
     assert _extract_recipe_parts("Juste une phrase sans recette.") == ([], [])
+
+
+def test_ingredient_descriptif_reste_ingredient():
+    """Un ingrédient contenant un verbe/préparation ne doit pas basculer en étape
+    tant qu'il ne COMMENCE pas par un verbe d'action."""
+    desc = """Ingrédients :
+- 250 g de beurre mou, à sortir à l'avance
+- 2 oignons émincés finement
+- 3 tomates coupées en dés
+- 1 citron
+
+Préparation :
+Mélanger le tout.
+Cuire 20 minutes."""
+    ingredients, steps = _extract_recipe_parts(desc)
+    assert "250 g de beurre mou, à sortir à l'avance" in ingredients
+    assert "2 oignons émincés finement" in ingredients
+    assert "3 tomates coupées en dés" in ingredients
+    assert "1 citron" in ingredients
+    # Ces lignes ne doivent PAS se retrouver dans les étapes
+    assert not any("beurre mou" in s.lower() for s in steps)
+    assert not any("émincés" in s.lower() for s in steps)
+    # Les vraies étapes restent des étapes
+    assert "Mélanger le tout." in steps
+    assert "Cuire 20 minutes." in steps
+
+
+def test_verbes_courants_couper_raper():
+    """Verbes courants longtemps absents (couper, râper, émincer, presser…) :
+    une ligne qui commence par ces verbes est une étape, pas un ingrédient."""
+    desc = """Ma salade express
+2 carottes
+1 citron
+Râper les carottes finement.
+Presser le citron par-dessus.
+Couper le tout et mélanger."""
+    ingredients, steps = _extract_recipe_parts(desc)
+    assert "2 carottes" in ingredients
+    assert "1 citron" in ingredients
+    assert any(s.startswith("Râper") for s in steps)
+    assert any(s.startswith("Presser") for s in steps)
+    assert any(s.startswith("Couper") for s in steps)
+    # aucune étape égarée dans les ingrédients
+    assert not any(v in " ".join(ingredients).lower() for v in ("râper", "presser", "couper"))
