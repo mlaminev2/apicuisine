@@ -1,4 +1,5 @@
 import html as _html
+import logging
 import ipaddress
 import json
 import re
@@ -9,7 +10,7 @@ import urllib.request
 import urllib.parse
 from datetime import datetime, timezone
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlmodel import Session, select
 from pydantic import BaseModel, Field
 from app.db import get_session
@@ -19,6 +20,7 @@ from app.models import Member
 
 # Import de recettes : illimite en premium, sinon quota mensuel gratuit
 router = APIRouter(prefix="/api", tags=["import"], dependencies=[Depends(check_import_quota)])
+logger = logging.getLogger(__name__)
 
 YOUTUBE_OEMBED = "https://www.youtube.com/oembed?url={url}&format=json"
 TIKTOK_OEMBED = "https://www.tiktok.com/oembed?url={url}"
@@ -895,17 +897,46 @@ def extract_text_endpoint(
     if len(body.text) > _MAX_EXTRACT_TEXT_LEN:
         raise HTTPException(status_code=413, detail="Texte trop long (50 000 caractères max.)")
     text = body.text.strip()
-    ingredients, steps = _extract_recipe_parts(text)
+    ingredients, steps = _parse_recipe_text(text)
+    return ExtractTextResult(ingredients=ingredients, steps=steps)
 
-    # If the heuristics found nothing, fall back to all lines
+
+def _parse_recipe_text(text: str) -> tuple[list[str], list[str]]:
+    """Sépare un texte brut en (ingrédients, étapes) via heuristiques, avec
+    repli ligne-à-ligne si rien n'est classé."""
+    ingredients, steps = _extract_recipe_parts(text)
     if not ingredients and not steps and text:
         lines = [ln.strip() for ln in text.splitlines() if 2 < len(ln.strip()) < 120]
         ingredients = [ln for ln in lines if len(ln) <= 70 and not _INSTRUCTION_VERB.match(_BULLET.sub("", _NUMBEREDLINE.sub("", ln)))][:25]
         steps = [ln for ln in lines if len(ln) > 20 and (_INSTRUCTION_VERB.match(_BULLET.sub("", _NUMBEREDLINE.sub("", ln))) or _NUMBEREDLINE.match(ln))][:15]
-        # If still nothing classified, return all as ingredients
         if not ingredients and not steps:
             ingredients = lines[:30]
+    return ingredients, steps
 
+
+@router.post("/import-photo", response_model=ExtractTextResult)
+async def import_photo(
+    file: UploadFile = File(...),
+    household: Household = Depends(get_current_household),
+    session: Session = Depends(get_session),
+):
+    """OCR d'une photo de recette (papier, livre, magazine) → ingrédients/étapes."""
+    from app.services.ocr import ocr_available, image_to_text
+    if not ocr_available():
+        raise HTTPException(status_code=503, detail="Import par photo indisponible sur ce serveur")
+    if file.content_type not in ("image/jpeg", "image/png", "image/webp"):
+        raise HTTPException(status_code=415, detail="Format d'image non supporté (JPEG, PNG ou WebP)")
+    data = await file.read(6 * 1024 * 1024 + 1)
+    if len(data) > 6 * 1024 * 1024:
+        raise HTTPException(status_code=413, detail="Image trop volumineuse (max 6 Mo)")
+    try:
+        text = image_to_text(data)
+    except Exception as exc:
+        logger.error("import_photo OCR: %s", exc)
+        raise HTTPException(status_code=422, detail="Lecture de l'image impossible")
+    if not text:
+        raise HTTPException(status_code=422, detail="Aucun texte lisible détecté sur la photo")
+    ingredients, steps = _parse_recipe_text(text)
     return ExtractTextResult(ingredients=ingredients, steps=steps)
 
 

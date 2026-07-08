@@ -79,6 +79,12 @@ export async function renderImport(root) {
       <div class="import2-divider"><span>ou</span></div>
 
       <!-- Autres méthodes -->
+      <button class="import2-method" id="method-photo">
+        <div class="import2-method-icon"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="3"/><circle cx="9" cy="10" r="1.8"/><path d="M4 17l5-4 4 3 3-2 4 3"/></svg></div>
+        <div class="import2-method-txt"><div class="import2-method-name">Prendre une photo</div><div class="import2-method-sub">D'une recette papier, d'un livre ou d'un magazine</div></div>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#c4b3a3" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>
+      </button>
+      <input type="file" id="import-photo-input" accept="image/*" capture="environment" style="display:none" />
       <button class="import2-method" id="method-paste">
         <div class="import2-method-icon"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg></div>
         <div class="import2-method-txt"><div class="import2-method-name">Coller un texte</div><div class="import2-method-sub">Description Instagram/TikTok, recette copiée…</div></div>
@@ -171,6 +177,33 @@ export async function renderImport(root) {
     document.getElementById("import-step-paste").style.display = "block";
     document.getElementById("import-paste-textarea").focus();
     document.getElementById("import-step-paste").scrollIntoView({ behavior: "smooth", block: "center" });
+  };
+  const photoInput = document.getElementById("import-photo-input");
+  document.getElementById("method-photo").onclick = () => photoInput.click();
+  photoInput.onchange = async () => {
+    const f = photoInput.files && photoInput.files[0];
+    if (!f) return;
+    showFlow();
+    document.getElementById("import-ingr-hint").textContent = "📷 Lecture de la photo en cours…";
+    document.getElementById("import-step2").scrollIntoView({ behavior: "smooth", block: "center" });
+    try {
+      const result = await api.importPhoto(f);
+      renderIngrRows(result.ingredients || []);
+      document.getElementById("import-steps-textarea").value = (result.steps || []).join("
+");
+      const total = (result.ingredients || []).length + (result.steps || []).length;
+      if (total > 0) {
+        showToast(`${(result.ingredients || []).length} ingrédient(s) et ${(result.steps || []).length} étape(s) lus ✓`);
+        document.getElementById("import-ingr-hint").textContent = "Vérifie et corrige si besoin, puis enregistre. Coche les ingrédients pour les courses.";
+      } else {
+        showToast("Rien de lisible détecté — réessaie avec une photo plus nette", "error");
+        document.getElementById("import-ingr-hint").innerHTML = `<span style="color:#c0662f;font-weight:600">⚠️ Texte non détecté</span> — photo plus nette / mieux éclairée, ou saisis à la main.`;
+      }
+    } catch (err) {
+      showToast(err.message, "error");
+    } finally {
+      photoInput.value = "";
+    }
   };
   document.getElementById("method-manual").onclick = () => {
     showFlow();

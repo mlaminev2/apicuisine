@@ -96,6 +96,19 @@ export const api = {
   importUrl: (url) => request("POST", "/api/import-url", { url }),
   importSave: (data) => request("POST", "/api/import-save", data),
   extractText: (text) => request("POST", "/api/extract-text", { text }),
+  importPhoto: async (file) => {
+    const fd = new FormData();
+    fd.append("file", file);
+    const headers = {};
+    const token = getToken();
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+    const res = await fetch("/api/import-photo", { method: "POST", headers, body: fd });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || "Lecture de la photo impossible");
+    }
+    return res.json();
+  },
 
   uploadDishImage: async (id, file) => {
     const formData = new FormData();
