@@ -914,29 +914,45 @@ def _parse_recipe_text(text: str) -> tuple[list[str], list[str]]:
     return ingredients, steps
 
 
+_MAX_PHOTOS = 6
+_MAX_PHOTO_BYTES = 6 * 1024 * 1024
+
+
 @router.post("/import-photo", response_model=ExtractTextResult)
 async def import_photo(
-    file: UploadFile = File(...),
+    files: list[UploadFile] = File(...),
     household: Household = Depends(get_current_household),
     session: Session = Depends(get_session),
 ):
-    """OCR d'une photo de recette (papier, livre, magazine) → ingrédients/étapes."""
+    """OCR d'une ou plusieurs photos de recette (ex. recette sur 2 pages) :
+    le texte de chaque image est lu puis fusionné avant l'analyse."""
     from app.services.ocr import ocr_available, image_to_text
     if not ocr_available():
         raise HTTPException(status_code=503, detail="Import par photo indisponible sur ce serveur")
-    if file.content_type not in ("image/jpeg", "image/png", "image/webp"):
-        raise HTTPException(status_code=415, detail="Format d'image non supporté (JPEG, PNG ou WebP)")
-    data = await file.read(6 * 1024 * 1024 + 1)
-    if len(data) > 6 * 1024 * 1024:
-        raise HTTPException(status_code=413, detail="Image trop volumineuse (max 6 Mo)")
-    try:
-        text = image_to_text(data)
-    except Exception as exc:
-        logger.error("import_photo OCR: %s", exc)
-        raise HTTPException(status_code=422, detail="Lecture de l'image impossible")
-    if not text:
-        raise HTTPException(status_code=422, detail="Aucun texte lisible détecté sur la photo")
-    ingredients, steps = _parse_recipe_text(text)
+    if not files:
+        raise HTTPException(status_code=422, detail="Aucune photo reçue")
+    if len(files) > _MAX_PHOTOS:
+        raise HTTPException(status_code=413, detail=f"{_MAX_PHOTOS} photos maximum à la fois")
+
+    texts = []
+    for f in files:
+        if f.content_type not in ("image/jpeg", "image/png", "image/webp"):
+            raise HTTPException(status_code=415, detail="Format d'image non supporté (JPEG, PNG ou WebP)")
+        data = await f.read(_MAX_PHOTO_BYTES + 1)
+        if len(data) > _MAX_PHOTO_BYTES:
+            raise HTTPException(status_code=413, detail="Une image dépasse 6 Mo")
+        try:
+            t = image_to_text(data)
+        except Exception as exc:
+            logger.error("import_photo OCR: %s", exc)
+            raise HTTPException(status_code=422, detail="Lecture d'une image impossible")
+        if t:
+            texts.append(t)
+
+    combined = "\n".join(texts).strip()
+    if not combined:
+        raise HTTPException(status_code=422, detail="Aucun texte lisible détecté sur la/les photo(s)")
+    ingredients, steps = _parse_recipe_text(combined)
     return ExtractTextResult(ingredients=ingredients, steps=steps)
 
 

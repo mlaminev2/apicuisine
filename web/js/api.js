@@ -96,9 +96,9 @@ export const api = {
   importUrl: (url) => request("POST", "/api/import-url", { url }),
   importSave: (data) => request("POST", "/api/import-save", data),
   extractText: (text) => request("POST", "/api/extract-text", { text }),
-  importPhoto: async (file) => {
+  importPhoto: async (files) => {
     const fd = new FormData();
-    fd.append("file", file);
+    for (const f of (Array.isArray(files) ? files : [files])) fd.append("files", f);
     const headers = {};
     const token = getToken();
     if (token) headers["Authorization"] = `Bearer ${token}`;
