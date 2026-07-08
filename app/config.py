@@ -29,6 +29,11 @@ class Settings(BaseSettings):
     smtp_from: str = ""
     app_base_url: str = "http://localhost:8000"
 
+    # Suivi d'audience (chargé seulement après consentement RGPD)
+    gtm_container_id: str = ""    # Google Tag Manager, ex. GTM-XXXXXXX (contient GA4, Pixel…)
+    ga_measurement_id: str = ""   # Google Analytics 4 direct, ex. G-XXXXXXXXXX (si pas de GTM)
+    meta_pixel_id: str = ""        # Pixel Meta/Facebook direct, ex. 123456789012345 (si pas de GTM)
+
     # Google OAuth (optionnel)
     google_client_id: str = ""
     google_client_secret: str = ""

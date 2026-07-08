@@ -61,6 +61,17 @@ def _clear_rate_limit(session: Session, bucket: str, ip: str) -> None:
     session.commit()
 
 
+@router.get("/public-config")
+def public_config():
+    """Config publique (sans authentification) : IDs de suivi pour le front.
+    Vides tant que non configurés → aucun traceur chargé."""
+    return {
+        "gtm_container_id": app_config.gtm_container_id or "",
+        "ga_measurement_id": app_config.ga_measurement_id or "",
+        "meta_pixel_id": app_config.meta_pixel_id or "",
+    }
+
+
 @router.post("/register", response_model=LoginResponse, status_code=201)
 def register(body: RegisterRequest, request: Request, session: Session = Depends(get_session)):
     ip = request.client.host if request.client else "unknown"

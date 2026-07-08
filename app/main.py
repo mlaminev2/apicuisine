@@ -41,12 +41,18 @@ async def security_headers(request: Request, call_next):
     if request.url.scheme == "https":
         response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
     if "text/html" in response.headers.get("content-type", ""):
+        # Domaines autorisés pour Google Analytics et le Pixel Meta (chargés
+        # uniquement après consentement RGPD, mais autorisés ici par la CSP).
+        ga = "https://www.googletagmanager.com https://connect.facebook.net"
+        conn = ("https://www.google-analytics.com https://*.google-analytics.com "
+                "https://*.analytics.google.com https://www.googletagmanager.com "
+                "https://connect.facebook.net https://www.facebook.com")
         response.headers["Content-Security-Policy"] = (
             "default-src 'none'; "
-            "script-src 'self'; "
+            f"script-src 'self' {ga}; "
             "style-src 'self' 'unsafe-inline'; "
             "img-src 'self' data: https:; "
-            "connect-src 'self'; "
+            f"connect-src 'self' {conn}; "
             "manifest-src 'self'; "
             "worker-src 'self'; "
             "font-src 'self'; "

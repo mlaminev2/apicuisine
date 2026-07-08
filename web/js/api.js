@@ -43,6 +43,7 @@ export const api = {
   register: (name, email, password, color, invite_code) =>
     request("POST", "/api/register", { name, email, password, color, invite_code: invite_code || null }),
   oauthExchange: (code) => request("POST", "/api/auth/exchange", { code }),
+  publicConfig: () => request("GET", "/api/public-config"),
   changePassword: (current_password, new_password) =>
     request("POST", "/api/password", { current_password, new_password }),
   forgotPassword: (email) => request("POST", "/api/password/forgot", { email }),

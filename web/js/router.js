@@ -7,6 +7,7 @@ import { renderHome } from "./views/home.js";
 import { renderRemplir } from "./views/remplir.js";
 import { renderAdmin } from "./views/admin.js";
 import { renderForgot, renderReset } from "./views/password.js";
+import { initAnalytics, trackPageView } from "./analytics.js";
 import { renderCalendar } from "./views/calendar.js";
 import { renderBase } from "./views/base.js";
 import { renderShopping } from "./views/shopping.js";
@@ -22,6 +23,7 @@ function animateViewEntry(path) {
   // Relance l'animation d'entrée uniquement quand on change de vue
   if (path === lastPath) return;
   lastPath = path;
+  try { trackPageView("#" + path); } catch {}
   root.scrollTop = 0;
   root.classList.remove("view-enter");
   void root.offsetWidth; // force un reflow pour redémarrer l'animation
@@ -76,6 +78,7 @@ async function route() {
 
 window.addEventListener("hashchange", route);
 window.addEventListener("load", route);
+window.addEventListener("load", () => { initAnalytics(); });
 
 // Offline banner
 const banner = document.createElement("div");

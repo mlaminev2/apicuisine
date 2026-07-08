@@ -198,8 +198,7 @@ export async function renderImport(root) {
         const pasteSec = document.getElementById("import-step-paste");
         const ta = document.getElementById("import-paste-textarea");
         pasteSec.style.display = "block";
-        ta.value = (ta.value.trim() ? ta.value.trim() + "
-" : "") + result.text;
+        ta.value = (ta.value.trim() ? ta.value.trim() + "\n" : "") + result.text;
         pasteSec.querySelector("div").textContent = "📷 Texte lu sur la photo";
         const note = pasteSec.querySelectorAll("div")[1];
         if (note) note.innerHTML = "Corrige les erreurs de lecture si besoin, puis « Extraire » pour re-répartir ingrédients et étapes.";
