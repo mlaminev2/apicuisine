@@ -664,16 +664,41 @@ def _dedupe(values: list[str]) -> list[str]:
     return unique
 
 
+# Noms d'ingrédients courants qui sont AUSSI des verbes de cuisine
+# (poivre/poivrer, beurre/beurrer, farine/fariner, sale/saler…) ou souvent
+# listés sans quantité (sel, huile, ail…). En tête d'une ligne courte, ils
+# désignent un ingrédient, pas une instruction.
+_INGREDIENT_NOUNS = {
+    "sel", "poivre", "beurre", "sucre", "farine", "huile", "vinaigre",
+    "moutarde", "miel", "levure", "cannelle", "muscade", "persil", "basilic",
+    "thym", "laurier", "ail", "oignon", "oignons", "lait", "crème", "creme",
+    "eau", "oeuf", "oeufs", "œuf", "œufs", "riz", "semoule", "curry", "paprika",
+    "cumin", "gingembre", "coriandre", "ciboulette", "estragon", "romarin",
+}
+
+
 def _looks_like_ingredient(clean: str, has_unit: bool) -> bool:
-    """Ligne « nom + quantité » typique d'un ingrédient (« Farine 250 g »,
-    « Beurre 100 g »), à distinguer d'une instruction (« Fariner le moule »).
-    Vrai si la ligne est courte, contient une unité de mesure, et n'est pas
-    une phrase (pas de ponctuation finale)."""
-    if not has_unit:
+    """Vrai quand une ligne courte désigne un ingrédient plutôt qu'une étape :
+    soit « nom + quantité » (« Farine 250 g »), soit un nom d'ingrédient courant
+    en tête (« Sel », « Poivre du moulin », « Beurre doux ») — ces mots étant
+    ambigus (noms ET verbes). Une phrase (ponctuation finale) ou une ligne longue
+    est exclue."""
+    s = clean.rstrip()
+    if s.endswith((".", "!", "?", ":")):
         return False
-    if clean.rstrip().endswith((".", "!", "?", ":")):
+    words = clean.split()
+    if not words or len(words) > 5:
         return False
-    return len(clean.split()) <= 5
+    if has_unit:
+        return True
+    first = words[0].lower().strip(",;:.")
+    if first not in _INGREDIENT_NOUNS:
+        return False
+    # « Beurre le moule », « Poivre la sauce » : 2e mot = article direct →
+    # c'est une instruction, pas l'ingrédient « Beurre doux » / « Poivre noir ».
+    if len(words) >= 2 and words[1].lower().strip(",;:.'’") in ("le", "la", "les", "l"):
+        return False
+    return True
 
 
 def _extract_recipe_parts(description: str) -> tuple[list[str], list[str]]:

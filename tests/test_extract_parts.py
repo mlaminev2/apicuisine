@@ -262,3 +262,36 @@ Cuire 30 minutes a 180 degres."""
     assert "Beurre 100 g" in ingredients
     assert any(s.startswith("Cuire") for s in steps)
     assert not any("farine 250" in s.lower() for s in steps)
+
+
+def test_ingredients_ambigus_sans_quantite():
+    """Sel, Poivre, Beurre… (noms ET verbes) sans quantité = ingrédients ;
+    « Beurre le moule » (article direct) = instruction."""
+    desc = """Gateau
+Farine 200 g
+Beurre doux
+Sel
+Poivre du moulin
+Beurrer le moule et enfourner.
+Cuire 25 minutes."""
+    ingredients, steps = _extract_recipe_parts(desc)
+    assert "Beurre doux" in ingredients
+    assert "Sel" in ingredients
+    assert "Poivre du moulin" in ingredients
+    assert not any("beurre doux" in s.lower() for s in steps)
+    assert any("moule" in s.lower() for s in steps)  # « Beurrer le moule… » = étape
+    assert any(s.startswith("Cuire") for s in steps)
+
+
+def test_beurre_le_moule_est_instruction():
+    desc = """Ingrédients :
+Beurre doux
+Sucre
+
+Préparation :
+Beurre le moule généreusement
+Verse la pâte"""
+    ingredients, steps = _extract_recipe_parts(desc)
+    assert "Beurre doux" in ingredients
+    assert any("moule" in s.lower() for s in steps)
+    assert "Beurre le moule généreusement" not in ingredients
