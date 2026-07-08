@@ -304,9 +304,7 @@ export async function renderImport(root) {
     if (!steps.length) return;
     const ta = document.getElementById("import-steps-textarea");
     const cur = ta.value.trim();
-    ta.value = (cur ? cur + "
-" : "") + steps.join("
-");
+    ta.value = (cur ? cur + "\n" : "") + steps.join("\n");
   }
   document.getElementById("btn-check-all").onclick = () =>
     document.querySelectorAll(".import-ingr-row input[type=checkbox]").forEach((cb) => { cb.checked = true; });
