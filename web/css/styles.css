@@ -349,6 +349,14 @@ a { color: inherit; text-decoration: none; }
 .login-wrap > * { position: relative; z-index: 1; }
 .login-wrap h1 { font-family: var(--font-display); font-size: 26px; color: var(--ink); font-weight: 800; }
 
+/* Masquage des publicites AdSense pour les comptes premium / admin */
+html.no-ads .adsbygoogle,
+html.no-ads ins.adsbygoogle,
+html.no-ads .google-auto-placed,
+html.no-ads iframe[src*="googlesyndication"],
+html.no-ads iframe[src*="doubleclick"],
+html.no-ads iframe[src*="adtrafficquality"] { display: none !important; height: 0 !important; }
+
 /* ── Premium / abonnement ── */
 .premium-card { text-align: center; background: var(--card, #fff); border: 1px solid rgba(0,0,0,.06); border-radius: 16px; padding: 22px 18px; margin: 4px 0 14px; }
 .premium-card.premium-active { background: linear-gradient(135deg, #FDF6E9, #F6ECD8); border-color: rgba(180,140,60,.25); }

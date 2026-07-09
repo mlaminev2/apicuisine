@@ -48,14 +48,6 @@ function _loadGTM(id) {
   document.head.appendChild(s);
 }
 
-function _loadAdsense(client) {
-  const s = document.createElement("script");
-  s.async = true;
-  s.crossOrigin = "anonymous";
-  s.src = "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=" + encodeURIComponent(client);
-  document.head.appendChild(s);
-}
-
 function _activate() {
   if (loaded || !cfg) return;
   // Google Tag Manager gère GA4 + Pixel depuis son conteneur → prioritaire.
@@ -115,10 +107,13 @@ function _renderBanner() {
 export async function initAnalytics() {
   try { cfg = await api.publicConfig(); } catch { return; }
 
-  // AdSense : chargé pour les visiteurs et les comptes gratuits. Les comptes
-  // PREMIUM (payés) et le super admin ne voient aucune pub. Google (non
-  // connecté) voit toujours les pubs → validation/diffusion OK.
-  if (cfg.adsense_client_id && !(await _adsHidden())) _loadAdsense(cfg.adsense_client_id);
+  // AdSense est chargé statiquement dans le <head> (requis pour la validation
+  // Google). Les comptes PREMIUM (payés) et le super admin ne voient aucune
+  // pub : on masque les emplacements via la classe « no-ads ». Les visiteurs et
+  // comptes gratuits voient les pubs → diffusion/validation OK.
+  if (cfg.adsense_client_id && (await _adsHidden())) {
+    document.documentElement.classList.add("no-ads");
+  }
 
   // GA4 / Pixel / GTM : soumis à MA bannière de consentement.
   const hasTracker = cfg && (cfg.gtm_container_id || cfg.ga_measurement_id || cfg.meta_pixel_id);
