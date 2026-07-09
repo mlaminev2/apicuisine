@@ -58,9 +58,6 @@ function _activate() {
     if (cfg.ga_measurement_id) _loadGA(cfg.ga_measurement_id);
     if (cfg.meta_pixel_id) _loadPixel(cfg.meta_pixel_id);
   }
-  // Publicités AdSense (Auto ads : le placement est géré depuis le tableau
-  // de bord AdSense, aucun code d'emplacement nécessaire ici).
-  if (cfg.adsense_client_id) _loadAdsense(cfg.adsense_client_id);
   loaded = true;
 }
 
@@ -110,8 +107,14 @@ function _renderBanner() {
  * traceurs (consentement déjà donné), soit affiche la bannière. */
 export async function initAnalytics() {
   try { cfg = await api.publicConfig(); } catch { return; }
-  const hasTracker = cfg && (cfg.gtm_container_id || cfg.ga_measurement_id || cfg.meta_pixel_id || cfg.adsense_client_id);
-  if (!hasTracker) return;             // rien de configuré → pas de bannière
+
+  // AdSense : chargé sans condition (Google doit voir le script pour valider et
+  // diffuser ; le consentement pub est géré par le message RGPD de Google/CMP).
+  if (cfg.adsense_client_id) _loadAdsense(cfg.adsense_client_id);
+
+  // GA4 / Pixel / GTM : soumis à MA bannière de consentement.
+  const hasTracker = cfg && (cfg.gtm_container_id || cfg.ga_measurement_id || cfg.meta_pixel_id);
+  if (!hasTracker) return;
   if (consent() === "granted") { _activate(); trackPageView(location.hash || "#/"); }
   else if (consent() !== "denied") { _renderBanner(); }
 }
