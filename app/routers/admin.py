@@ -1,4 +1,5 @@
 import logging
+import time
 from datetime import date, datetime, timezone
 from pathlib import Path
 
@@ -49,23 +50,39 @@ def _billing_overview(members: list[Member]) -> dict:
     if not app_config.stripe_enabled:
         return out
     out["mode"] = "test" if app_config.stripe_secret_key.startswith("sk_test") else "live"
+    snap = _stripe_snapshot()
+    if snap is not None:
+        out["subscribers"], out["mrr"] = snap
+    return out
+
+
+_STRIPE_CACHE: dict = {"ts": 0.0, "data": None}
+_STRIPE_CACHE_TTL = 90  # secondes
+
+
+def _stripe_snapshot():
+    """(abonnés actifs, MRR €) lu dans Stripe, mis en cache pour éviter un appel
+    réseau à chaque ouverture de l'admin. Retourne None si Stripe est injoignable."""
+    now = time.time()
+    if _STRIPE_CACHE["data"] is not None and now - _STRIPE_CACHE["ts"] < _STRIPE_CACHE_TTL:
+        return _STRIPE_CACHE["data"]
     try:
         import stripe
         stripe.api_key = app_config.stripe_secret_key
         n, mrr = 0, 0.0
         subs = stripe.Subscription.list(status="active", limit=100)
         for s in subs.auto_paging_iter():
-            item = s["items"]["data"][0]
-            price = item["price"]
+            price = s["items"]["data"][0]["price"]
             amount = (price.get("unit_amount") or 0) / 100
             interval = (price.get("recurring") or {}).get("interval")
             mrr += amount / 12 if interval == "year" else amount
             n += 1
-        out["subscribers"] = n
-        out["mrr"] = round(mrr, 2)
+        data = (n, round(mrr, 2))
+        _STRIPE_CACHE.update(ts=now, data=data)
+        return data
     except Exception:
         logger.exception("admin: récapitulatif Stripe indisponible")
-    return out
+        return None
 
 
 def _system_overview() -> dict:

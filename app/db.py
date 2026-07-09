@@ -1,5 +1,6 @@
 from pathlib import Path
 
+from sqlalchemy import event
 from sqlmodel import SQLModel, create_engine, Session
 from app.config import settings
 
@@ -14,6 +15,18 @@ def _engine_kwargs(url: str) -> dict:
 
 
 engine = create_engine(settings.database_url, **_engine_kwargs(settings.database_url))
+
+
+if settings.database_url.startswith("sqlite"):
+    @event.listens_for(engine, "connect")
+    def _sqlite_pragmas(dbapi_conn, _record):
+        """WAL : lectures et écritures concurrentes sans blocage ; busy_timeout
+        évite les erreurs « database is locked » sous charge."""
+        cur = dbapi_conn.cursor()
+        cur.execute("PRAGMA journal_mode=WAL")
+        cur.execute("PRAGMA busy_timeout=5000")
+        cur.execute("PRAGMA synchronous=NORMAL")
+        cur.close()
 
 
 def _ensure_sqlite_dir() -> None:
