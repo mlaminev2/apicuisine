@@ -56,11 +56,12 @@ async def security_headers(request: Request, call_next):
             ads = ("https://pagead2.googlesyndication.com https://*.googlesyndication.com "
                    "https://partner.googleadservices.com https://tpc.googlesyndication.com "
                    "https://www.googletagservices.com https://adservice.google.com "
-                   "https://*.adtrafficquality.google")
+                   "https://*.adtrafficquality.google https://fundingchoicesmessages.google.com")
             script += " " + ads
             conn += " " + ads + " https://*.g.doubleclick.net https://*.google.com"
             frame = ("frame-src https://*.googlesyndication.com https://*.g.doubleclick.net "
-                     "https://www.google.com https://*.adtrafficquality.google; ")
+                     "https://www.google.com https://*.adtrafficquality.google "
+                     "https://fundingchoicesmessages.google.com; ")
         response.headers["Content-Security-Policy"] = (
             "default-src 'none'; "
             f"script-src 'self' {script}; "
