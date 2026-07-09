@@ -18,6 +18,22 @@ export async function renderLogin(root) {
 
   root.innerHTML = `
     <div class="login-wrap">
+      <header class="landing-hero">
+        <h1 class="landing-title">Menu en Famille</h1>
+        <p class="landing-tagline">Le planificateur de repas de toute la famille</p>
+        <p class="landing-desc">
+          Organisez les <strong>repas de votre semaine</strong>, générez votre
+          <strong>liste de courses</strong> automatiquement et gardez toutes vos
+          <strong>recettes</strong> au même endroit — synchronisé sur tous vos appareils.
+        </p>
+        <ul class="landing-features">
+          <li>📅 Un calendrier de repas par semaine ou par mois</li>
+          <li>🛒 Liste de courses générée depuis vos plats</li>
+          <li>🍽️ Vos recettes rangées et faciles à retrouver</li>
+          <li>🔗 Importez une recette depuis un lien ou une photo</li>
+          <li>✨ Remplissage automatique de la semaine</li>
+        </ul>
+      </header>
       <form class="login-form" id="login-form">
         <div class="form-group">
           <label>Email</label>
