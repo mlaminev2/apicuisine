@@ -43,6 +43,7 @@ def my_access(
         # Sans pub pour les comptes premium payés et le super admin — pas pour
         # « freemium désactivé » (qui ne veut pas dire compte payant).
         hide_ads=is_super_admin(member) or getattr(member, "is_premium", False),
+        can_manage_billing=bool(getattr(member, "stripe_customer_id", None)),
         import_limit=None if unlimited else app_config.import_free_limit,
         imports_remaining=None if unlimited else remaining,
     )
@@ -62,6 +63,7 @@ def set_member_premium(
     if target.is_owner:
         raise HTTPException(status_code=400, detail="Le propriétaire a déjà tous les accès")
     target.is_premium = body.is_premium
+    target.premium_source = "admin" if body.is_premium else None
     session.add(target)
     session.commit()
     session.refresh(target)

@@ -39,5 +39,17 @@ class Settings(BaseSettings):
     google_client_id: str = ""
     google_client_secret: str = ""
 
+    # Paiements Stripe (abonnement Premium). Vides = paiement désactivé.
+    stripe_secret_key: str = ""         # sk_test_... puis sk_live_...
+    stripe_publishable_key: str = ""    # pk_test_... puis pk_live_...
+    stripe_webhook_secret: str = ""     # whsec_... (signature des webhooks)
+    stripe_price_monthly: str = ""      # price_... abonnement mensuel
+    stripe_price_yearly: str = ""       # price_... abonnement annuel
+
+    @property
+    def stripe_enabled(self) -> bool:
+        """Le paiement n'est actif que si la clé et au moins un tarif existent."""
+        return bool(self.stripe_secret_key and (self.stripe_price_monthly or self.stripe_price_yearly))
+
 
 settings = Settings()

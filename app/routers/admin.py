@@ -148,6 +148,7 @@ def admin_set_premium(
     if not target:
         raise HTTPException(status_code=404, detail="Utilisateur introuvable")
     target.is_premium = body.is_premium
+    target.premium_source = "admin" if body.is_premium else None
     session.add(target)
     session.commit()
     return {"id": target.id, "is_premium": target.is_premium}

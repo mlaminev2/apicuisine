@@ -26,6 +26,7 @@ from app.routers import (
     import_url,
     categories,
     oauth,
+    billing,
 )
 
 app = FastAPI(title="Menus Famille", version="1.0.0")
@@ -90,6 +91,7 @@ app.include_router(settings.router)
 app.include_router(import_url.router)
 app.include_router(categories.router)
 app.include_router(oauth.router)
+app.include_router(billing.router)
 
 
 @app.get("/api/health")
@@ -177,6 +179,9 @@ def _migrate():
             ("is_premium", "BOOLEAN NOT NULL DEFAULT 0"),
             ("import_count", "INTEGER NOT NULL DEFAULT 0"),
             ("import_month", "TEXT"),
+            ("premium_source", "TEXT"),
+            ("stripe_customer_id", "TEXT"),
+            ("stripe_subscription_id", "TEXT"),
         ]:
             try:
                 conn.execute(text(f"ALTER TABLE member ADD COLUMN {col} {definition}"))

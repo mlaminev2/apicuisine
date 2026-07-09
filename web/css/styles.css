@@ -349,6 +349,28 @@ a { color: inherit; text-decoration: none; }
 .login-wrap > * { position: relative; z-index: 1; }
 .login-wrap h1 { font-family: var(--font-display); font-size: 26px; color: var(--ink); font-weight: 800; }
 
+/* ── Premium / abonnement ── */
+.premium-card { text-align: center; background: var(--card, #fff); border: 1px solid rgba(0,0,0,.06); border-radius: 16px; padding: 22px 18px; margin: 4px 0 14px; }
+.premium-card.premium-active { background: linear-gradient(135deg, #FDF6E9, #F6ECD8); border-color: rgba(180,140,60,.25); }
+.premium-emoji { font-size: 38px; line-height: 1; }
+.premium-card h2 { font-family: var(--font-display); font-size: 21px; color: var(--ink); margin-top: 8px; }
+.premium-card p { font-size: 13.5px; color: var(--ink-soft); line-height: 1.5; margin-top: 6px; }
+.premium-benefits { list-style: none; margin: 0 0 14px; padding: 14px 16px; background: rgba(0,0,0,.03); border-radius: 14px; display: flex; flex-direction: column; gap: 10px; }
+.premium-benefits li { font-size: 14px; color: var(--ink); }
+.premium-plans { display: flex; flex-direction: column; gap: 10px; }
+.premium-plan { display: block; width: 100%; text-align: left; background: #fff; border: 1.5px solid rgba(0,0,0,.1); border-radius: 14px; padding: 14px 16px; cursor: pointer; transition: border-color .15s, box-shadow .15s; }
+.premium-plan:hover:not(:disabled) { border-color: var(--terra, #C56B4A); box-shadow: 0 2px 10px rgba(0,0,0,.06); }
+.premium-plan:disabled { opacity: .5; cursor: default; }
+.premium-plan-head { display: flex; align-items: center; gap: 8px; }
+.premium-plan-name { font-weight: 700; font-size: 15px; color: var(--ink); }
+.premium-plan-price { font-size: 20px; font-weight: 800; color: var(--ink); margin-top: 4px; }
+.premium-plan-price span { font-size: 13px; font-weight: 500; color: var(--ink-soft); }
+.premium-badge { font-size: 11px; font-weight: 700; color: #fff; background: var(--terra, #C56B4A); padding: 2px 8px; border-radius: 999px; text-transform: uppercase; letter-spacing: .03em; }
+.premium-note { font-size: 13px; color: var(--ink-soft); background: rgba(0,0,0,.04); border-radius: 10px; padding: 10px 12px; margin-bottom: 12px; }
+.settings-premium { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.settings-premium-title { font-weight: 700; font-size: 14.5px; color: var(--ink); }
+.settings-premium-sub { font-size: 12px; color: var(--ink-soft); margin-top: 2px; }
+
 /* ── Landing / présentation (page de connexion, contenu SEO) ── */
 .landing-hero { width: 100%; max-width: 420px; text-align: center; margin-bottom: 4px; }
 .landing-title { font-family: var(--font-display); font-weight: 800; font-size: 30px; color: var(--ink); letter-spacing: -0.01em; }

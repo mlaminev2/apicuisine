@@ -36,6 +36,9 @@ class Member(SQLModel, table=True):
     password_hash: Optional[str] = Field(default=None)
     is_owner: bool = Field(default=False)
     is_premium: bool = Field(default=False)  # accès premium accordé par le propriétaire
+    premium_source: Optional[str] = Field(default=None)  # "admin" | "stripe" (origine du premium)
+    stripe_customer_id: Optional[str] = Field(default=None)      # id client Stripe (cus_...)
+    stripe_subscription_id: Optional[str] = Field(default=None)  # abonnement en cours (sub_...)
     import_count: int = Field(default=0)               # imports consommés sur le mois courant
     import_month: Optional[str] = Field(default=None)  # mois du compteur, format "YYYY-MM"
     oauth_provider: Optional[str] = Field(default=None)   # "google" | "apple"

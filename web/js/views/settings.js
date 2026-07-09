@@ -83,6 +83,28 @@ export async function renderSettings(root) {
   if (profileSub && members?.length) {
     profileSub.textContent = `Foyer de ${members.length} membre${members.length > 1 ? "s" : ""}${state.isOwner ? " · propriétaire" : ""}`;
   }
+  // Accès Premium : état de l'abonnement + lien vers la page d'offre
+  const premiumCard = document.createElement("div");
+  premiumCard.className = "settings-section";
+  if (access?.premium_active && access?.is_premium) {
+    premiumCard.innerHTML = `
+      <div class="settings-premium is-active">
+        <div><div class="settings-premium-title">💎 Premium actif</div>
+          <div class="settings-premium-sub">Imports illimités · sans publicité</div></div>
+        ${access?.can_manage_billing ? `<button class="btn btn-ghost btn-sm" id="go-premium">Gérer</button>` : ""}
+      </div>`;
+  } else {
+    premiumCard.innerHTML = `
+      <div class="settings-premium">
+        <div><div class="settings-premium-title">✨ Passer Premium</div>
+          <div class="settings-premium-sub">Imports illimités et zéro publicité</div></div>
+        <button class="btn btn-primary btn-sm" id="go-premium">Découvrir</button>
+      </div>`;
+  }
+  const goPremium = premiumCard.querySelector("#go-premium");
+  if (goPremium) goPremium.onclick = () => { location.hash = "#/premium"; };
+  body.insertBefore(premiumCard, secLogout);
+
   // Espace admin : réservé au super administrateur (SUPER_ADMIN_EMAIL côté serveur)
   if (access?.is_admin) {
     const adminBtn = document.createElement("button");
