@@ -5,8 +5,6 @@ from pathlib import Path
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, func, select
 
-logger = logging.getLogger(__name__)
-
 from app.auth import get_current_admin, member_has_premium
 from app.config import settings as app_config
 from app.db import get_session
@@ -22,6 +20,7 @@ from app.models import (
 )
 from app.schemas import MemberPremiumUpdate
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/admin", tags=["admin"], dependencies=[Depends(get_current_admin)])
 
 
