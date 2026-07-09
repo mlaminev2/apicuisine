@@ -18,6 +18,20 @@ function _fmtDate(iso) {
   return new Date(iso).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" });
 }
 
+function _fmtEur(v) {
+  if (v == null) return "—";
+  return v.toLocaleString("fr-FR", { style: "currency", currency: "EUR" });
+}
+
+function _statusLine(label, ok, detail) {
+  const dot = ok ? "#3EA96B" : "#c9ccd1";
+  return `<div style="display:flex;align-items:center;gap:9px;padding:7px 0;border-bottom:1px solid var(--line)">
+    <span style="width:9px;height:9px;border-radius:50%;background:${dot};flex-shrink:0"></span>
+    <span style="flex:1;font-size:13px;font-weight:600">${label}</span>
+    <span class="home-sub" style="font-size:12px">${detail}</span>
+  </div>`;
+}
+
 export async function renderAdmin(root) {
   root.innerHTML = `
     <div class="page-header">
@@ -42,7 +56,16 @@ export async function renderAdmin(root) {
   const body = document.getElementById("admin-body");
   if (!body) return;
   const p = stats.platform;
+  const bill = stats.billing || {};
+  const sys = stats.system || {};
   const freemiumOn = stats.households.some((h) => h.freemium_enabled);
+
+  const stripeDetail = !bill.stripe_enabled
+    ? "désactivé"
+    : (bill.mode === "live" ? "actif · mode RÉEL" : "actif · mode test");
+  const analyticsDetail = sys.analytics
+    ? "configurée" + (sys.pixel ? " + Pixel" : "")
+    : "non configurée";
 
   body.innerHTML = `
     <div class="shop-cat-title" style="padding:6px 4px 0">🌍 Plateforme</div>
@@ -69,6 +92,25 @@ export async function renderAdmin(root) {
           <span class="toggle-slider"></span>
         </label>
       </div>
+    </div>
+
+    <div class="shop-cat-title" style="padding:6px 4px 0">💳 Abonnements & revenus</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+      ${_tile(bill.subscribers ?? 0, "abonné" + ((bill.subscribers ?? 0) > 1 ? "s" : "") + " payant" + ((bill.subscribers ?? 0) > 1 ? "s" : ""))}
+      ${_tile(_fmtEur(bill.mrr), "revenu mensuel")}
+      ${_tile(bill.granted ?? 0, "premium offert" + ((bill.granted ?? 0) > 1 ? "s" : ""))}
+    </div>
+    <div class="home-sub" style="font-size:11.5px;padding:0 4px">
+      ${bill.stripe_enabled
+        ? `Stripe ${bill.mode === "live" ? "en mode <strong>RÉEL</strong>" : "en mode test (paiements fictifs)"}${bill.mrr == null ? " · revenu momentanément indisponible" : ""}`
+        : "Paiement Stripe désactivé — aucun abonnement possible pour l'instant."}
+    </div>
+
+    <div class="shop-cat-title" style="padding:6px 4px 0">⚙️ État du système</div>
+    <div class="card home-card" style="cursor:default;padding:6px 14px">
+      ${_statusLine("💳 Paiement Stripe", !!bill.stripe_enabled, stripeDetail)}
+      ${_statusLine("📢 Publicités AdSense", !!sys.adsense, sys.adsense ? "configurées" : "non configurées")}
+      ${_statusLine("📊 Mesure d'audience", !!sys.analytics, analyticsDetail)}
     </div>
 
     <div class="shop-cat-title" style="padding:6px 4px 0">🏠 Foyers (${stats.households.length})</div>
@@ -143,6 +185,13 @@ export async function renderAdmin(root) {
     const quota = m.premium_active
       ? "imports illimités"
       : `imports : ${m.imports_this_month}/${p.import_limit}`;
+    const isPaid = m.premium_source === "stripe";
+    const premBadge = isPaid
+      ? '<span class="badge badge-tag">💳 abonné</span>'
+      : (m.is_premium ? '<span class="badge badge-tag">🎁 premium</span>' : "");
+    const premControl = isPaid
+      ? `<div class="flex-1" style="font-size:11px;color:var(--ink-soft);align-self:center;line-height:1.3">💳 Abonné payant · résiliation via Stripe</div>`
+      : `<button class="btn btn-sm ${m.is_premium ? "btn-primary" : "btn-ghost"} flex-1" data-prem style="font-size:11.5px">${m.is_premium ? "🎁 Premium offert — retirer" : "Offrir le premium"}</button>`;
     row.innerHTML = `
       <div style="display:flex;align-items:center;gap:10px">
         <span class="member-dot" style="background:${escapeHtml(m.color)};width:14px;height:14px;flex-shrink:0"></span>
@@ -150,7 +199,7 @@ export async function renderAdmin(root) {
           <div style="font-weight:700;font-size:14px">${escapeHtml(m.name)}
             ${m.is_self ? '<span class="badge badge-tag">vous</span>' : ""}
             ${m.is_owner ? '<span class="badge badge-tag">propriétaire</span>' : ""}
-            ${m.is_premium ? " 💎" : ""}
+            ${premBadge}
           </div>
           <div class="home-sub" style="font-size:11.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
             ${escapeHtml(m.email || "")} · ${escapeHtml(m.household_name)} · ${quota}
@@ -158,15 +207,14 @@ export async function renderAdmin(root) {
         </div>
       </div>
       <div style="display:flex;gap:6px;margin-top:9px">
-        <button class="btn btn-sm ${m.is_premium ? "btn-primary" : "btn-ghost"} flex-1" data-prem style="font-size:11.5px">
-          ${m.is_premium ? "💎 Premium — retirer" : "Accorder le premium"}
-        </button>
+        ${premControl}
         ${m.is_self ? "" : `<button class="btn btn-danger btn-sm" data-del style="font-size:11px;padding:5px 10px">🗑</button>`}
       </div>`;
-    row.querySelector("[data-prem]").onclick = async () => {
+    const premBtn = row.querySelector("[data-prem]");
+    if (premBtn) premBtn.onclick = async () => {
       try {
         await api.adminSetPremium(m.id, !m.is_premium);
-        showToast(m.is_premium ? `Premium retiré à ${m.name}` : `💎 ${m.name} est premium`);
+        showToast(m.is_premium ? `Premium retiré à ${m.name}` : `🎁 ${m.name} passe premium`);
         renderAdmin(root);
       } catch (err) { showToast(err.message, "error"); }
     };

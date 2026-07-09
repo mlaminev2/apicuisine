@@ -1,8 +1,11 @@
+import logging
 from datetime import date, datetime, timezone
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, func, select
+
+logger = logging.getLogger(__name__)
 
 from app.auth import get_current_admin, member_has_premium
 from app.config import settings as app_config
@@ -27,6 +30,56 @@ def _month_bounds(today: date) -> tuple[date, date]:
     end = (start.replace(year=start.year + 1, month=1) if start.month == 12
            else start.replace(month=start.month + 1))
     return start, end
+
+
+def _billing_overview(members: list[Member]) -> dict:
+    """Récapitulatif abonnements : abonnés payants + revenu mensuel réel (lu dans
+    Stripe si disponible), et premium offerts (accordés à la main)."""
+    def _src(m):
+        return getattr(m, "premium_source", None)
+    subscribers_db = sum(1 for m in members if _src(m) == "stripe")
+    granted = sum(1 for m in members if getattr(m, "is_premium", False) and _src(m) != "stripe")
+
+    out = {
+        "stripe_enabled": app_config.stripe_enabled,
+        "mode": None,
+        "subscribers": subscribers_db,
+        "mrr": None,          # revenu mensuel récurrent (€), None si indisponible
+        "granted": granted,
+    }
+    if not app_config.stripe_enabled:
+        return out
+    out["mode"] = "test" if app_config.stripe_secret_key.startswith("sk_test") else "live"
+    try:
+        import stripe
+        stripe.api_key = app_config.stripe_secret_key
+        n, mrr = 0, 0.0
+        subs = stripe.Subscription.list(status="active", limit=100)
+        for s in subs.auto_paging_iter():
+            item = s["items"]["data"][0]
+            price = item["price"]
+            amount = (price.get("unit_amount") or 0) / 100
+            interval = (price.get("recurring") or {}).get("interval")
+            mrr += amount / 12 if interval == "year" else amount
+            n += 1
+        out["subscribers"] = n
+        out["mrr"] = round(mrr, 2)
+    except Exception:
+        logger.exception("admin: récapitulatif Stripe indisponible")
+    return out
+
+
+def _system_overview() -> dict:
+    """État de configuration des intégrations (pour l'admin)."""
+    stripe_mode = None
+    if app_config.stripe_enabled:
+        stripe_mode = "test" if app_config.stripe_secret_key.startswith("sk_test") else "live"
+    return {
+        "stripe": stripe_mode,  # "test" | "live" | None
+        "adsense": bool(app_config.adsense_client_id),
+        "analytics": bool(app_config.ga_measurement_id or app_config.gtm_container_id),
+        "pixel": bool(app_config.meta_pixel_id),
+    }
 
 
 @router.get("/stats")
@@ -106,6 +159,7 @@ def admin_stats(
                 "household_name": hh_names.get(m.household_id, "?"),
                 "is_owner": m.is_owner,
                 "is_premium": getattr(m, "is_premium", False),
+                "premium_source": getattr(m, "premium_source", None),
                 "premium_active": member_has_premium(m, session),
                 "imports_this_month": (
                     m.import_count if getattr(m, "import_month", None) == this_month else 0
@@ -115,6 +169,8 @@ def admin_stats(
             }
             for m in members
         ],
+        "billing": _billing_overview(members),
+        "system": _system_overview(),
     }
 
 
