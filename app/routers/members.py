@@ -40,6 +40,9 @@ def my_access(
         is_premium=getattr(member, "is_premium", False),
         premium_active=member_has_premium(member, session),
         is_admin=is_super_admin(member),
+        # Sans pub pour les comptes premium payés et le super admin — pas pour
+        # « freemium désactivé » (qui ne veut pas dire compte payant).
+        hide_ads=is_super_admin(member) or getattr(member, "is_premium", False),
         import_limit=None if unlimited else app_config.import_free_limit,
         imports_remaining=None if unlimited else remaining,
     )

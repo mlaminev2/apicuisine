@@ -157,3 +157,24 @@ def test_premium_toggle_rejected_on_owner(client, household, auth_headers):
     owner_id = next(m["id"] for m in members if m["is_owner"])
     res = client.put(f"/api/members/{owner_id}/premium", json={"is_premium": True}, headers=auth_headers)
     assert res.status_code == 400
+
+
+def test_hide_ads_premium_and_admin(client, household, auth_headers, member_headers, session):
+    """Les pubs sont masquées pour le premium (payé) et le super admin, mais PAS
+    pour un compte gratuit — même quand le freemium plateforme est désactivé."""
+    from app.config import settings as app_config
+    # freemium désactivé : tout le monde a premium_active, mais hide_ads reste
+    # réservé aux comptes réellement premium / admin.
+    assert client.get("/api/access", headers=member_headers).json()["hide_ads"] is False
+
+    mid = _member_id(client, auth_headers)
+    client.put(f"/api/admin/members/{mid}/premium", json={"is_premium": True}, headers=auth_headers)
+    assert client.get("/api/access", headers=member_headers).json()["hide_ads"] is True
+
+    # Super admin (par email) : pas de pub non plus
+    previous = app_config.super_admin_email
+    app_config.super_admin_email = "owner@test.local"
+    try:
+        assert client.get("/api/access", headers=auth_headers).json()["hide_ads"] is True
+    finally:
+        app_config.super_admin_email = previous

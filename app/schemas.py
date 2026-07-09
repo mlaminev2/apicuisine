@@ -60,6 +60,7 @@ class AccessRead(BaseModel):
     is_premium: bool
     premium_active: bool  # le membre courant a-t-il accès aux fonctions premium ?
     is_admin: bool = False  # accès à l'espace admin (super admin)
+    hide_ads: bool = False  # masquer les publicités (compte premium payé ou admin)
     import_limit: Optional[int] = None      # null = illimité
     imports_remaining: Optional[int] = None  # null = illimité
 

@@ -9,6 +9,13 @@ let loaded = false;
 
 function consent() { return localStorage.getItem(CONSENT_KEY); }
 
+// Pas de pub pour les comptes premium payés / super admin. Un visiteur non
+// connecté voit les pubs (on ne peut pas savoir, et c'est le comportement voulu).
+async function _adsHidden() {
+  if (!localStorage.getItem("token")) return false;
+  try { return !!(await api.getAccess()).hide_ads; } catch { return false; }
+}
+
 function _loadGA(id) {
   window.dataLayer = window.dataLayer || [];
   window.gtag = function () { window.dataLayer.push(arguments); };
@@ -108,9 +115,10 @@ function _renderBanner() {
 export async function initAnalytics() {
   try { cfg = await api.publicConfig(); } catch { return; }
 
-  // AdSense : chargé sans condition (Google doit voir le script pour valider et
-  // diffuser ; le consentement pub est géré par le message RGPD de Google/CMP).
-  if (cfg.adsense_client_id) _loadAdsense(cfg.adsense_client_id);
+  // AdSense : chargé pour les visiteurs et les comptes gratuits. Les comptes
+  // PREMIUM (payés) et le super admin ne voient aucune pub. Google (non
+  // connecté) voit toujours les pubs → validation/diffusion OK.
+  if (cfg.adsense_client_id && !(await _adsHidden())) _loadAdsense(cfg.adsense_client_id);
 
   // GA4 / Pixel / GTM : soumis à MA bannière de consentement.
   const hasTracker = cfg && (cfg.gtm_container_id || cfg.ga_measurement_id || cfg.meta_pixel_id);
