@@ -54,10 +54,10 @@ async def security_headers(request: Request, call_next):
         if _cfg.adsense_client_id:
             ads = ("https://pagead2.googlesyndication.com https://*.googlesyndication.com "
                    "https://partner.googleadservices.com https://tpc.googlesyndication.com "
-                   "https://www.googletagservices.com https://adservice.google.com")
+                   "https://www.googletagservices.com https://adservice.google.com "
+                   "https://*.adtrafficquality.google")
             script += " " + ads
-            conn += (" " + ads + " https://*.g.doubleclick.net https://*.google.com "
-                     "https://*.adtrafficquality.google")
+            conn += " " + ads + " https://*.g.doubleclick.net https://*.google.com"
             frame = ("frame-src https://*.googlesyndication.com https://*.g.doubleclick.net "
                      "https://www.google.com https://*.adtrafficquality.google; ")
         response.headers["Content-Security-Policy"] = (
