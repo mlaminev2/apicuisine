@@ -41,17 +41,27 @@ function _loadGTM(id) {
   document.head.appendChild(s);
 }
 
+function _loadAdsense(client) {
+  const s = document.createElement("script");
+  s.async = true;
+  s.crossOrigin = "anonymous";
+  s.src = "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=" + encodeURIComponent(client);
+  document.head.appendChild(s);
+}
+
 function _activate() {
   if (loaded || !cfg) return;
   // Google Tag Manager gère GA4 + Pixel depuis son conteneur → prioritaire.
   if (cfg.gtm_container_id) {
     _loadGTM(cfg.gtm_container_id);
-    loaded = true;
-    return;
+  } else {
+    if (cfg.ga_measurement_id) _loadGA(cfg.ga_measurement_id);
+    if (cfg.meta_pixel_id) _loadPixel(cfg.meta_pixel_id);
   }
-  if (cfg.ga_measurement_id) _loadGA(cfg.ga_measurement_id);
-  if (cfg.meta_pixel_id) _loadPixel(cfg.meta_pixel_id);
-  loaded = !!(cfg.ga_measurement_id || cfg.meta_pixel_id);
+  // Publicités AdSense (Auto ads : le placement est géré depuis le tableau
+  // de bord AdSense, aucun code d'emplacement nécessaire ici).
+  if (cfg.adsense_client_id) _loadAdsense(cfg.adsense_client_id);
+  loaded = true;
 }
 
 /** Enregistre une vue de page (routeur SPA à base de hash). */
@@ -100,7 +110,7 @@ function _renderBanner() {
  * traceurs (consentement déjà donné), soit affiche la bannière. */
 export async function initAnalytics() {
   try { cfg = await api.publicConfig(); } catch { return; }
-  const hasTracker = cfg && (cfg.gtm_container_id || cfg.ga_measurement_id || cfg.meta_pixel_id);
+  const hasTracker = cfg && (cfg.gtm_container_id || cfg.ga_measurement_id || cfg.meta_pixel_id || cfg.adsense_client_id);
   if (!hasTracker) return;             // rien de configuré → pas de bannière
   if (consent() === "granted") { _activate(); trackPageView(location.hash || "#/"); }
   else if (consent() !== "denied") { _renderBanner(); }

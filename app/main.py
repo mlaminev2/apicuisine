@@ -41,18 +41,31 @@ async def security_headers(request: Request, call_next):
     if request.url.scheme == "https":
         response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
     if "text/html" in response.headers.get("content-type", ""):
+        from app.config import settings as _cfg
         # Domaines autorisés pour Google Analytics et le Pixel Meta (chargés
         # uniquement après consentement RGPD, mais autorisés ici par la CSP).
-        ga = "https://www.googletagmanager.com https://connect.facebook.net"
+        script = "https://www.googletagmanager.com https://connect.facebook.net"
         conn = ("https://www.google-analytics.com https://*.google-analytics.com "
                 "https://*.analytics.google.com https://www.googletagmanager.com "
                 "https://connect.facebook.net https://www.facebook.com")
+        frame = ""
+        # AdSense : nombreux domaines (scripts, iframes de pub) — ajoutés
+        # uniquement quand la pub est activée, pour garder la CSP stricte sinon.
+        if _cfg.adsense_client_id:
+            ads = ("https://pagead2.googlesyndication.com https://*.googlesyndication.com "
+                   "https://partner.googleadservices.com https://tpc.googlesyndication.com "
+                   "https://www.googletagservices.com https://adservice.google.com")
+            script += " " + ads
+            conn += " " + ads + " https://*.g.doubleclick.net https://*.google.com"
+            frame = ("frame-src https://*.googlesyndication.com https://*.g.doubleclick.net "
+                     "https://www.google.com; ")
         response.headers["Content-Security-Policy"] = (
             "default-src 'none'; "
-            f"script-src 'self' {ga}; "
+            f"script-src 'self' {script}; "
             "style-src 'self' 'unsafe-inline'; "
             "img-src 'self' data: https:; "
             f"connect-src 'self' {conn}; "
+            f"{frame}"
             "manifest-src 'self'; "
             "worker-src 'self'; "
             "font-src 'self'; "

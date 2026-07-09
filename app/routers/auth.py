@@ -69,6 +69,7 @@ def public_config():
         "gtm_container_id": app_config.gtm_container_id or "",
         "ga_measurement_id": app_config.ga_measurement_id or "",
         "meta_pixel_id": app_config.meta_pixel_id or "",
+        "adsense_client_id": app_config.adsense_client_id or "",
     }
 
 

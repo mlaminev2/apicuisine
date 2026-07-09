@@ -1,7 +1,7 @@
 def test_public_config_empty_by_default(client):
     res = client.get("/api/public-config")
     assert res.status_code == 200
-    assert res.json() == {"gtm_container_id": "", "ga_measurement_id": "", "meta_pixel_id": ""}
+    assert res.json() == {"gtm_container_id": "", "ga_measurement_id": "", "meta_pixel_id": "", "adsense_client_id": ""}
 
 
 def test_public_config_reports_ids(client):

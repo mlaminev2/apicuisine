@@ -33,6 +33,7 @@ class Settings(BaseSettings):
     gtm_container_id: str = ""    # Google Tag Manager, ex. GTM-XXXXXXX (contient GA4, Pixel…)
     ga_measurement_id: str = ""   # Google Analytics 4 direct, ex. G-XXXXXXXXXX (si pas de GTM)
     meta_pixel_id: str = ""        # Pixel Meta/Facebook direct, ex. 123456789012345 (si pas de GTM)
+    adsense_client_id: str = ""    # Google AdSense, ex. ca-pub-XXXXXXXXXXXXXXXX (affichage de pubs)
 
     # Google OAuth (optionnel)
     google_client_id: str = ""
