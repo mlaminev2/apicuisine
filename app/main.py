@@ -94,7 +94,7 @@ app.include_router(oauth.router)
 app.include_router(billing.router)
 
 
-@app.get("/api/health")
+@app.api_route("/api/health", methods=["GET", "HEAD"])
 def health():
     try:
         with engine.connect() as conn:
