@@ -69,6 +69,7 @@ export async function renderLogin(root) {
       </div>
 
       <div class="legal-links">
+        <a href="/conseils/">Conseils</a>
         <a href="#/mentions-legales">Mentions légales</a>
         <a href="#/cgv">CGV</a>
         <a href="#/confidentialite">Confidentialité</a>

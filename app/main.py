@@ -220,10 +220,17 @@ if web_dir.exists():
     @app.get("/{full_path:path}")
     def serve_spa(full_path: str):
         candidate = (web_dir / full_path).resolve()
-        if (
-            candidate.is_relative_to(web_dir_resolved)
-            and candidate.exists()
-            and candidate.is_file()
-        ):
-            return FileResponse(str(candidate))
+        if candidate.is_relative_to(web_dir_resolved):
+            # Fichier existant (assets, pages statiques)
+            if candidate.is_file():
+                return FileResponse(str(candidate))
+            # Dossier avec index.html (ex: /conseils/ -> conseils/index.html)
+            index = candidate / "index.html"
+            if candidate.is_dir() and index.is_file():
+                return FileResponse(str(index))
+            # URL propre sans extension (ex: /conseils/batch-cooking -> .html)
+            html = candidate.with_suffix(".html")
+            if html.is_relative_to(web_dir_resolved) and html.is_file():
+                return FileResponse(str(html))
+        # Sinon : on sert la SPA (routage géré côté client par le hash)
         return FileResponse(str(web_dir / "index.html"))
