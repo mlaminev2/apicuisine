@@ -83,6 +83,10 @@ def update_dish(
         dish.thumbnail_url = body.thumbnail_url
     if body.author is not None:
         dish.author = body.author
+    if body.is_favorite is not None:
+        dish.is_favorite = body.is_favorite
+    if body.diet_tags is not None:
+        dish.diet_tags = body.diet_tags or None
     session.add(dish)
     session.commit()
     session.refresh(dish)

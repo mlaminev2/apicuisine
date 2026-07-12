@@ -116,6 +116,8 @@ def _migrate():
             ("source_url", "TEXT"),
             ("thumbnail_url", "TEXT"),
             ("author", "TEXT"),
+            ("is_favorite", "BOOLEAN NOT NULL DEFAULT 0"),
+            ("diet_tags", "TEXT"),
         ]:
             try:
                 conn.execute(text(f"ALTER TABLE dish ADD COLUMN {col} {definition}"))
@@ -143,6 +145,7 @@ def _migrate():
             ("lunch_enabled", "BOOLEAN NOT NULL DEFAULT 0"),
             ("multi_dish_enabled", "BOOLEAN NOT NULL DEFAULT 0"),
             ("freemium_enabled", "BOOLEAN NOT NULL DEFAULT 0"),
+            ("dietary_notes", "TEXT"),
         ]:
             try:
                 conn.execute(text(f"ALTER TABLE settings ADD COLUMN {col} {definition}"))

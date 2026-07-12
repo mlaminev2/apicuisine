@@ -4,7 +4,7 @@ import { openModal } from "../components/modal.js";
 import { showToast } from "../components/toast.js";
 import { CAT_LABELS, DAYS_FULL_FR, isoWeekOf, mergeShoppingItems, escapeHtml } from "../utils.js";
 
-export async function renderPicker(dateStr, category, currentEntry, dessertEnabled, onSave, lunchEnabled = false, multiEnabled = false) {
+export async function renderPicker(dateStr, category, currentEntry, dessertEnabled, onSave, lunchEnabled = false, multiEnabled = false, dietaryNotes = "") {
   const d = new Date(dateStr + "T00:00:00");
   const dayName = DAYS_FULL_FR[(d.getDay() + 6) % 7];
   const dateLabel = `${dayName} ${d.getDate().toString().padStart(2, "0")}/${(d.getMonth() + 1).toString().padStart(2, "0")}`;
@@ -101,6 +101,14 @@ export async function renderPicker(dateStr, category, currentEntry, dessertEnabl
 
   function renderBody(body) {
     body.innerHTML = "";
+
+    // Rappel des allergies & restrictions du foyer (défini dans les réglages)
+    if (dietaryNotes) {
+      const note = document.createElement("div");
+      note.className = "diet-reminder";
+      note.textContent = "🥗 " + dietaryNotes;
+      body.appendChild(note);
+    }
 
     // Accès au menu du midi (option activée dans les réglages)
     if (lunchEnabled) {

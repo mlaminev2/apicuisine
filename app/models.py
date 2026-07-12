@@ -61,6 +61,8 @@ class Dish(SQLModel, table=True):
     source_url: Optional[str] = Field(default=None, sa_type=Text)
     thumbnail_url: Optional[str] = Field(default=None, sa_type=Text)
     author: Optional[str] = Field(default=None)
+    is_favorite: bool = Field(default=False)                 # plat mis en favori
+    diet_tags: Optional[str] = Field(default=None)           # régime/allergènes, séparés par des virgules
     created_at: datetime = Field(default_factory=_utcnow)
 
 
@@ -126,4 +128,5 @@ class Settings(SQLModel, table=True):
     lunch_enabled: bool = Field(default=False)
     multi_dish_enabled: bool = Field(default=False)
     freemium_enabled: bool = Field(default=False)
+    dietary_notes: Optional[str] = Field(default=None)       # allergies & restrictions du foyer
     updated_at: datetime = Field(default_factory=_utcnow)

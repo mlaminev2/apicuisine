@@ -575,7 +575,7 @@ async function openDayPicker(dateStr, entry, settings, onSave) {
   const dow = (d.getDay() + 6) % 7;
   const catMap = settings.weekday_category_map;
   const category = catMap[String(dow)] || DEFAULT_CATS[dow];
-  await renderPicker(dateStr, category, entry, settings.dessert_enabled, onSave, settings.lunch_enabled, settings.multi_dish_enabled);
+  await renderPicker(dateStr, category, entry, settings.dessert_enabled, onSave, settings.lunch_enabled, settings.multi_dish_enabled, settings.dietary_notes || "");
 }
 
 function openDaySummary(dateStr, entry, settings, onSave) {

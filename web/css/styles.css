@@ -954,6 +954,18 @@ html.no-ads iframe[src*="adtrafficquality"] { display: none !important; height: 
 .ddc-click:active { transform: scale(.99); }
 .ddc-arrow { margin-left: auto; align-self: center; color: var(--muted-2); font-size: 20px; padding-left: 8px; flex: none; }
 
+/* Étoile favori sur les cartes de plats */
+.plat-star { position: absolute; top: 6px; left: 6px; z-index: 2; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; font-size: 18px; color: #A79E8A; background: rgba(249,247,241,.92); border: 1px solid var(--line-strong); cursor: pointer; line-height: 1; }
+.plat-star.on { color: #C79A3D; }
+.plat-star:active { transform: scale(.85); }
+/* Onglet Favoris */
+.cat-tab.cat-fav.active { background: #8A6D2E; border-color: #8A6D2E; color: var(--cream); }
+/* Pastilles régime / allergènes (fiche recette) */
+.diet-tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0 2px; }
+.diet-tag { font-size: 12px; font-weight: 600; color: #6B5A3E; background: #F0E9DA; border: 1px solid var(--line-strong); padding: 4px 9px; }
+/* Rappel allergies/restrictions dans le sélecteur de plat */
+.diet-reminder { background: var(--terra-soft); border: 1px solid var(--terra); color: var(--terra); font-size: 12.5px; font-weight: 600; padding: 8px 11px; margin-bottom: 10px; }
+
 /* Pages légales (mentions, CGV, confidentialité) */
 .legal-doc { max-width: 680px; margin: 0 auto; padding: 4px 20px 44px; font-size: 14px; line-height: 1.62; color: var(--ink-soft); }
 .legal-doc h2 { font-family: var(--font-display); font-style: italic; font-size: 20px; color: var(--ink); margin: 24px 0 8px; }

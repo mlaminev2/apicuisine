@@ -59,6 +59,13 @@ function renderCatTabs() {
   allBtn.textContent = total ? `Tous · ${total}` : "Tous";
   allBtn.onclick = () => { activeCategory = "tous"; renderCatTabs(); renderDishList(document.getElementById("dish-list-container")); };
   tabs.appendChild(allBtn);
+  // Onglet Favoris
+  const favCount = allDishes.filter((d) => d.active && d.is_favorite).length;
+  const favBtn = document.createElement("button");
+  favBtn.className = "cat-tab cat-fav" + (activeCategory === "favoris" ? " active" : "");
+  favBtn.textContent = favCount ? `★ Favoris · ${favCount}` : "★ Favoris";
+  favBtn.onclick = () => { activeCategory = "favoris"; renderCatTabs(); renderDishList(document.getElementById("dish-list-container")); };
+  tabs.appendChild(favBtn);
   for (const cat of CATEGORIES) {
     const btn = document.createElement("button");
     btn.className = `cat-tab ${CAT_CSS[cat]}` + (cat === activeCategory ? " active" : "");
@@ -90,7 +97,8 @@ function renderDishList(container) {
   if (!container) return;
   container.innerHTML = "";
   let dishes = allDishes.filter((d) => d.active);
-  if (activeCategory !== "tous") dishes = dishes.filter((d) => d.category === activeCategory);
+  if (activeCategory === "favoris") dishes = dishes.filter((d) => d.is_favorite);
+  else if (activeCategory !== "tous") dishes = dishes.filter((d) => d.category === activeCategory);
   if (searchQuery) dishes = dishes.filter((d) => d.name.toLowerCase().includes(searchQuery));
 
   if (!dishes.length) {
@@ -122,12 +130,30 @@ function makePlatCard(dish, index) {
 
   card.innerHTML = `
     ${thumbHtml}
-    ${dish.source_tag ? `<span class="plat-fav" title="${escapeHtml(dish.source_tag)}">🔖</span>` : ""}
+    <span class="plat-star${dish.is_favorite ? " on" : ""}" role="button" aria-label="Favori" title="Favori">${dish.is_favorite ? "★" : "☆"}</span>
     <div class="plat-body">
       <div class="plat-name">${escapeHtml(dish.name)}</div>
       <div class="plat-meta">${escapeHtml(meta.join(" · "))}</div>
     </div>`;
   card.onclick = () => openDishModal(dish);
+  const star = card.querySelector(".plat-star");
+  star.onclick = async (e) => {
+    e.stopPropagation();
+    const nv = !dish.is_favorite;
+    star.classList.toggle("on", nv);
+    star.textContent = nv ? "★" : "☆";
+    dish.is_favorite = nv;
+    try {
+      await api.updateDish(dish.id, { is_favorite: nv });
+      renderCatTabs();
+      if (activeCategory === "favoris" && !nv) renderDishList(document.getElementById("dish-list-container"));
+    } catch (err) {
+      dish.is_favorite = !nv;
+      star.classList.toggle("on", !nv);
+      star.textContent = !nv ? "★" : "☆";
+      showToast(err.message, "error");
+    }
+  };
   return card;
 }
 
@@ -249,9 +275,11 @@ export function openDishModal(dish) {
         const ingredients = collectIngredients(body);
         const instructions = body.querySelector("#edit-instructions").value
           .split("\n").map((l) => l.trim()).filter(Boolean);
-        await api.updateDish(dish.id, { name, category, ingredients, instructions });
+        const dietTags = body.querySelector("#edit-diet-tags").value.trim();
+        await api.updateDish(dish.id, { name, category, ingredients, instructions, diet_tags: dietTags });
         dish.name = name; dish.category = category;
         dish.ingredients = ingredients; dish.instructions = instructions;
+        dish.diet_tags = dietTags || null;
         showToast("Plat enregistré");
         overlay.remove();
         loadDishes();
@@ -291,6 +319,13 @@ function renderRecipeView(dish) {
       <div class="recette-meta-card"><div class="v">${dish.ingredients.length}</div><div class="l">Ingrédient${dish.ingredients.length > 1 ? "s" : ""}</div></div>
       <div class="recette-meta-card"><div class="v">${dish.instructions.length}</div><div class="l">Étape${dish.instructions.length > 1 ? "s" : ""}</div></div>
     </div>`;
+
+  if (dish.diet_tags) {
+    const tags = dish.diet_tags.split(",").map((t) => t.trim()).filter(Boolean);
+    if (tags.length) {
+      html += `<div class="diet-tags">${tags.map((t) => `<span class="diet-tag">🥗 ${escapeHtml(t)}</span>`).join("")}</div>`;
+    }
+  }
 
   if (dish.ingredients.length) {
     html += `
@@ -415,6 +450,11 @@ function renderEditShell(dish, suggestions) {
           <div style="font-size:10px;color:#8A8271;margin-top:3px">JPG, PNG, WebP · max 5 Mo</div>
         </div>
       </div>
+    </div>
+    <div class="form-group" style="margin-bottom:14px">
+      <label style="font-size:13px;font-weight:700;color:#555;margin-bottom:4px;display:block">🥗 Régime / allergènes <span style="font-weight:400;color:#6B6353">(séparés par des virgules)</span></label>
+      <input id="edit-diet-tags" value="${dish.diet_tags ? escapeHtml(dish.diet_tags) : ""}" placeholder="Ex : Végétarien, Sans porc, Contient gluten"
+        style="width:100%;border:1.5px solid #C9C2B4;border-radius:10px;padding:9px 12px;font-size:13px" />
     </div>
     <div style="margin-bottom:14px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">

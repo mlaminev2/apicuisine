@@ -168,6 +168,16 @@ export async function renderSettings(root) {
     </label>`;
   sec1Body.appendChild(multiRow);
 
+  // Allergies & restrictions alimentaires du foyer
+  const dietRow = document.createElement("div");
+  dietRow.style.cssText = "padding:12px 0 4px;border-top:1px solid var(--line);margin-top:6px";
+  dietRow.innerHTML = `
+    <label style="font-size:14.5px;font-weight:700;display:block;margin-bottom:5px">🥗 Allergies &amp; restrictions du foyer</label>
+    <input id="dietary-notes" value="${sett.dietary_notes ? escapeHtml(sett.dietary_notes) : ""}" placeholder="Ex : Pas de porc, allergie arachide, sans gluten"
+      style="width:100%;border:1.5px solid var(--line-strong);border-radius:2px;padding:9px 12px;font-size:14px" />
+    <div style="font-size:11.5px;color:var(--muted);margin-top:4px">Rappelé quand vous choisissez un plat.</div>`;
+  sec1Body.appendChild(dietRow);
+
   const saveBtn = document.createElement("button");
   saveBtn.className = "btn btn-primary btn-full mt-8";
   saveBtn.textContent = "Enregistrer les réglages";
@@ -183,6 +193,7 @@ export async function renderSettings(root) {
         dessert_enabled: dessertEnabled,
         lunch_enabled: lunchEnabled,
         multi_dish_enabled: multiEnabled,
+        dietary_notes: document.getElementById("dietary-notes").value.trim(),
       });
       showToast("Réglages enregistrés ✓");
     } catch (err) { showToast(err.message, "error"); }

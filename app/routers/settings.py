@@ -26,6 +26,7 @@ def _to_read(s: Settings) -> SettingsRead:
         lunch_enabled=getattr(s, "lunch_enabled", False),
         multi_dish_enabled=getattr(s, "multi_dish_enabled", False),
         freemium_enabled=getattr(s, "freemium_enabled", False),
+        dietary_notes=getattr(s, "dietary_notes", None),
     )
 
 
@@ -113,6 +114,8 @@ def update_settings(
         sett.multi_dish_enabled = body.multi_dish_enabled
     if body.freemium_enabled is not None:
         sett.freemium_enabled = body.freemium_enabled
+    if body.dietary_notes is not None:
+        sett.dietary_notes = body.dietary_notes or None
     sett.updated_at = datetime.now(timezone.utc)
     session.add(sett)
     session.commit()

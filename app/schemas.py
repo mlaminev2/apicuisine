@@ -84,6 +84,8 @@ class DishUpdate(BaseModel):
     instructions: Optional[list[str]] = None
     thumbnail_url: Optional[str] = Field(default=None, max_length=500)
     author: Optional[str] = Field(default=None, max_length=200)
+    is_favorite: Optional[bool] = None
+    diet_tags: Optional[str] = Field(default=None, max_length=300)
 
 
 class DishRead(BaseModel):
@@ -99,6 +101,8 @@ class DishRead(BaseModel):
     source_url: Optional[str] = None
     thumbnail_url: Optional[str] = None
     author: Optional[str] = None
+    is_favorite: bool = False
+    diet_tags: Optional[str] = None
 
     @field_validator("ingredients", "instructions", mode="before")
     @classmethod
@@ -222,6 +226,7 @@ class SettingsRead(BaseModel):
     lunch_enabled: bool
     multi_dish_enabled: bool
     freemium_enabled: bool
+    dietary_notes: Optional[str] = None
 
 
 class SettingsUpdate(BaseModel):
@@ -230,3 +235,4 @@ class SettingsUpdate(BaseModel):
     lunch_enabled: Optional[bool] = None
     multi_dish_enabled: Optional[bool] = None
     freemium_enabled: Optional[bool] = None
+    dietary_notes: Optional[str] = Field(default=None, max_length=500)
