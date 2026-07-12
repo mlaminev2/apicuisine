@@ -68,6 +68,9 @@ function attachSwipe(body) {
   const SLOP = 12;           // au-delà, on décide de l'axe du geste
 
   body.addEventListener("touchstart", (e) => {
+    // En vue mois, la grille coulisse horizontalement (défilement natif pour
+    // voir le dimanche) : on n'intercepte pas le geste pour changer de mois.
+    if (viewMode === "month") { tracking = false; return; }
     if (e.touches.length !== 1) { tracking = false; return; }
     startX = e.touches[0].clientX;
     startY = e.touches[0].clientY;
@@ -374,7 +377,12 @@ async function drawMonth() {
     }
   }
 
-  body.appendChild(grid);
+  // Conteneur à défilement horizontal : les 7 jours restent lisibles, et le
+  // dimanche est accessible en faisant coulisser sur les petits écrans.
+  const scroller = document.createElement("div");
+  scroller.className = "cal-scroll";
+  scroller.appendChild(grid);
+  body.appendChild(scroller);
 }
 
 async function drawWeek() {

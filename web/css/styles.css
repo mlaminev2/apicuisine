@@ -875,6 +875,11 @@ html.no-ads iframe[src*="adtrafficquality"] { display: none !important; height: 
 .nav-tab.active { color: var(--ink); font-weight: 700; }
 .nav-tab.active > span:last-child { border-bottom: 2px solid var(--ink); padding-bottom: 4px; }
 .nav-tab.active .icon { transform: none; }
+/* Déconnexion : icône seule, compacte, en bout de barre */
+.nav-tab.nav-logout { flex: 0 0 38px; }
+.nav-tab.nav-logout .icon { display: flex; align-items: center; justify-content: center; color: var(--muted-2); }
+.nav-tab.nav-logout .icon svg { width: 19px; height: 19px; }
+.nav-tab.nav-logout:active .icon { transform: scale(.85); }
 @media (max-width: 340px) { .nav-tab { font-size: 7.5px; letter-spacing: .02em; } }
 
 /* Puces & avatars carrés (signature papier) */
@@ -922,6 +927,13 @@ html.no-ads iframe[src*="adtrafficquality"] { display: none !important; height: 
 .cal-header-cell { background: var(--ink); }
 .cal-header-cell.weekend { background: var(--terra); }
 .day-cell.today .day-num { background: var(--ink); border-radius: 0; }
+/* Vue mois : colonnes lisibles (min 50px), la grille coulisse horizontalement
+   sur petit écran pour accéder au dimanche sans rapetisser les cellules. */
+.cal-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; padding: 0 12px 12px; }
+.cal-scroll .calendar-grid { margin: 4px 0 0; min-width: 366px; }
+.calendar-grid { grid-template-columns: repeat(7, minmax(50px, 1fr)); }
+.day-cell { overflow: hidden; }
+.day-dish { overflow-wrap: anywhere; }
 
 /* Divers surfaces secondaires */
 .home2-settings, .home2-tile-icon, .import2-method-icon, .ia-step-btn { border-radius: 2px; background: var(--cream-deep); color: var(--terra); }

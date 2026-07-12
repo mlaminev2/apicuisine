@@ -40,4 +40,12 @@ export function renderNavbar() {
     nav.appendChild(btn);
   }
 
+  // Déconnexion : icône seule (pas de libellé) pour tenir dans la barre mobile.
+  const logoutBtn = document.createElement("button");
+  logoutBtn.className = "nav-tab nav-logout";
+  logoutBtn.title = "Se déconnecter";
+  logoutBtn.setAttribute("aria-label", "Se déconnecter");
+  logoutBtn.innerHTML = `<span class="icon" aria-hidden="true">${ICONS.logout}</span>`;
+  logoutBtn.onclick = () => { state.clearAuth(); location.hash = "#/login"; };
+  nav.appendChild(logoutBtn);
 }
