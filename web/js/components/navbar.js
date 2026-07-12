@@ -11,12 +11,13 @@ const ICONS = {
   logout: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 20H6a1.6 1.6 0 0 1-1.6-1.6V5.6A1.6 1.6 0 0 1 6 4h3"/><path d="M15 16l4-4-4-4M19 12H9"/></svg>`,
 };
 
+// Navbar éditoriale à 5 onglets (comme la maquette). « Importer » reste
+// accessible depuis l'accueil, « Se déconnecter » depuis les Réglages.
 const TABS = [
   { hash: "#/accueil", icon: ICONS.home, label: "Accueil" },
   { hash: "#/calendrier", icon: ICONS.calendar, label: "Calendrier" },
   { hash: "#/base", icon: ICONS.plate, label: "Plats" },
   { hash: "#/courses", icon: ICONS.cart, label: "Courses" },
-  { hash: "#/importer", icon: ICONS.download, label: "Importer" },
   { hash: "#/reglages", icon: ICONS.sliders, label: "Réglages" },
 ];
 
@@ -39,10 +40,4 @@ export function renderNavbar() {
     nav.appendChild(btn);
   }
 
-  const logoutBtn = document.createElement("button");
-  logoutBtn.className = "nav-tab nav-logout";
-  logoutBtn.title = "Se déconnecter";
-  logoutBtn.innerHTML = `<span class="icon">${ICONS.logout}</span><span>Quitter</span>`;
-  logoutBtn.onclick = () => { state.clearAuth(); location.hash = "#/login"; };
-  nav.appendChild(logoutBtn);
 }
