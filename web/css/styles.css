@@ -1,63 +1,76 @@
-/* ── Polices auto-hébergées (CSP : font-src 'self') ── */
-@font-face {
-  font-family: "Bricolage Grotesque";
-  font-style: normal;
-  font-weight: 200 800;
-  font-display: swap;
-  src: url("/fonts/bricolage-grotesque-latin.woff2") format("woff2");
-}
-@font-face {
-  font-family: "Hanken Grotesk";
-  font-style: normal;
-  font-weight: 100 900;
-  font-display: swap;
-  src: url("/fonts/hanken-grotesk-latin.woff2") format("woff2");
-}
+/* ── Polices auto-hébergées (CSP : font-src 'self') — DA « Éditorial Papier » ── */
+@font-face { font-family: "EB Garamond"; font-style: normal; font-weight: 400; font-display: swap; src: url("/fonts/ebgaramond-400-normal.woff2") format("woff2"); }
+@font-face { font-family: "EB Garamond"; font-style: normal; font-weight: 500; font-display: swap; src: url("/fonts/ebgaramond-500-normal.woff2") format("woff2"); }
+@font-face { font-family: "EB Garamond"; font-style: italic; font-weight: 400; font-display: swap; src: url("/fonts/ebgaramond-400-italic.woff2") format("woff2"); }
+@font-face { font-family: "EB Garamond"; font-style: italic; font-weight: 500; font-display: swap; src: url("/fonts/ebgaramond-500-italic.woff2") format("woff2"); }
+@font-face { font-family: "Archivo"; font-style: normal; font-weight: 400; font-display: swap; src: url("/fonts/archivo-400-normal.woff2") format("woff2"); }
+@font-face { font-family: "Archivo"; font-style: normal; font-weight: 500; font-display: swap; src: url("/fonts/archivo-500-normal.woff2") format("woff2"); }
+@font-face { font-family: "Archivo"; font-style: normal; font-weight: 600; font-display: swap; src: url("/fonts/archivo-600-normal.woff2") format("woff2"); }
+@font-face { font-family: "Archivo"; font-style: normal; font-weight: 700; font-display: swap; src: url("/fonts/archivo-700-normal.woff2") format("woff2"); }
+@font-face { font-family: "Courier Prime"; font-style: normal; font-weight: 400; font-display: swap; src: url("/fonts/courierprime-400-normal.woff2") format("woff2"); }
+@font-face { font-family: "Courier Prime"; font-style: normal; font-weight: 700; font-display: swap; src: url("/fonts/courierprime-700-normal.woff2") format("woff2"); }
 
-/* ── Variables — thème Bento crème & terracotta ── */
+/* ── Variables — DA « Éditorial Papier » (crème, encre, terracotta) ── */
 :root {
-  --ink: #2B2320;               /* texte principal */
-  --ink-soft: #5c5148;
-  --muted: #a08b78;             /* texte secondaire chaud */
-  --muted-2: #8c8178;
-  --cream: #FBF4EA;             /* fond app */
-  --cream-deep: #F1E7D8;        /* surfaces (icônes, chips) */
-  --cream-dashed: #F5EADD;      /* jours futurs, zones en attente */
-  --terra: #C4633C;             /* accent terracotta */
-  --terra-soft: #FDF0E7;        /* carte teintée */
-  --line: rgba(43,35,32,.07);   /* bordures de cartes */
-  --line-strong: rgba(43,35,32,.12);
+  --ink: #26221B;               /* encre principale (brun-noir) */
+  --ink-soft: #4A443A;
+  --muted: #8A8271;             /* labels / texte secondaire taupe */
+  --muted-2: #A79E8A;
+  --cream: #F4F1EA;             /* fond app (papier) */
+  --cream-deep: #EDE7DA;        /* surfaces (chips, icônes) */
+  --cream-dashed: #F0EBDF;      /* jours futurs, zones en attente */
+  --card: #F9F7F1;             /* fond des cartes */
+  --terra: #9C5637;             /* accent terracotta */
+  --terra-soft: #F1E9E2;        /* carte teintée */
+  --line: #E3DED0;              /* bordures fines claires */
+  --line-strong: #C9C2B4;       /* bordures / filets marqués */
 
   /* alias historiques (mêmes noms, nouvelles valeurs) */
-  --accent-dark: #2B2320;
-  --accent-header: #C4633C;
-  --weekend-accent: #C4633C;
-  --weekend-bg: #F5EADD;
-  --shopping-header: #C4633C;
-  --priority-green: #F6E7DA;
-  --cat-pdt: #8C6A4A;
-  --cat-riz: #D9A93C;
-  --cat-pates: #C0504D;
-  --cat-entree: #5B9A6E;
-  --cat-autre: #C4633C;
-  --cat-sucree: #C77BA0;
-  --cat-africain: #B5651D;
-  --cat-apero: #708D3C;
-  --cat-sauce: #9C6644;
+  --accent-dark: #26221B;
+  --accent-header: #9C5637;
+  --weekend-accent: #9C5637;
+  --weekend-bg: #F0EBDF;
+  --shopping-header: #9C5637;
+  --priority-green: #EEEADD;
+  --cat-pdt: #9C6B37;
+  --cat-riz: #6B7A4F;
+  --cat-pates: #9C823D;
+  --cat-entree: #5B7A4F;
+  --cat-autre: #4E6B80;
+  --cat-sucree: #9C5680;
+  --cat-africain: #8A4B35;
+  --cat-apero: #6B7A4F;
+  --cat-sauce: #9C6B37;
 
-  --font-display: "Cambria", Georgia, "Bricolage Grotesque", "Times New Roman", serif;
-  --font-body: "Hanken Grotesk", system-ui, -apple-system, sans-serif;
+  --font-display: "EB Garamond", Georgia, "Times New Roman", serif;
+  --font-body: "Archivo", system-ui, -apple-system, sans-serif;
+  --font-mono: "Courier Prime", ui-monospace, monospace;
 
-  --radius: 16px;
-  --radius-lg: 22px;
-  --shadow: 0 2px 10px rgba(43,35,32,.06);
-  --shadow-lift: 0 10px 30px rgba(43,35,32,.18);
-  --navbar-h: 62px;
+  --radius: 2px;               /* angles quasi vifs (esthétique papier) */
+  --radius-lg: 2px;
+  --shadow: none;
+  --shadow-lift: 0 12px 34px rgba(38,34,27,.22);
+  --navbar-h: 60px;
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --ease-out: cubic-bezier(.22, .8, .36, 1);
   --ease-spring: cubic-bezier(.34, 1.4, .64, 1);
   --t-fast: .15s;
   --t-med: .28s;
+}
+
+/* Titres éditoriaux : Garamond italique */
+.page-header h1, .home2-date, .home2-hero-title, .home2-section-title,
+.recette-hero-title, .recette-section-title, .import2-title, .plat-name,
+.settings-section h2, .settings-profile-name, .premium-card h2,
+.landing-title, .modal-header h2, .week-day-num {
+  font-style: italic;
+  letter-spacing: 0;
+}
+/* Petits labels en capitales espacées (signature de la DA) */
+.home2-kicker, .cat-tab, .shop-cat-title, .import2-caps-label,
+.nav-tab, .week-daycard-day, .badge-tag {
+  text-transform: uppercase;
+  letter-spacing: .14em;
 }
 
 /* ── Reset ── */
@@ -816,6 +829,103 @@ html.no-ads iframe[src*="adtrafficquality"] { display: none !important; height: 
 /* ── État vide ── */
 .empty-state { text-align: center; padding: 40px 24px; color: var(--muted); }
 .empty-state .empty-icon { font-size: 40px; display: block; margin-bottom: 8px; }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   DA « ÉDITORIAL PAPIER » — surcharges appliquées à toute l'app.
+   Transforme le look (papier, filets fins, angles vifs, capitales) sans
+   toucher à la logique JS ni aux identifiants/handlers des vues.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* Surfaces & cartes : fond papier, filet fin, angles vifs, pas d'ombre */
+.card, .home2-hero, .week-daycard, .home2-tile, .home2-plats, .plat-card,
+.settings-section, .settings-profile, .shop-progress-card, .shopping-item,
+.import2-method, .import2-recent-item, .ia-card, .ia-preview-day,
+.premium-card, .premium-plan, .recette-meta-card, .dish-item, .week-day-row {
+  background: var(--card) !important;
+  border: 1px solid var(--line-strong) !important;
+  border-radius: 2px !important;
+  box-shadow: none !important;
+}
+
+/* Boutons : pleins = encre, capitales espacées, angles vifs */
+.btn { border-radius: 2px; text-transform: uppercase; letter-spacing: .12em; font-weight: 600; font-size: 12.5px; }
+.btn-primary { background: var(--ink); color: var(--cream); }
+.btn-primary:hover { background: #3a342a; opacity: 1; }
+.btn-ghost { background: transparent; border: 1px solid var(--ink); color: var(--ink); }
+.btn-danger { background: #8A4B35; color: #fff; }
+
+/* Champs de saisie : filet fin, angles vifs, fond papier */
+.form-group input, .form-group select, .picker-search, .picker-select,
+.shopping-add input, .plats-search, .import2-linkbox, .settings-row select {
+  border-radius: 2px !important; border-color: var(--line-strong) !important;
+}
+
+/* Navbar éditoriale : capitales, onglet actif souligné, sans icônes */
+#navbar { background: var(--cream); backdrop-filter: none; -webkit-backdrop-filter: none; border-top: 1px solid var(--line-strong); }
+.nav-tab { font-size: 8.5px; font-weight: 600; gap: 0; padding-bottom: 8px; color: var(--muted-2); }
+.nav-tab .icon { display: none; }
+.nav-tab.active { color: var(--ink); font-weight: 700; }
+.nav-tab.active > span:last-child { border-bottom: 2px solid var(--ink); padding-bottom: 4px; }
+.nav-tab.active .icon { transform: none; }
+
+/* Puces & avatars carrés (signature papier) */
+.member-dot { border-radius: 0 !important; width: 8px; height: 8px; }
+.settings-avatar { border-radius: 0 !important; border: 1px solid var(--ink); background: transparent; color: var(--ink); }
+
+/* Titres de page : grand Garamond italique */
+.page-header h1 { font-size: 30px; font-weight: 500; }
+.page-header button { border-radius: 2px; background: transparent; border: 1px solid var(--line-strong); }
+.page-header .btn-view-toggle { background: var(--ink); color: var(--cream); border: none; }
+
+/* Accent terracotta : liens, rubriques, badges */
+.shop-cat-title, .import2-caps-label, .home2-section-link, .priority-label { color: var(--terra); }
+.home2-tile-badge, .badge-count { background: var(--terra); color: var(--cream); border-radius: 2px; }
+
+/* Placeholders photo : hachures diagonales papier */
+.home2-hero-photo.empty, .plat-thumb, .week-daycard-thumb,
+.import2-recent-thumb, .home2-stack-thumb {
+  background: repeating-linear-gradient(-45deg, #EDE7DA 0, #EDE7DA 7px, #E4DCCB 7px, #E4DCCB 14px) !important;
+}
+
+/* Toggle carré éditorial */
+.toggle { width: 30px; height: 16px; }
+.toggle-slider { border-radius: 0; border: 1px solid var(--ink); background: transparent; }
+.toggle-slider::before { border-radius: 0; width: 10px; height: 10px; left: 2px; top: 2px; background: var(--muted-2); }
+.toggle input:checked + .toggle-slider { background: var(--ink); }
+.toggle input:checked + .toggle-slider::before { background: var(--cream); transform: translateX(14px); }
+
+/* Chips / onglets / badges : angles vifs */
+.cat-tab, .quick-chip, .import2-cap, .badge, .home2-hero-pill, .btn-week-shop,
+.badge-new, .badge-tag, .collapse-badge, .week-daycard-auj { border-radius: 2px !important; }
+.cat-tab { background: transparent; border: 1px solid var(--line-strong); color: var(--muted); }
+.cat-tab.active { background: var(--ink); color: var(--cream); border-color: var(--ink); }
+.home2-hero-pill { background: var(--ink); }
+
+/* Modale / bottom-sheet : papier, filet marqué */
+.modal-box { background: var(--card); border-radius: 0; border-top: 2px solid var(--ink); }
+.modal-box::before { display: none; }
+@media (min-width: 640px) { .modal-box { border-radius: 0; } }
+
+/* Calendrier : filets fins papier */
+.calendar-grid { border-radius: 0; background: var(--line-strong); border: 1px solid var(--line-strong); }
+.day-cell { background: var(--cream); }
+.day-cell.weekend { background: var(--cream-dashed); }
+.cal-header-cell { background: var(--ink); }
+.cal-header-cell.weekend { background: var(--terra); }
+.day-cell.today .day-num { background: var(--ink); border-radius: 0; }
+
+/* Divers surfaces secondaires */
+.home2-settings, .home2-tile-icon, .import2-method-icon, .ia-step-btn { border-radius: 2px; background: var(--cream-deep); color: var(--terra); }
+.toast { border-radius: 2px; }
+.cookie-banner { border-radius: 2px; }
+.home2-hero { box-shadow: none !important; }
+
+/* CTA principaux pleins = encre (le terracotta reste réservé aux accents/liens) */
+.home2-hero-cta, .home2-fill { background: var(--ink) !important; color: var(--cream) !important; }
+.home2-fill-sub { color: var(--muted-2) !important; opacity: 1 !important; }
+.home2-hero-swap { border-radius: 2px; border: 1px solid var(--ink); background: transparent; color: var(--ink); }
+/* Bouton d'ajout des plats : carré éditorial */
+.plats-add-btn, .import2-go { border-radius: 2px !important; }
 
 /* ── Accessibilité : réduction des animations ── */
 @media (prefers-reduced-motion: reduce) {
