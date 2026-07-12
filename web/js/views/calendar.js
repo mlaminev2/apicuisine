@@ -585,75 +585,43 @@ function openDaySummary(dateStr, entry, settings, onSave) {
   const d = new Date(dateStr + "T00:00:00");
   const label = d.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
 
+  // Carte d'un plat : miniature (photo ou hachures) + label + nom + ingrédients.
+  const dishCard = (label, dish) => {
+    const thumb = dish.thumbnail_url
+      ? `<div class="ddc-thumb" style="background-image:url('${escapeHtml(dish.thumbnail_url)}')"></div>`
+      : `<div class="ddc-thumb ddc-thumb-empty"></div>`;
+    const ingr = (dish.ingredients && dish.ingredients.length)
+      ? `<ul class="ddc-ingr">${dish.ingredients.map((i) => `<li>${escapeHtml(i)}</li>`).join("")}</ul>`
+      : "";
+    return `<div class="ddc">
+      <div class="ddc-head">
+        ${thumb}
+        <div class="ddc-txt">
+          <div class="ddc-label">${label}</div>
+          <div class="ddc-name">${escapeHtml(dish.name)}</div>
+        </div>
+      </div>
+      ${ingr}
+    </div>`;
+  };
+  // Carte simple pour un texte libre (pas de plat associé, donc ni photo ni ingrédients).
+  const freeCard = (label, text) => `<div class="ddc">
+    <div class="ddc-head">
+      <div class="ddc-thumb ddc-thumb-empty"></div>
+      <div class="ddc-txt"><div class="ddc-label">${label}</div>
+      <div class="ddc-name">${escapeHtml(text)}</div></div>
+    </div></div>`;
+
   let menuHtml = "";
-  if (settings.lunch_enabled && (entry.lunch_dish || entry.lunch_free_text)) {
-    const lunchName = entry.lunch_dish?.name || entry.lunch_free_text;
-    menuHtml += `<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #f5f5f5">
-      <span style="font-size:18px">🌞</span>
-      <div>
-        <div style="font-size:10px;font-weight:700;color:#aaa;text-transform:uppercase">Midi</div>
-        <div style="font-size:14px;font-weight:600">${escapeHtml(lunchName)}</div>
-      </div>
-    </div>`;
-  }
-  const optRows = [
-    ["🥂", "Apéro", entry.apero_dish],
-    ["🥗", "Entrée", entry.entree_dish],
-  ];
-  for (const [icon, label, dish] of optRows) {
-    if (!dish) continue;
-    menuHtml += `<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #f5f5f5">
-      <span style="font-size:18px">${icon}</span>
-      <div>
-        <div style="font-size:10px;font-weight:700;color:#aaa;text-transform:uppercase">${label}</div>
-        <div style="font-size:14px;font-weight:600">${escapeHtml(dish.name)}</div>
-      </div>
-    </div>`;
-  }
-  if (entry.main_dish) {
-    menuHtml += `<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #f5f5f5">
-      <span style="font-size:18px">🍽️</span>
-      <div>
-        <div style="font-size:10px;font-weight:700;color:#aaa;text-transform:uppercase">Plat principal</div>
-        <div style="font-size:14px;font-weight:600">${escapeHtml(entry.main_dish.name)}</div>
-      </div>
-    </div>`;
-  } else if (entry.free_text) {
-    menuHtml += `<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #f5f5f5">
-      <span style="font-size:18px">🍽️</span>
-      <div>
-        <div style="font-size:10px;font-weight:700;color:#aaa;text-transform:uppercase">Plat</div>
-        <div style="font-size:14px;font-weight:600">${escapeHtml(entry.free_text)}</div>
-      </div>
-    </div>`;
-  }
-  for (const extra of entry.extra_dishes || []) {
-    menuHtml += `<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #f5f5f5">
-      <span style="font-size:18px">➕</span>
-      <div>
-        <div style="font-size:10px;font-weight:700;color:#aaa;text-transform:uppercase">Aussi</div>
-        <div style="font-size:14px;font-weight:600">${escapeHtml(extra.name)}</div>
-      </div>
-    </div>`;
-  }
-  if (entry.sauce_dish) {
-    menuHtml += `<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #f5f5f5">
-      <span style="font-size:18px">🥣</span>
-      <div>
-        <div style="font-size:10px;font-weight:700;color:#aaa;text-transform:uppercase">Sauce</div>
-        <div style="font-size:14px;font-weight:600">${escapeHtml(entry.sauce_dish.name)}</div>
-      </div>
-    </div>`;
-  }
-  if (entry.dessert_dish) {
-    menuHtml += `<div style="display:flex;align-items:center;gap:8px;padding:8px 0">
-      <span style="font-size:18px">🍰</span>
-      <div>
-        <div style="font-size:10px;font-weight:700;color:#aaa;text-transform:uppercase">Dessert</div>
-        <div style="font-size:14px;font-weight:600">${escapeHtml(entry.dessert_dish.name)}</div>
-      </div>
-    </div>`;
-  }
+  if (settings.lunch_enabled && entry.lunch_dish) menuHtml += dishCard("🌞 Midi", entry.lunch_dish);
+  else if (settings.lunch_enabled && entry.lunch_free_text) menuHtml += freeCard("🌞 Midi", entry.lunch_free_text);
+  if (entry.apero_dish) menuHtml += dishCard("🥂 Apéro", entry.apero_dish);
+  if (entry.entree_dish) menuHtml += dishCard("🥗 Entrée", entry.entree_dish);
+  if (entry.main_dish) menuHtml += dishCard("🍽️ Plat principal", entry.main_dish);
+  else if (entry.free_text) menuHtml += freeCard("🍽️ Plat", entry.free_text);
+  for (const extra of entry.extra_dishes || []) menuHtml += dishCard("➕ Aussi", extra);
+  if (entry.sauce_dish) menuHtml += dishCard("🥣 Sauce", entry.sauce_dish);
+  if (entry.dessert_dish) menuHtml += dishCard("🍰 Dessert", entry.dessert_dish);
 
   const cookedStatus = entry.cooked
     ? `<div style="display:flex;align-items:center;gap:6px;margin-top:12px;padding:8px 12px;background:#d5ead8;border-radius:10px;font-size:13px;color:#2d6a4f;font-weight:600">
