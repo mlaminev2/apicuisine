@@ -948,6 +948,11 @@ html.no-ads iframe[src*="adtrafficquality"] { display: none !important; height: 
 .ddc-name { font-family: var(--font-display); font-style: italic; font-size: 18px; color: var(--ink); line-height: 1.15; margin-top: 1px; }
 .ddc-ingr { list-style: none; margin: 0; padding: 2px 12px 11px; display: flex; flex-wrap: wrap; gap: 5px; }
 .ddc-ingr li { font-size: 11.5px; color: var(--ink-soft); background: var(--cream-deep); border: 1px solid var(--line); padding: 3px 8px; }
+/* Carte de plat cliquable : ouvre la fiche recette complète */
+.ddc-click { cursor: pointer; transition: background var(--t-fast); }
+.ddc-click:hover { background: var(--cream-deep); }
+.ddc-click:active { transform: scale(.99); }
+.ddc-arrow { margin-left: auto; align-self: center; color: var(--muted-2); font-size: 20px; padding-left: 8px; flex: none; }
 
 /* Divers surfaces secondaires */
 .home2-settings, .home2-tile-icon, .import2-method-icon, .ia-step-btn { border-radius: 2px; background: var(--cream-deep); color: var(--terra); }

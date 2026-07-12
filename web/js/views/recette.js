@@ -165,7 +165,7 @@ function makeDishRow(dish) {
   return card;
 }
 
-function openRecipeModal(dish) {
+export function openRecipeModal(dish) {
   const root = document.getElementById("modal-root");
   const overlay = document.createElement("div");
   overlay.className = "modal-overlay";

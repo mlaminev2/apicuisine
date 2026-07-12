@@ -2,6 +2,7 @@ import { api } from "../api.js";
 import { state } from "../state.js";
 import { showToast } from "../components/toast.js";
 import { renderPicker, renderLunchPicker } from "./picker.js";
+import { openRecipeModal } from "./recette.js";
 import { DAYS_FR, MONTHS_FR, CAT_LABELS, monthGrid, toIsoDate, today, isoWeekOf, mergeShoppingItems, escapeHtml } from "../utils.js";
 
 const DEFAULT_CATS = ["pomme_de_terre","riz","pates","pomme_de_terre","riz","autre","africain"];
@@ -593,13 +594,14 @@ function openDaySummary(dateStr, entry, settings, onSave) {
     const ingr = (dish.ingredients && dish.ingredients.length)
       ? `<ul class="ddc-ingr">${dish.ingredients.map((i) => `<li>${escapeHtml(i)}</li>`).join("")}</ul>`
       : "";
-    return `<div class="ddc">
+    return `<div class="ddc ddc-click" data-dish-id="${dish.id}" role="button" tabindex="0" title="Voir la recette">
       <div class="ddc-head">
         ${thumb}
         <div class="ddc-txt">
           <div class="ddc-label">${label}</div>
           <div class="ddc-name">${escapeHtml(dish.name)}</div>
         </div>
+        <span class="ddc-arrow" aria-hidden="true">›</span>
       </div>
       ${ingr}
     </div>`;
@@ -649,6 +651,18 @@ function openDaySummary(dateStr, entry, settings, onSave) {
   root.appendChild(overlay);
   overlay.querySelector(".btn-close").onclick = () => overlay.remove();
   overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+
+  // Clic sur un plat du menu → ouvre sa fiche recette complète (par-dessus).
+  const dishById = {};
+  for (const d of [entry.lunch_dish, entry.apero_dish, entry.entree_dish, entry.main_dish,
+    ...(entry.extra_dishes || []), entry.sauce_dish, entry.dessert_dish]) {
+    if (d && d.id != null) dishById[d.id] = d;
+  }
+  overlay.querySelectorAll(".ddc-click").forEach((el) => {
+    const dish = dishById[el.dataset.dishId];
+    if (!dish) return;
+    el.onclick = () => openRecipeModal(dish);
+  });
 
   overlay.querySelector("#btn-day-modify").onclick = () => {
     overlay.remove();
