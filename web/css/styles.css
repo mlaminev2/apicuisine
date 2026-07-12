@@ -14,8 +14,8 @@
 :root {
   --ink: #26221B;               /* encre principale (brun-noir) */
   --ink-soft: #4A443A;
-  --muted: #8A8271;             /* labels / texte secondaire taupe */
-  --muted-2: #A79E8A;
+  --muted: #776E5C;             /* labels / texte secondaire taupe (contraste renforcé) */
+  --muted-2: #8E856F;
   --cream: #F4F1EA;             /* fond app (papier) */
   --cream-deep: #EDE7DA;        /* surfaces (chips, icônes) */
   --cream-dashed: #F0EBDF;      /* jours futurs, zones en attente */
