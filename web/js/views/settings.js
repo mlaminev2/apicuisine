@@ -335,6 +335,16 @@ export async function renderSettings(root) {
 
   body.append(sec1, sec2, ...(sec2b ? [sec2b] : []), sec3, sec4);
   renderShopCategories(body);
+
+  // Liens légaux en bas des réglages
+  const legalFooter = document.createElement("div");
+  legalFooter.className = "legal-links";
+  legalFooter.style.cssText = "padding:20px 16px 10px";
+  legalFooter.innerHTML = `
+    <a href="#/mentions-legales">Mentions légales</a>
+    <a href="#/cgv">CGV</a>
+    <a href="#/confidentialite">Confidentialité</a>`;
+  body.appendChild(legalFooter);
 }
 
 // ── Catégories de courses ─────────────────────────────────────────────────────

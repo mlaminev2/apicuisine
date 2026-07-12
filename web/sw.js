@@ -1,10 +1,10 @@
-const CACHE = "menus-v74";
+const CACHE = "menus-v75";
 const SHELL = ["/", "/css/styles.css", "/js/api.js", "/js/state.js", "/js/utils.js", "/js/router.js",
   "/js/sw-register.js", "/js/analytics.js", "/js/consent-init.js",
   "/js/components/navbar.js", "/js/components/toast.js", "/js/components/modal.js",
   "/js/views/login.js", "/js/views/register.js", "/js/views/password.js", "/js/views/home.js", "/js/views/remplir.js", "/js/views/admin.js", "/js/views/calendar.js", "/js/views/picker.js",
   "/js/views/base.js", "/js/views/shopping.js", "/js/views/tracking.js", "/js/views/settings.js",
-  "/js/views/import.js", "/js/views/recette.js", "/js/views/premium.js",
+  "/js/views/import.js", "/js/views/recette.js", "/js/views/premium.js", "/js/views/legal.js",
   "/fonts/ebgaramond-400-normal.woff2", "/fonts/ebgaramond-500-normal.woff2",
   "/fonts/ebgaramond-400-italic.woff2", "/fonts/ebgaramond-500-italic.woff2",
   "/fonts/archivo-400-normal.woff2", "/fonts/archivo-500-normal.woff2",

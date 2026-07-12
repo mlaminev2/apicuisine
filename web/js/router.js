@@ -15,6 +15,7 @@ import { renderTracking } from "./views/tracking.js";
 import { renderSettings } from "./views/settings.js";
 import { renderImport } from "./views/import.js";
 import { renderPremium } from "./views/premium.js";
+import { renderLegal } from "./views/legal.js";
 
 const root = document.getElementById("view-root");
 
@@ -35,7 +36,8 @@ async function route() {
   const hash = location.hash || (state.isLoggedIn() ? "#/accueil" : "#/login");
   renderNavbar();
 
-  if (!state.isLoggedIn() && !hash.startsWith("#/login") && !hash.startsWith("#/inscription") && !hash.startsWith("#/oauth-callback") && !hash.startsWith("#/motdepasse-oublie") && !hash.startsWith("#/reinitialisation")) {
+  const publicRoutes = ["#/login", "#/inscription", "#/oauth-callback", "#/motdepasse-oublie", "#/reinitialisation", "#/mentions-legales", "#/cgv", "#/confidentialite"];
+  if (!state.isLoggedIn() && !publicRoutes.some((r) => hash.startsWith(r))) {
     location.hash = "#/login";
     return;
   }
@@ -73,6 +75,9 @@ async function route() {
   if (hash.startsWith("#/recette")) { location.hash = "#/base"; return; }
   if (hash.startsWith("#/importer")) { await renderImport(root); return; }
   if (hash.startsWith("#/premium")) { await renderPremium(root, params); return; }
+  if (hash.startsWith("#/mentions-legales")) { renderLegal(root, "mentions"); return; }
+  if (hash.startsWith("#/cgv")) { renderLegal(root, "cgv"); return; }
+  if (hash.startsWith("#/confidentialite")) { renderLegal(root, "confidentialite"); return; }
   if (hash.startsWith("#/reglages")) { await renderSettings(root); return; }
 
   location.hash = "#/accueil";

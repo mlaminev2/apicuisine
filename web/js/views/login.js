@@ -67,6 +67,12 @@ export async function renderLogin(root) {
           Continuer avec Google
         </a>
       </div>
+
+      <div class="legal-links">
+        <a href="#/mentions-legales">Mentions légales</a>
+        <a href="#/cgv">CGV</a>
+        <a href="#/confidentialite">Confidentialité</a>
+      </div>
     </div>`;
 
   const form = document.getElementById("login-form");
