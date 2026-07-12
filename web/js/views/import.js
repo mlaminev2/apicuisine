@@ -244,7 +244,7 @@ export async function renderImport(root) {
       const srcColor = result.source === "youtube" ? "#FF0000"
                      : result.source === "instagram" ? "#C13584"
                      : result.source === "tiktok" ? "#010101"
-                     : result.source === "site" ? "var(--terra)" : "#888";
+                     : result.source === "site" ? "var(--terra)" : "#6B6353";
       const srcLabel = result.source === "youtube" ? "▶️ YouTube"
                      : result.source === "instagram" ? "📸 Instagram"
                      : result.source === "tiktok" ? "🎵 TikTok"
@@ -293,7 +293,7 @@ export async function renderImport(root) {
     inp.style.cssText = "flex:1;border:1px solid #e5d9c6;border-radius:8px;padding:5px 8px;font-size:13px";
     const del = document.createElement("button");
     del.textContent = "✕";
-    del.style.cssText = "color:#ccc;font-size:13px;flex-shrink:0;padding:0 4px";
+    del.style.cssText = "color:#A79E8A;font-size:13px;flex-shrink:0;padding:0 4px";
     del.onclick = () => row.remove();
     row.append(cb, inp, del);
     return row;

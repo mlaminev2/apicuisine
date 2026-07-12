@@ -231,13 +231,13 @@ function makeItemRow(item, idx, onToggle, onDelete, onCategoryChange) {
   if (qty) {
     const qtySpan = document.createElement("span");
     qtySpan.textContent = qty;
-    qtySpan.style.cssText = "font-size:11px;color:#888;white-space:nowrap";
+    qtySpan.style.cssText = "font-size:11px;color:#6B6353;white-space:nowrap";
     label.appendChild(qtySpan);
   }
 
   const del = document.createElement("button");
   del.textContent = "✕";
-  del.style.cssText = "color:#aaa;font-size:14px;";
+  del.style.cssText = "color:#8A8271;font-size:14px;";
   del.onclick = () => onDelete(idx);
 
   row.append(cb, catDot, label, del);
@@ -249,7 +249,7 @@ function groupByCategory(itemList) {
   for (const cat of [...categories].sort((a, b) => a.sort_order - b.sort_order)) {
     groups.set(cat.id, { cat, items: [] });
   }
-  groups.set(null, { cat: { id: null, name: "📦 Autres", color: "#888" }, items: [] });
+  groups.set(null, { cat: { id: null, name: "📦 Autres", color: "#6B6353" }, items: [] });
 
   for (let i = 0; i < itemList.length; i++) {
     const item = itemList[i];
@@ -422,12 +422,12 @@ function renderWeekPills(weeks) {
     pill.style.cssText = `
       display:inline-flex;align-items:center;gap:4px;padding:5px 12px;border-radius:20px;
       font-size:12px;font-weight:600;
-      border:1.5px solid ${isActive ? "var(--shopping-header)" : "#ddd"};
+      border:1.5px solid ${isActive ? "var(--shopping-header)" : "#C9C2B4"};
       background:${isActive ? "var(--shopping-header)" : "white"};
       color:${isActive ? "white" : "#555"};cursor:pointer;white-space:nowrap;flex-shrink:0`;
     pill.innerHTML = `Sem.&nbsp;${w.iso_week}
       <span style="opacity:.75;font-weight:400">${w.iso_year !== currentYear ? " " + w.iso_year : ""}</span>
-      <span style="background:${isActive ? "rgba(255,255,255,.3)" : "#f0f0f0"};color:${isActive ? "white" : "#777"};
+      <span style="background:${isActive ? "rgba(255,255,255,.3)" : "#E3DED0"};color:${isActive ? "white" : "#777"};
         border-radius:10px;padding:1px 6px;font-size:10px">${remaining}/${w.item_count}</span>`;
     pill.onclick = () => { currentYear = w.iso_year; currentWeek = w.iso_week; updateHeader(); loadShopping(); loadWeekPills(); };
     strip.appendChild(pill);

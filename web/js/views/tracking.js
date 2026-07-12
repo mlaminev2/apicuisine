@@ -11,9 +11,9 @@ const CATEGORIES = ["", "pomme_de_terre", "riz", "pates", "entree", "autre", "su
 export async function renderTracking(root) {
   root.innerHTML = `
     <div class="page-header"><h1>Suivi de rotation</h1></div>
-    <div style="padding:10px 16px;background:white;border-bottom:1px solid #eee;display:flex;gap:8px;align-items:center">
+    <div style="padding:10px 16px;background:white;border-bottom:1px solid #E3DED0;display:flex;gap:8px;align-items:center">
       <label style="font-size:13px;font-weight:600">Catégorie :</label>
-      <select id="tracking-cat-filter" style="border:1.5px solid #ddd;border-radius:8px;padding:4px 8px;font-size:13px">
+      <select id="tracking-cat-filter" style="border:1.5px solid #C9C2B4;border-radius:8px;padding:4px 8px;font-size:13px">
         ${CATEGORIES.map((c) => `<option value="${c}">${c ? CAT_LABELS[c] : "Toutes"}</option>`).join("")}
       </select>
     </div>

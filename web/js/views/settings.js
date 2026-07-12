@@ -197,14 +197,14 @@ export async function renderSettings(root) {
   for (const m of members) {
     const row = document.createElement("div");
     row.className = "settings-row";
-    row.innerHTML = `<span class="member-dot" style="background:${escapeHtml(m.color)}"></span><span style="flex:1">${escapeHtml(m.name)}${!m.is_owner && m.is_premium ? ' <span title="Membre premium">💎</span>' : ""}</span>${m.is_owner ? '<span style="font-size:11px;color:#888">Propriétaire</span>' : ""}`;
+    row.innerHTML = `<span class="member-dot" style="background:${escapeHtml(m.color)}"></span><span style="flex:1">${escapeHtml(m.name)}${!m.is_owner && m.is_premium ? ' <span title="Membre premium">💎</span>' : ""}</span>${m.is_owner ? '<span style="font-size:11px;color:#6B6353">Propriétaire</span>' : ""}`;
     if (state.isOwner && !m.is_owner) {
       const delBtn = document.createElement("button");
       delBtn.textContent = "🗑";
       delBtn.title = "Retirer ce membre";
-      delBtn.style.cssText = "font-size:15px;color:#ccc;padding:0 4px;margin-left:8px";
+      delBtn.style.cssText = "font-size:15px;color:#A79E8A;padding:0 4px;margin-left:8px";
       delBtn.onmouseenter = () => { delBtn.style.color = "#e74c3c"; };
-      delBtn.onmouseleave = () => { delBtn.style.color = "#ccc"; };
+      delBtn.onmouseleave = () => { delBtn.style.color = "#A79E8A"; };
       delBtn.onclick = async () => {
         if (!confirm(`Retirer ${m.name} du foyer ?`)) return;
         try {
@@ -231,11 +231,11 @@ export async function renderSettings(root) {
       if (inv && inv.invite_code) {
         const link = `${location.origin}/#/inscription?code=${inv.invite_code}`;
         codeDisplay.innerHTML = `
-          <div style="font-size:12px;color:#888;margin-bottom:4px">Code d'invitation actif (valable 7 jours)</div>
+          <div style="font-size:12px;color:#6B6353;margin-bottom:4px">Code d'invitation actif (valable 7 jours)</div>
           <div style="font-size:16px;font-weight:700;letter-spacing:.08em;color:var(--accent-dark)">${escapeHtml(inv.invite_code)}</div>
-          <div style="font-size:11px;color:#aaa;margin-top:6px">Lien : <a href="${escapeHtml(link)}" style="color:var(--accent-header)">${escapeHtml(link)}</a></div>`;
+          <div style="font-size:11px;color:#8A8271;margin-top:6px">Lien : <a href="${escapeHtml(link)}" style="color:var(--accent-header)">${escapeHtml(link)}</a></div>`;
       } else {
-        codeDisplay.innerHTML = `<div style="font-size:13px;color:#aaa">Aucun code actif. Générez-en un pour inviter un membre.</div>`;
+        codeDisplay.innerHTML = `<div style="font-size:13px;color:#8A8271">Aucun code actif. Générez-en un pour inviter un membre.</div>`;
       }
     };
     updateCodeDisplay(invite);
@@ -282,11 +282,11 @@ export async function renderSettings(root) {
   pwdFields.style.cssText = "display:flex;flex-direction:column;gap:8px";
   pwdFields.innerHTML = `
     <input type="password" id="pwd-current" placeholder="Mot de passe actuel" autocomplete="current-password"
-      style="border:1.5px solid #ddd;border-radius:8px;padding:8px 10px;font-size:13px" />
+      style="border:1.5px solid #C9C2B4;border-radius:8px;padding:8px 10px;font-size:13px" />
     <input type="password" id="pwd-new" placeholder="Nouveau mot de passe (8 caractères min.)" autocomplete="new-password"
-      style="border:1.5px solid #ddd;border-radius:8px;padding:8px 10px;font-size:13px" />
+      style="border:1.5px solid #C9C2B4;border-radius:8px;padding:8px 10px;font-size:13px" />
     <input type="password" id="pwd-confirm" placeholder="Confirmer le nouveau mot de passe" autocomplete="new-password"
-      style="border:1.5px solid #ddd;border-radius:8px;padding:8px 10px;font-size:13px" />`;
+      style="border:1.5px solid #C9C2B4;border-radius:8px;padding:8px 10px;font-size:13px" />`;
   sec3Body.appendChild(pwdFields);
   const pwdBtn = document.createElement("button");
   pwdBtn.className = "btn btn-primary btn-full mt-8";
@@ -310,7 +310,7 @@ export async function renderSettings(root) {
   // ── Section sauvegarde ──
   const { sec: sec4, body: sec4Body } = makeSection("💾 Sauvegarde", "sauvegarde");
   sec4Body.innerHTML = `
-    <div style="font-size:12px;color:#888;margin-bottom:10px">
+    <div style="font-size:12px;color:#6B6353;margin-bottom:10px">
       Téléchargez une copie complète de vos données (plats, recettes, planning,
       courses, réglages) au format JSON. Gardez-la en lieu sûr.
     </div>`;
@@ -344,7 +344,7 @@ async function renderShopCategories(body) {
 
   const { sec: catSec, body: catBody } = makeSection("🛒 Catégories de courses", "shopcats");
   catBody.innerHTML = `
-    <div class="settings-row" style="border-bottom:1px solid #f0f0f0">
+    <div class="settings-row" style="border-bottom:1px solid #E3DED0">
       <label for="shop-cats-toggle">Regrouper les courses par catégorie</label>
       <label class="toggle">
         <input type="checkbox" id="shop-cats-toggle" ${catsEnabled ? "checked" : ""} />
@@ -359,7 +359,7 @@ async function renderShopCategories(body) {
 
   const { sec: ingrSec, body: ingrBody } = makeSection("🥕 Ingrédients connus", "ingrmap");
   ingrBody.innerHTML = `
-    <div style="font-size:12px;color:#888;margin-bottom:8px">Modifiez la catégorie attribuée à chaque ingrédient connu.</div>
+    <div style="font-size:12px;color:#6B6353;margin-bottom:8px">Modifiez la catégorie attribuée à chaque ingrédient connu.</div>
     <div id="ingr-map-list" style="display:flex;flex-direction:column;gap:6px"></div>`;
   body.appendChild(ingrSec);
 
@@ -400,7 +400,7 @@ function renderCatList(cats, container) {
   container.innerHTML = "";
   for (const cat of [...cats].sort((a, b) => a.sort_order - b.sort_order)) {
     const row = document.createElement("div");
-    row.style.cssText = "display:flex;align-items:center;gap:8px;padding:8px;background:#f8f8f8;border-radius:10px";
+    row.style.cssText = "display:flex;align-items:center;gap:8px;padding:8px;background:#F9F7F1;border-radius:10px";
 
     const colorIn = document.createElement("input");
     colorIn.type = "color";
@@ -409,7 +409,7 @@ function renderCatList(cats, container) {
 
     const nameIn = document.createElement("input");
     nameIn.value = cat.name;
-    nameIn.style.cssText = "flex:1;border:1.5px solid #ddd;border-radius:8px;padding:5px 8px;font-size:13px";
+    nameIn.style.cssText = "flex:1;border:1.5px solid #C9C2B4;border-radius:8px;padding:5px 8px;font-size:13px";
 
     const saveBtn = document.createElement("button");
     saveBtn.textContent = "✓";
@@ -420,13 +420,13 @@ function renderCatList(cats, container) {
         await api.updateShopCategory(cat.id, { name: nameIn.value.trim(), color: colorIn.value });
         showToast("Catégorie mise à jour ✓");
         row.style.background = "#e8f5e9";
-        setTimeout(() => { row.style.background = "#f8f8f8"; }, 1200);
+        setTimeout(() => { row.style.background = "#F9F7F1"; }, 1200);
       } catch (err) { showToast(err.message, "error"); }
     };
 
     const delBtn = document.createElement("button");
     delBtn.textContent = "🗑";
-    delBtn.style.cssText = "font-size:15px;color:#aaa;padding:0 4px";
+    delBtn.style.cssText = "font-size:15px;color:#8A8271;padding:0 4px";
     delBtn.title = "Supprimer";
     delBtn.onclick = async () => {
       if (!confirm(`Supprimer "${cat.name}" ? Les ingrédients associés seront déplacés vers "Autres".`)) return;
@@ -450,14 +450,14 @@ function renderIngrMap(ingrMap, cats, container) {
   }
   for (const entry of ingrMap) {
     const row = document.createElement("div");
-    row.style.cssText = "display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #f0f0f0";
+    row.style.cssText = "display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #E3DED0";
 
     const label = document.createElement("span");
     label.textContent = entry.ingredient_key;
     label.style.cssText = "flex:1;font-size:13px;text-transform:capitalize";
 
     const sel = document.createElement("select");
-    sel.style.cssText = "border:1.5px solid #ddd;border-radius:8px;padding:4px 6px;font-size:12px;max-width:200px";
+    sel.style.cssText = "border:1.5px solid #C9C2B4;border-radius:8px;padding:4px 6px;font-size:12px;max-width:200px";
     const noneOpt = document.createElement("option");
     noneOpt.value = "";
     noneOpt.textContent = "— Aucune —";
@@ -483,9 +483,9 @@ function renderIngrMap(ingrMap, cats, container) {
     const delBtn = document.createElement("button");
     delBtn.textContent = "✕";
     delBtn.title = "Supprimer cet ingrédient";
-    delBtn.style.cssText = "color:#ccc;font-size:14px;padding:0 4px;flex-shrink:0";
+    delBtn.style.cssText = "color:#A79E8A;font-size:14px;padding:0 4px;flex-shrink:0";
     delBtn.onmouseenter = () => { delBtn.style.color = "#e74c3c"; };
-    delBtn.onmouseleave = () => { delBtn.style.color = "#ccc"; };
+    delBtn.onmouseleave = () => { delBtn.style.color = "#A79E8A"; };
     delBtn.onclick = async () => {
       try {
         await api.deleteIngredientMap(entry.ingredient_key);

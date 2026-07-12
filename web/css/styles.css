@@ -895,10 +895,13 @@ html.no-ads iframe[src*="adtrafficquality"] { display: none !important; height: 
 .shop-cat-title, .import2-caps-label, .home2-section-link, .priority-label { color: var(--terra); }
 .home2-tile-badge, .badge-count { background: var(--terra); color: var(--cream); border-radius: 2px; }
 
-/* Placeholders photo : hachures diagonales papier */
-.home2-hero-photo.empty, .plat-thumb, .week-daycard-thumb,
-.import2-recent-thumb, .home2-stack-thumb {
-  background: repeating-linear-gradient(-45deg, #EDE7DA 0, #EDE7DA 7px, #E4DCCB 7px, #E4DCCB 14px) !important;
+/* Fond hachuré « papier » par DÉFAUT des vignettes : la vraie photo (définie en
+   inline sur l'élément, ex background-image:url(...)) le recouvre naturellement.
+   Surtout PAS de !important ici, sinon les photos réelles seraient masquées. */
+.home2-hero-photo, .week-daycard-thumb, .import2-recent-thumb, .home2-stack-thumb, .plat-thumb {
+  background-color: #EDE7DA;
+  background-image: repeating-linear-gradient(-45deg, #EDE7DA 0, #EDE7DA 7px, #E4DCCB 7px, #E4DCCB 14px);
+  background-size: cover; background-position: center;
 }
 
 /* Toggle carré éditorial */

@@ -80,14 +80,14 @@ function renderDishList(container, dishes) {
 
   if (withRecipe.length) {
     const header = document.createElement("div");
-    header.style.cssText = "padding:10px 16px 2px;font-size:10px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:.6px";
+    header.style.cssText = "padding:10px 16px 2px;font-size:10px;font-weight:700;color:#8A8271;text-transform:uppercase;letter-spacing:.6px";
     header.textContent = "Avec recette";
     container.appendChild(header);
     for (const dish of withRecipe) container.appendChild(makeDishRow(dish));
   }
   if (withoutRecipe.length) {
     const header = document.createElement("div");
-    header.style.cssText = "padding:10px 16px 2px;font-size:10px;font-weight:700;color:#ccc;text-transform:uppercase;letter-spacing:.6px";
+    header.style.cssText = "padding:10px 16px 2px;font-size:10px;font-weight:700;color:#A79E8A;text-transform:uppercase;letter-spacing:.6px";
     header.textContent = "Sans recette";
     container.appendChild(header);
     for (const dish of withoutRecipe) container.appendChild(makeDishRow(dish));
@@ -103,7 +103,7 @@ function _sourceMeta(dish) {
     return { icon: "📸", name: "Instagram", color: "#C13584" };
   if (url.includes("tiktok.com"))
     return { icon: "🎵", name: "TikTok", color: "#010101" };
-  return { icon: "🔗", name: "Source", color: "#888" };
+  return { icon: "🔗", name: "Source", color: "#6B6353" };
 }
 
 function makeDishRow(dish) {
@@ -117,7 +117,7 @@ function makeDishRow(dish) {
 
   // Thumbnail
   const thumb = document.createElement("div");
-  thumb.style.cssText = "width:86px;flex-shrink:0;background:#f0f0f0;position:relative;overflow:hidden";
+  thumb.style.cssText = "width:86px;flex-shrink:0;background:#E3DED0;position:relative;overflow:hidden";
   if (dish.thumbnail_url) {
     const img = document.createElement("img");
     img.src = dish.thumbnail_url;
@@ -148,7 +148,7 @@ function makeDishRow(dish) {
 
   if (dish.author) {
     const author = document.createElement("div");
-    author.style.cssText = "font-size:11px;color:#999;margin-top:1px";
+    author.style.cssText = "font-size:11px;color:#6B6353;margin-top:1px";
     author.textContent = "par " + dish.author;
     content.appendChild(author);
   }
@@ -313,7 +313,7 @@ function renderRecipeView(dish) {
   let html = "";
 
   if (dish.thumbnail_url || dish.author || src) {
-    html += `<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid #f0f0f0">`;
+    html += `<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid #E3DED0">`;
     const safeThumb = _safeUrl(dish.thumbnail_url);
     if (safeThumb) {
       html += `<img src="${escapeHtml(safeThumb)}" style="width:72px;height:72px;object-fit:cover;border-radius:10px;flex-shrink:0" onerror="this.style.display='none'">`;
@@ -321,7 +321,7 @@ function renderRecipeView(dish) {
     html += `<div style="min-width:0">`;
     if (src) html += `<div style="font-size:11px;font-weight:700;color:${src.color};margin-bottom:2px">${src.icon} ${src.name}</div>`;
     html += `<div style="font-size:13px;font-weight:700;color:#222;line-height:1.3">${escapeHtml(dish.name)}</div>`;
-    if (dish.author) html += `<div style="font-size:11px;color:#999;margin-top:2px">par ${escapeHtml(dish.author)}</div>`;
+    if (dish.author) html += `<div style="font-size:11px;color:#6B6353;margin-top:2px">par ${escapeHtml(dish.author)}</div>`;
     html += `</div></div>`;
   }
 
@@ -334,10 +334,10 @@ function renderRecipeView(dish) {
           <button id="btn-uncheck-ingr-all" class="btn btn-sm btn-ghost" style="font-size:11px;padding:3px 8px">Tout ✗</button>
         </div>
       </div>
-      <div style="display:flex;flex-direction:column;gap:3px;margin-bottom:16px;border:1px solid #eee;border-radius:10px;padding:8px">
+      <div style="display:flex;flex-direction:column;gap:3px;margin-bottom:16px;border:1px solid #E3DED0;border-radius:10px;padding:8px">
         ${dish.ingredients.map((ing) => `
           <label class="recipe-ingr-row" style="display:flex;align-items:center;gap:8px;padding:5px 6px;cursor:pointer;border-radius:6px"
-            onmouseenter="this.style.background='#f5f5f5'" onmouseleave="this.style.background=''">
+            onmouseenter="this.style.background='#EDE7DA'" onmouseleave="this.style.background=''">
             <input type="checkbox" checked class="recipe-ingr-cb"
               style="width:16px;height:16px;accent-color:var(--shopping-header);flex-shrink:0">
             <span class="ingr-text" style="font-size:13px;flex:1">${escapeHtml(ing)}</span>
@@ -372,7 +372,7 @@ function renderRecipeEditShell(dish, suggestions) {
   const safeEditThumb = _safeUrl(dish.thumbnail_url);
   const thumbHtml = safeEditThumb
     ? `<img id="edit-thumb-preview" src="${escapeHtml(safeEditThumb)}" style="width:70px;height:70px;object-fit:cover;border-radius:8px;flex-shrink:0">`
-    : `<div id="edit-thumb-preview" style="width:70px;height:70px;border-radius:8px;background:#f0f0f0;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">🍽</div>`;
+    : `<div id="edit-thumb-preview" style="width:70px;height:70px;border-radius:8px;background:#E3DED0;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">🍽</div>`;
   return `
     <datalist id="ingr-suggestions">${datalistOpts}</datalist>
     <div style="margin-bottom:14px">
@@ -384,7 +384,7 @@ function renderRecipeEditShell(dish, suggestions) {
           <button type="button" id="edit-thumb-btn" class="btn btn-ghost btn-sm" style="font-size:12px">
             ${dish.thumbnail_url ? "🔄 Changer la photo" : "📷 Ajouter une photo"}
           </button>
-          <div style="font-size:10px;color:#aaa;margin-top:3px">JPG, PNG, WebP · max 5 Mo</div>
+          <div style="font-size:10px;color:#8A8271;margin-top:3px">JPG, PNG, WebP · max 5 Mo</div>
         </div>
       </div>
     </div>
@@ -400,10 +400,10 @@ function renderRecipeEditShell(dish, suggestions) {
     </div>
     <div class="form-group">
       <label style="font-size:13px;font-weight:700;color:var(--accent-dark);margin-bottom:4px;display:block">
-        📋 Instructions <span style="font-weight:400;color:#888">(une étape par ligne)</span>
+        📋 Instructions <span style="font-weight:400;color:#6B6353">(une étape par ligne)</span>
       </label>
       <textarea id="edit-instructions" rows="7"
-        style="width:100%;border:1.5px solid #ddd;border-radius:10px;padding:10px 12px;font-size:13px;resize:vertical;line-height:1.6"
+        style="width:100%;border:1.5px solid #C9C2B4;border-radius:10px;padding:10px 12px;font-size:13px;resize:vertical;line-height:1.6"
         placeholder="Ex :&#10;Préchauffer le four à 180°C&#10;Mélanger la farine et les œufs&#10;Enfourner 25 minutes"
       >${dish.instructions.join("\n")}</textarea>
     </div>`;
@@ -419,20 +419,20 @@ function makeIngrRow(name = "", qty = "") {
   nameIn.setAttribute("list", "ingr-suggestions");
   nameIn.value = name;
   nameIn.placeholder = "Ingrédient…";
-  nameIn.style.cssText = "flex:2;border:1.5px solid #ddd;border-radius:8px;padding:6px 8px;font-size:13px;min-width:0";
+  nameIn.style.cssText = "flex:2;border:1.5px solid #C9C2B4;border-radius:8px;padding:6px 8px;font-size:13px;min-width:0";
 
   const qtyIn = document.createElement("input");
   qtyIn.className = "ingr-qty-input";
   qtyIn.value = qty;
   qtyIn.placeholder = "Quantité…";
-  qtyIn.style.cssText = "flex:1;border:1.5px solid #ddd;border-radius:8px;padding:6px 8px;font-size:13px;min-width:0";
+  qtyIn.style.cssText = "flex:1;border:1.5px solid #C9C2B4;border-radius:8px;padding:6px 8px;font-size:13px;min-width:0";
 
   const del = document.createElement("button");
   del.type = "button";
   del.textContent = "✕";
-  del.style.cssText = "color:#ccc;font-size:14px;flex-shrink:0;padding:0 4px";
+  del.style.cssText = "color:#A79E8A;font-size:14px;flex-shrink:0;padding:0 4px";
   del.onmouseenter = () => { del.style.color = "#e74c3c"; };
-  del.onmouseleave = () => { del.style.color = "#ccc"; };
+  del.onmouseleave = () => { del.style.color = "#A79E8A"; };
   del.onclick = () => row.remove();
 
   row.append(nameIn, qtyIn, del);

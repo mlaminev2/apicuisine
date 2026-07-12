@@ -23,7 +23,7 @@ function _sourceMeta(dish) {
   if (url.includes("youtube.com") || url.includes("youtu.be")) return { icon: "▶️", name: "YouTube", color: "#FF0000" };
   if (url.includes("instagram.com")) return { icon: "📸", name: "Instagram", color: "#C13584" };
   if (url.includes("tiktok.com")) return { icon: "🎵", name: "TikTok", color: "#010101" };
-  return { icon: "🔗", name: "Source", color: "#888" };
+  return { icon: "🔗", name: "Source", color: "#6B6353" };
 }
 
 export async function renderBase(root) {
@@ -388,7 +388,7 @@ function renderEditShell(dish, suggestions) {
   const safeThumb = _safeUrl(dish.thumbnail_url);
   const thumbHtml = safeThumb
     ? `<img id="edit-thumb-preview" src="${escapeHtml(safeThumb)}" style="width:70px;height:70px;object-fit:cover;border-radius:8px;flex-shrink:0">`
-    : `<div id="edit-thumb-preview" style="width:70px;height:70px;border-radius:8px;background:#f0f0f0;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">🍽</div>`;
+    : `<div id="edit-thumb-preview" style="width:70px;height:70px;border-radius:8px;background:#E3DED0;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">🍽</div>`;
   return `
     <datalist id="ingr-suggestions">${datalistOpts}</datalist>
     <div style="display:flex;gap:8px;margin-bottom:12px">
@@ -412,7 +412,7 @@ function renderEditShell(dish, suggestions) {
           <button type="button" id="edit-thumb-btn" class="btn btn-ghost btn-sm" style="font-size:12px">
             ${dish.thumbnail_url ? "🔄 Changer" : "📷 Ajouter photo"}
           </button>
-          <div style="font-size:10px;color:#aaa;margin-top:3px">JPG, PNG, WebP · max 5 Mo</div>
+          <div style="font-size:10px;color:#8A8271;margin-top:3px">JPG, PNG, WebP · max 5 Mo</div>
         </div>
       </div>
     </div>
@@ -428,10 +428,10 @@ function renderEditShell(dish, suggestions) {
     </div>
     <div class="form-group">
       <label style="font-size:13px;font-weight:700;color:var(--accent-dark);margin-bottom:4px;display:block">
-        📋 Instructions <span style="font-weight:400;color:#888">(une étape par ligne)</span>
+        📋 Instructions <span style="font-weight:400;color:#6B6353">(une étape par ligne)</span>
       </label>
       <textarea id="edit-instructions" rows="7"
-        style="width:100%;border:1.5px solid #ddd;border-radius:10px;padding:10px 12px;font-size:13px;resize:vertical;line-height:1.6"
+        style="width:100%;border:1.5px solid #C9C2B4;border-radius:10px;padding:10px 12px;font-size:13px;resize:vertical;line-height:1.6"
         placeholder="Ex :&#10;Préchauffer le four à 180°C&#10;Mélanger la farine et les œufs&#10;Enfourner 25 minutes"
       >${dish.instructions.join("\n")}</textarea>
     </div>`;
@@ -446,18 +446,18 @@ function makeIngrRow(name = "", qty = "") {
   nameIn.className = "ingr-name-input";
   nameIn.setAttribute("list", "ingr-suggestions");
   nameIn.value = name; nameIn.placeholder = "Ingrédient…";
-  nameIn.style.cssText = "flex:2;border:1.5px solid #ddd;border-radius:8px;padding:6px 8px;font-size:13px;min-width:0";
+  nameIn.style.cssText = "flex:2;border:1.5px solid #C9C2B4;border-radius:8px;padding:6px 8px;font-size:13px;min-width:0";
 
   const qtyIn = document.createElement("input");
   qtyIn.className = "ingr-qty-input";
   qtyIn.value = qty; qtyIn.placeholder = "Quantité…";
-  qtyIn.style.cssText = "flex:1;border:1.5px solid #ddd;border-radius:8px;padding:6px 8px;font-size:13px;min-width:0";
+  qtyIn.style.cssText = "flex:1;border:1.5px solid #C9C2B4;border-radius:8px;padding:6px 8px;font-size:13px;min-width:0";
 
   const del = document.createElement("button");
   del.type = "button"; del.textContent = "✕";
-  del.style.cssText = "color:#ccc;font-size:14px;flex-shrink:0;padding:0 4px";
+  del.style.cssText = "color:#A79E8A;font-size:14px;flex-shrink:0;padding:0 4px";
   del.onmouseenter = () => { del.style.color = "#e74c3c"; };
-  del.onmouseleave = () => { del.style.color = "#ccc"; };
+  del.onmouseleave = () => { del.style.color = "#A79E8A"; };
   del.onclick = () => row.remove();
 
   row.append(nameIn, qtyIn, del);
