@@ -200,6 +200,29 @@ export function openDishModal(dish) {
   overlay.querySelector(".btn-close").onclick = () => overlay.remove();
   overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
 
+  // Ajout/changement rapide de photo directement depuis la fiche (appareil photo sur mobile)
+  const qpBtn = overlay.querySelector("#btn-quick-photo");
+  const qpInput = overlay.querySelector("#quick-photo-input");
+  if (qpBtn && qpInput) {
+    qpBtn.onclick = (e) => { e.stopPropagation(); qpInput.click(); };
+    qpInput.onchange = async () => {
+      const file = qpInput.files[0];
+      if (!file) return;
+      qpBtn.disabled = true; qpBtn.textContent = "⏳ Envoi…";
+      try {
+        const up = await api.uploadDishImage(dish.id, file);
+        dish.thumbnail_url = up.thumbnail_url;
+        showToast("Photo ajoutée ✓");
+        overlay.remove();
+        openDishModal(dish);
+        loadDishes();
+      } catch (err) {
+        showToast(err.message, "error");
+        qpBtn.disabled = false; qpBtn.textContent = "📷 Réessayer";
+      }
+    };
+  }
+
   // Check/uncheck all
   overlay.querySelector("#btn-check-ingr-all")?.addEventListener("click", (e) => {
     e.stopPropagation();
@@ -305,6 +328,8 @@ function renderRecipeView(dish) {
     <div class="recette-hero">
       ${safeThumb ? `<img src="${escapeHtml(safeThumb)}" alt="" onerror="this.remove()">` : ""}
       <div class="recette-hero-grad"></div>
+      <button type="button" id="btn-quick-photo" class="recette-photo-btn">📷 ${safeThumb ? "Changer la photo" : "Ajouter une photo"}</button>
+      <input type="file" id="quick-photo-input" accept="image/*" capture="environment" style="display:none">
       <div class="recette-hero-body">
         <span class="bento-pill">${escapeHtml(CAT_LABELS[dish.category] || dish.category)}</span>
         <div class="recette-hero-title">${escapeHtml(dish.name)}</div>

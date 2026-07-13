@@ -965,6 +965,10 @@ html.no-ads iframe[src*="adtrafficquality"] { display: none !important; height: 
 .diet-tag { font-size: 12px; font-weight: 600; color: #6B5A3E; background: #F0E9DA; border: 1px solid var(--line-strong); padding: 4px 9px; }
 /* Rappel allergies/restrictions dans le sélecteur de plat */
 .diet-reminder { background: var(--terra-soft); border: 1px solid var(--terra); color: var(--terra); font-size: 12.5px; font-weight: 600; padding: 8px 11px; margin-bottom: 10px; }
+/* Bouton photo rapide sur la fiche recette */
+.recette-photo-btn { position: absolute; top: 10px; right: 10px; z-index: 3; background: rgba(38,34,27,.72); color: var(--cream); font-size: 12px; font-weight: 700; letter-spacing: .03em; padding: 8px 12px; border: 1px solid rgba(255,255,255,.25); cursor: pointer; }
+.recette-photo-btn:hover { background: rgba(38,34,27,.9); }
+.recette-photo-btn:disabled { opacity: .7; }
 
 /* Pages légales (mentions, CGV, confidentialité) */
 .legal-doc { max-width: 680px; margin: 0 auto; padding: 4px 20px 44px; font-size: 14px; line-height: 1.62; color: var(--ink-soft); }

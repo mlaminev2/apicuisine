@@ -44,6 +44,19 @@ class Member(SQLModel, table=True):
     oauth_provider: Optional[str] = Field(default=None)   # "google" | "apple"
     oauth_sub: Optional[str] = Field(default=None)        # identifiant unique chez le provider
     token_version: int = Field(default=0)  # incrémenté pour révoquer tous les tokens émis
+    reminder_enabled: bool = Field(default=False)         # rappel du dîner par notification push
+    created_at: datetime = Field(default_factory=_utcnow)
+
+
+class PushSubscription(SQLModel, table=True):
+    """Abonnement d'un appareil aux notifications push (un membre peut en avoir plusieurs)."""
+    __tablename__ = "push_subscription"
+    id: Optional[int] = Field(default=None, primary_key=True)
+    member_id: int = Field(foreign_key="member.id", index=True)
+    household_id: int = Field(foreign_key="household.id", index=True)
+    endpoint: str = Field(unique=True, sa_type=Text)  # URL du service push du navigateur
+    p256dh: str = Field(sa_type=Text)                  # clé publique du client (chiffrement)
+    auth: str                                          # secret d'authentification du client
     created_at: datetime = Field(default_factory=_utcnow)
 
 

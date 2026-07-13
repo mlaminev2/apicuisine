@@ -2,6 +2,7 @@ import { api } from "../api.js";
 import { state } from "../state.js";
 import { showToast } from "../components/toast.js";
 import { CAT_LABELS, DAYS_FULL_FR, escapeHtml } from "../utils.js";
+import { enablePush, disablePush, pushSupported } from "../push.js";
 
 const CATEGORIES = ["pomme_de_terre", "riz", "pates", "entree", "autre", "sucree", "africain", "apero", "sauce"];
 
@@ -104,6 +105,48 @@ export async function renderSettings(root) {
   const goPremium = premiumCard.querySelector("#go-premium");
   if (goPremium) goPremium.onclick = () => { location.hash = "#/premium"; };
   body.insertBefore(premiumCard, secLogout);
+
+  // ── Notifications / rappel du dîner ──
+  const notifCard = document.createElement("div");
+  notifCard.className = "settings-section";
+  if (pushSupported()) {
+    notifCard.innerHTML = `
+      <div class="settings-row" style="border-bottom:none">
+        <div style="flex:1">
+          <label style="font-size:14.5px;font-weight:700">🔔 Rappel du dîner</label>
+          <div style="font-size:11.5px;color:var(--muted);margin-top:3px">Une notification chaque soir avec le plat prévu.</div>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="notif-toggle" ${access?.reminder_enabled ? "checked" : ""} />
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px">📱 Sur iPhone : ajoutez d'abord l'app à l'écran d'accueil (Partager → Sur l'écran d'accueil).</div>`;
+    const notifToggle = notifCard.querySelector("#notif-toggle");
+    notifToggle.onchange = async () => {
+      notifToggle.disabled = true;
+      try {
+        if (notifToggle.checked) {
+          await enablePush();
+          try { await api.pushTest(); } catch (_) { /* la notif test n'est pas bloquante */ }
+          showToast("Notifications activées ✓");
+        } else {
+          await disablePush();
+          showToast("Notifications désactivées");
+        }
+      } catch (err) {
+        notifToggle.checked = !notifToggle.checked; // annule le changement visuel
+        showToast(err.message, "error");
+      } finally {
+        notifToggle.disabled = false;
+      }
+    };
+  } else {
+    notifCard.innerHTML = `
+      <div style="font-size:14.5px;font-weight:700;margin-bottom:4px">🔔 Rappel du dîner</div>
+      <div style="font-size:12px;color:var(--muted)">Les notifications ne sont pas gérées par ce navigateur. Sur iPhone, ajoutez l'app à l'écran d'accueil pour les activer.</div>`;
+  }
+  body.insertBefore(notifCard, secLogout);
 
   // Espace admin : réservé au super administrateur (SUPER_ADMIN_EMAIL côté serveur)
   if (access?.is_admin) {

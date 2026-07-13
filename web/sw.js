@@ -1,6 +1,6 @@
-const CACHE = "menus-v78";
+const CACHE = "menus-v79";
 const SHELL = ["/", "/css/styles.css", "/js/api.js", "/js/state.js", "/js/utils.js", "/js/router.js",
-  "/js/sw-register.js", "/js/analytics.js", "/js/consent-init.js",
+  "/js/sw-register.js", "/js/analytics.js", "/js/consent-init.js", "/js/push.js",
   "/js/components/navbar.js", "/js/components/toast.js", "/js/components/modal.js",
   "/js/views/login.js", "/js/views/register.js", "/js/views/password.js", "/js/views/home.js", "/js/views/remplir.js", "/js/views/admin.js", "/js/views/calendar.js", "/js/views/picker.js",
   "/js/views/base.js", "/js/views/shopping.js", "/js/views/tracking.js", "/js/views/settings.js",
@@ -36,6 +36,36 @@ function isAppShell(req, url) {
   if (req.mode === "navigate") return true;
   return /\.(?:js|css)$/.test(url.pathname);
 }
+
+// ── Notifications push ────────────────────────────────────────────────────────
+self.addEventListener("push", (e) => {
+  let data = { title: "Menu en Famille", body: "", url: "/" };
+  try { if (e.data) data = Object.assign(data, e.data.json()); } catch (_) { /* payload non-JSON */ }
+  e.waitUntil(
+    self.registration.showNotification(data.title, {
+      body: data.body,
+      icon: "/icons/icon-192.png",
+      badge: "/icons/icon-192.png",
+      data: { url: data.url || "/" },
+      tag: "menu-rappel",
+      renotify: true,
+    })
+  );
+});
+
+// Clic sur la notification : ouvrir/mettre au premier plan l'app sur la bonne page.
+self.addEventListener("notificationclick", (e) => {
+  e.notification.close();
+  const target = (e.notification.data && e.notification.data.url) || "/";
+  e.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((list) => {
+      for (const client of list) {
+        if ("focus" in client) { client.focus(); client.navigate(target); return; }
+      }
+      if (self.clients.openWindow) return self.clients.openWindow(target);
+    })
+  );
+});
 
 self.addEventListener("fetch", (e) => {
   const req = e.request;

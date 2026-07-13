@@ -46,10 +46,28 @@ class Settings(BaseSettings):
     stripe_price_monthly: str = ""      # price_... abonnement mensuel
     stripe_price_yearly: str = ""       # price_... abonnement annuel
 
+    # Notifications push web (VAPID). Vides = notifications désactivées.
+    vapid_public_key: str = ""       # clé publique (application server key, base64url) — exposée au front
+    vapid_private_key_b64: str = ""  # clé privée PEM encodée en base64 (tient sur une ligne de .env)
+    vapid_subject: str = "mailto:contact@menuenfamille.fr"  # contact requis par le protocole
+
     @property
     def stripe_enabled(self) -> bool:
         """Le paiement n'est actif que si la clé et au moins un tarif existent."""
         return bool(self.stripe_secret_key and (self.stripe_price_monthly or self.stripe_price_yearly))
+
+    @property
+    def push_enabled(self) -> bool:
+        """Les notifications ne sont actives que si les deux clés VAPID existent."""
+        return bool(self.vapid_public_key and self.vapid_private_key_b64)
+
+    @property
+    def vapid_private_pem(self) -> str:
+        """Reconstitue la clé privée PEM à partir de sa forme base64."""
+        import base64
+        if not self.vapid_private_key_b64:
+            return ""
+        return base64.b64decode(self.vapid_private_key_b64).decode()
 
 
 settings = Settings()

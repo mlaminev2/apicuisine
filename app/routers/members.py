@@ -44,6 +44,7 @@ def my_access(
         # « freemium désactivé » (qui ne veut pas dire compte payant).
         hide_ads=is_super_admin(member) or getattr(member, "is_premium", False),
         can_manage_billing=bool(getattr(member, "stripe_customer_id", None)),
+        reminder_enabled=getattr(member, "reminder_enabled", False),
         import_limit=None if unlimited else app_config.import_free_limit,
         imports_remaining=None if unlimited else remaining,
     )

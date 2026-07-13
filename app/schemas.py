@@ -62,8 +62,19 @@ class AccessRead(BaseModel):
     is_admin: bool = False  # accès à l'espace admin (super admin)
     hide_ads: bool = False  # masquer les publicités (compte premium payé ou admin)
     can_manage_billing: bool = False  # a un abonnement Stripe (accès au portail client)
+    reminder_enabled: bool = False    # rappel du dîner par notification push activé
     import_limit: Optional[int] = None      # null = illimité
     imports_remaining: Optional[int] = None  # null = illimité
+
+
+class PushKeys(BaseModel):
+    p256dh: str = Field(max_length=200)
+    auth: str = Field(max_length=100)
+
+
+class PushSubscribeRequest(BaseModel):
+    endpoint: str = Field(max_length=1000)
+    keys: PushKeys
 
 
 class InviteRead(BaseModel):
