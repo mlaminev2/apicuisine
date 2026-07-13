@@ -864,8 +864,8 @@ html.no-ads iframe[src*="adtrafficquality"] { display: none !important; height: 
    5 onglets tenant sur une seule ligne, même sur petit mobile. */
 #navbar { background: var(--cream); backdrop-filter: none; -webkit-backdrop-filter: none; border-top: 1px solid var(--line-strong); }
 .nav-tab {
-  font-size: 8.5px; font-weight: 600; gap: 0; padding: 8px 2px; min-width: 0;
-  letter-spacing: .04em; color: var(--muted-2);
+  font-size: 8px; font-weight: 600; gap: 0; padding: 8px 1px; min-width: 0;
+  letter-spacing: .02em; color: var(--muted-2);
 }
 .nav-tab .icon { display: none; }
 .nav-tab > span:last-child {
@@ -876,7 +876,7 @@ html.no-ads iframe[src*="adtrafficquality"] { display: none !important; height: 
 .nav-tab.active > span:last-child { border-bottom: 2px solid var(--ink); padding-bottom: 4px; }
 .nav-tab.active .icon { transform: none; }
 /* Déconnexion : icône seule, compacte, en bout de barre */
-.nav-tab.nav-logout { flex: 0 0 38px; }
+.nav-tab.nav-logout { flex: 0 0 32px; }
 .nav-tab.nav-logout .icon { display: flex; align-items: center; justify-content: center; color: var(--muted-2); }
 .nav-tab.nav-logout .icon svg { width: 19px; height: 19px; }
 .nav-tab.nav-logout:active .icon { transform: scale(.85); }
@@ -965,6 +965,20 @@ html.no-ads iframe[src*="adtrafficquality"] { display: none !important; height: 
 .diet-tag { font-size: 12px; font-weight: 600; color: #6B5A3E; background: #F0E9DA; border: 1px solid var(--line-strong); padding: 4px 9px; }
 /* Rappel allergies/restrictions dans le sélecteur de plat */
 .diet-reminder { background: var(--terra-soft); border: 1px solid var(--terra); color: var(--terra); font-size: 12.5px; font-weight: 600; padding: 8px 11px; margin-bottom: 10px; }
+/* Invitation à installer la PWA (bottom-sheet) */
+.pwa-overlay { position: fixed; inset: 0; z-index: 1000; background: rgba(38,34,27,.55); display: flex; align-items: flex-end; justify-content: center; animation: pwa-fade .2s ease-out; }
+@keyframes pwa-fade { from { opacity: 0 } to { opacity: 1 } }
+.pwa-sheet { width: 100%; max-width: 460px; background: var(--card); border: 1px solid var(--line-strong); border-bottom: none; border-radius: 4px 4px 0 0; padding: 22px 20px calc(20px + env(safe-area-inset-bottom)); box-shadow: 0 -10px 40px rgba(38,34,27,.25); animation: pwa-slide .28s var(--ease-out); }
+@keyframes pwa-slide { from { transform: translateY(100%) } to { transform: translateY(0) } }
+.pwa-icon { font-size: 34px; text-align: center; margin-bottom: 6px; }
+.pwa-title { font-family: var(--font-display); font-size: 22px; line-height: 1.15; text-align: center; color: var(--ink); margin-bottom: 12px; text-wrap: balance; }
+.pwa-lead { font-size: 13.5px; color: var(--muted); text-align: center; margin-bottom: 14px; }
+.pwa-steps { list-style: none; counter-reset: pwa; display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
+.pwa-steps li { counter-increment: pwa; position: relative; padding-left: 34px; font-size: 14px; color: var(--ink); line-height: 1.4; }
+.pwa-steps li::before { content: counter(pwa); position: absolute; left: 0; top: -1px; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; background: var(--terra); color: #fff; font-size: 12px; font-weight: 700; border-radius: 50%; }
+.pwa-note { font-size: 12px; color: var(--terra); background: var(--terra-soft); border: 1px solid var(--terra); padding: 8px 10px; margin-bottom: 12px; }
+.pwa-actions { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+
 /* Bouton photo rapide sur la fiche recette */
 .recette-photo-btn { position: absolute; top: 10px; right: 10px; z-index: 3; background: rgba(38,34,27,.72); color: var(--cream); font-size: 12px; font-weight: 700; letter-spacing: .03em; padding: 8px 12px; border: 1px solid rgba(255,255,255,.25); cursor: pointer; }
 .recette-photo-btn:hover { background: rgba(38,34,27,.9); }

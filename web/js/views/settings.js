@@ -3,6 +3,7 @@ import { state } from "../state.js";
 import { showToast } from "../components/toast.js";
 import { CAT_LABELS, DAYS_FULL_FR, escapeHtml } from "../utils.js";
 import { enablePush, disablePush, pushSupported } from "../push.js";
+import { openInstallPrompt } from "../pwa-install.js";
 
 const CATEGORIES = ["pomme_de_terre", "riz", "pates", "entree", "autre", "sucree", "africain", "apero", "sauce"];
 
@@ -145,6 +146,18 @@ export async function renderSettings(root) {
     notifCard.innerHTML = `
       <div style="font-size:14.5px;font-weight:700;margin-bottom:4px">🔔 Rappel du dîner</div>
       <div style="font-size:12px;color:var(--muted)">Les notifications ne sont pas gérées par ce navigateur. Sur iPhone, ajoutez l'app à l'écran d'accueil pour les activer.</div>`;
+  }
+  // Bouton « Installer l'app » (masqué si l'app est déjà lancée en mode installé)
+  const standalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+  if (!standalone) {
+    const installRow = document.createElement("div");
+    installRow.style.cssText = "margin-top:10px;padding-top:10px;border-top:1px solid var(--line)";
+    const installBtn = document.createElement("button");
+    installBtn.className = "btn btn-ghost btn-sm btn-full";
+    installBtn.textContent = "📲 Installer l'app sur l'écran d'accueil";
+    installBtn.onclick = () => openInstallPrompt();
+    installRow.appendChild(installBtn);
+    notifCard.appendChild(installRow);
   }
   body.insertBefore(notifCard, secLogout);
 

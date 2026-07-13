@@ -16,6 +16,7 @@ import { renderSettings } from "./views/settings.js";
 import { renderImport } from "./views/import.js";
 import { renderPremium } from "./views/premium.js";
 import { renderLegal } from "./views/legal.js";
+import { maybeShowInstallPrompt } from "./pwa-install.js";
 
 const root = document.getElementById("view-root");
 
@@ -65,7 +66,7 @@ async function route() {
     }
     return;
   }
-  if (hash.startsWith("#/accueil")) { await renderHome(root); return; }
+  if (hash.startsWith("#/accueil")) { await renderHome(root); maybeShowInstallPrompt(); return; }
   if (hash.startsWith("#/remplir")) { await renderRemplir(root); return; }
   if (hash.startsWith("#/admin")) { await renderAdmin(root); return; }
   if (hash.startsWith("#/calendrier")) { await renderCalendar(root); return; }
