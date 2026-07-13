@@ -965,6 +965,13 @@ html.no-ads iframe[src*="adtrafficquality"] { display: none !important; height: 
 .diet-tag { font-size: 12px; font-weight: 600; color: #6B5A3E; background: #F0E9DA; border: 1px solid var(--line-strong); padding: 4px 9px; }
 /* Rappel allergies/restrictions dans le sélecteur de plat */
 .diet-reminder { background: var(--terra-soft); border: 1px solid var(--terra); color: var(--terra); font-size: 12.5px; font-weight: 600; padding: 8px 11px; margin-bottom: 10px; }
+/* Cases à cocher des restrictions alimentaires (réglages) */
+.diet-group-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--muted-2); margin: 10px 0 6px; }
+.diet-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 4px; }
+.diet-chip { font-size: 12.5px; font-weight: 600; padding: 6px 11px; border: 1.5px solid var(--line-strong); background: transparent; color: var(--muted); cursor: pointer; border-radius: 2px; transition: all var(--t-fast); }
+.diet-chip:hover { border-color: var(--terra); color: var(--terra); }
+.diet-chip.on { background: var(--terra); border-color: var(--terra); color: #fff; }
+
 /* Invitation à installer la PWA (bottom-sheet) */
 .pwa-overlay { position: fixed; inset: 0; z-index: 1000; background: rgba(38,34,27,.55); display: flex; align-items: flex-end; justify-content: center; animation: pwa-fade .2s ease-out; }
 @keyframes pwa-fade { from { opacity: 0 } to { opacity: 1 } }

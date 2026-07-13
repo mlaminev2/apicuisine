@@ -7,6 +7,31 @@ import { openInstallPrompt } from "../pwa-install.js";
 
 const CATEGORIES = ["pomme_de_terre", "riz", "pates", "entree", "autre", "sucree", "africain", "apero", "sauce"];
 
+// Restrictions courantes proposées en cases à cocher dans les réglages.
+const DIET_PRESETS = {
+  "Allergènes": ["Arachide", "Fruits à coque", "Gluten", "Lactose", "Œuf", "Poisson", "Crustacés", "Soja", "Sésame"],
+  "Régimes": ["Végétarien", "Végétalien", "Sans porc", "Halal", "Casher", "Sans sucre"],
+};
+
+// Normalise pour comparer (minuscules, sans accents).
+function normDiet(s) {
+  return (s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").trim();
+}
+
+// Reconstruit la chaîne "dietary_notes" à partir des puces cochées + du champ libre.
+function collectDietaryNotes(container) {
+  const chosen = [];
+  container.querySelectorAll(".diet-chip.on").forEach((c) => chosen.push(c.dataset.diet));
+  const custom = container.querySelector("#dietary-custom").value.trim();
+  if (custom) {
+    for (const part of custom.split(",")) {
+      const p = part.trim();
+      if (p && !chosen.some((c) => normDiet(c) === normDiet(p))) chosen.push(p);
+    }
+  }
+  return chosen.join(", ");
+}
+
 // ── Section dépliante ─────────────────────────────────────────────────────────
 // Retourne { sec, body } ; l'état ouvert/fermé est mémorisé par section.
 function makeSection(title, key, { open = false, badge = "" } = {}) {
@@ -224,14 +249,36 @@ export async function renderSettings(root) {
     </label>`;
   sec1Body.appendChild(multiRow);
 
-  // Allergies & restrictions alimentaires du foyer
+  // Allergies & restrictions alimentaires du foyer (cases à cocher + champ libre)
   const dietRow = document.createElement("div");
   dietRow.style.cssText = "padding:12px 0 4px;border-top:1px solid var(--line);margin-top:6px";
+  // Valeurs déjà enregistrées : celles qui correspondent à un preset cochent la
+  // puce, les autres remplissent le champ « Autres ».
+  const savedTokens = (sett.dietary_notes || "").split(",").map((t) => t.trim()).filter(Boolean);
+  const allPresets = Object.values(DIET_PRESETS).flat();
+  const isPreset = (tok) => allPresets.some((p) => normDiet(p) === normDiet(tok));
+  const customLeftover = savedTokens.filter((t) => !isPreset(t)).join(", ");
+
+  let groupsHtml = "";
+  for (const [group, items] of Object.entries(DIET_PRESETS)) {
+    const chips = items.map((label) => {
+      const on = savedTokens.some((t) => normDiet(t) === normDiet(label));
+      return `<button type="button" class="diet-chip${on ? " on" : ""}" data-diet="${escapeHtml(label)}">${escapeHtml(label)}</button>`;
+    }).join("");
+    groupsHtml += `<div class="diet-group-title">${group}</div><div class="diet-chips">${chips}</div>`;
+  }
+
   dietRow.innerHTML = `
-    <label style="font-size:14.5px;font-weight:700;display:block;margin-bottom:5px">🥗 Allergies &amp; restrictions du foyer</label>
-    <input id="dietary-notes" value="${sett.dietary_notes ? escapeHtml(sett.dietary_notes) : ""}" placeholder="Ex : Pas de porc, allergie arachide, sans gluten"
-      style="width:100%;border:1.5px solid var(--line-strong);border-radius:2px;padding:9px 12px;font-size:14px" />
-    <div style="font-size:11.5px;color:var(--muted);margin-top:4px">Rappelé quand vous choisissez un plat.</div>`;
+    <label style="font-size:14.5px;font-weight:700;display:block;margin-bottom:2px">🥗 Allergies &amp; restrictions du foyer</label>
+    <div style="font-size:11.5px;color:var(--muted);margin-bottom:8px">Touchez pour activer. Rappelé automatiquement quand vous choisissez un plat.</div>
+    ${groupsHtml}
+    <div class="diet-group-title">Autres</div>
+    <input id="dietary-custom" value="${escapeHtml(customLeftover)}" placeholder="Ex : sans piment, allergie kiwi…"
+      style="width:100%;border:1.5px solid var(--line-strong);border-radius:2px;padding:9px 12px;font-size:14px" />`;
+  // Bascule des puces au clic
+  dietRow.querySelectorAll(".diet-chip").forEach((chip) => {
+    chip.onclick = () => chip.classList.toggle("on");
+  });
   sec1Body.appendChild(dietRow);
 
   const saveBtn = document.createElement("button");
@@ -249,7 +296,7 @@ export async function renderSettings(root) {
         dessert_enabled: dessertEnabled,
         lunch_enabled: lunchEnabled,
         multi_dish_enabled: multiEnabled,
-        dietary_notes: document.getElementById("dietary-notes").value.trim(),
+        dietary_notes: collectDietaryNotes(dietRow),
       });
       showToast("Réglages enregistrés ✓");
     } catch (err) { showToast(err.message, "error"); }
