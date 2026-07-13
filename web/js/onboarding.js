@@ -1,4 +1,5 @@
 // Mini-guide affiché une seule fois, à la première connexion, pour présenter l'app.
+import { maybeShowInstallPrompt } from "./pwa-install.js";
 
 const STEPS = [
   { icon: "👋", title: "Bienvenue !", body: "Menu en Famille réunit les repas de toute la famille au même endroit — fini les « on mange quoi ce soir ? »." },
@@ -18,7 +19,12 @@ function buildOnboarding() {
   overlay.appendChild(card);
 
   let i = 0;
-  const close = () => overlay.remove();
+  // À la fin du guide, on enchaîne sur l'explication « ajouter à l'écran
+  // d'accueil » (adaptée iOS / Android / bureau), dès la première visite.
+  const close = () => {
+    overlay.remove();
+    maybeShowInstallPrompt();
+  };
 
   const render = () => {
     const s = STEPS[i];
