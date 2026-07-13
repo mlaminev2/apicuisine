@@ -186,41 +186,6 @@ export async function renderSettings(root) {
   }
   body.insertBefore(notifCard, secLogout);
 
-  // ── Allergies & restrictions du foyer (carte visible, pas repliée) ──
-  const dietCard = document.createElement("div");
-  dietCard.className = "settings-section";
-  const savedTokens = (sett.dietary_notes || "").split(",").map((t) => t.trim()).filter(Boolean);
-  const allPresets = Object.values(DIET_PRESETS).flat();
-  const isPreset = (tok) => allPresets.some((p) => normDiet(p) === normDiet(tok));
-  const customLeftover = savedTokens.filter((t) => !isPreset(t)).join(", ");
-  let groupsHtml = "";
-  for (const [group, items] of Object.entries(DIET_PRESETS)) {
-    const chips = items.map((label) => {
-      const on = savedTokens.some((t) => normDiet(t) === normDiet(label));
-      return `<button type="button" class="diet-chip${on ? " on" : ""}" data-diet="${escapeHtml(label)}">${escapeHtml(label)}</button>`;
-    }).join("");
-    groupsHtml += `<div class="diet-group-title">${group}</div><div class="diet-chips">${chips}</div>`;
-  }
-  dietCard.innerHTML = `
-    <label style="font-size:14.5px;font-weight:700;display:block;margin-bottom:2px">🥗 Allergies &amp; restrictions du foyer</label>
-    <div style="font-size:11.5px;color:var(--muted);margin-bottom:8px">Touchez pour activer. Rappelé automatiquement quand vous choisissez un plat.</div>
-    ${groupsHtml}
-    <div class="diet-group-title">Autres</div>
-    <input id="dietary-custom" value="${escapeHtml(customLeftover)}" placeholder="Ex : sans piment, allergie kiwi…"
-      style="width:100%;border:1.5px solid var(--line-strong);border-radius:2px;padding:9px 12px;font-size:14px" />`;
-  dietCard.querySelectorAll(".diet-chip").forEach((chip) => { chip.onclick = () => chip.classList.toggle("on"); });
-  const dietSave = document.createElement("button");
-  dietSave.className = "btn btn-primary btn-full mt-8";
-  dietSave.textContent = "Enregistrer les restrictions";
-  dietSave.onclick = async () => {
-    try {
-      await api.putSettings({ dietary_notes: collectDietaryNotes(dietCard) });
-      showToast("Restrictions enregistrées ✓");
-    } catch (err) { showToast(err.message, "error"); }
-  };
-  dietCard.appendChild(dietSave);
-  body.insertBefore(dietCard, secLogout);
-
   // Espace admin : réservé au super administrateur (SUPER_ADMIN_EMAIL côté serveur)
   if (access?.is_admin) {
     const adminBtn = document.createElement("button");
@@ -304,6 +269,38 @@ export async function renderSettings(root) {
     } catch (err) { showToast(err.message, "error"); }
   };
   sec1Body.appendChild(saveBtn);
+
+  // ── Section repliable : allergies & restrictions du foyer (après le roulement) ──
+  const { sec: dietSec, body: dietSecBody } = makeSection("🥗 Allergies & restrictions du foyer", "restrictions");
+  const savedTokens = (sett.dietary_notes || "").split(",").map((t) => t.trim()).filter(Boolean);
+  const allPresets = Object.values(DIET_PRESETS).flat();
+  const isPreset = (tok) => allPresets.some((p) => normDiet(p) === normDiet(tok));
+  const customLeftover = savedTokens.filter((t) => !isPreset(t)).join(", ");
+  let groupsHtml = "";
+  for (const [group, items] of Object.entries(DIET_PRESETS)) {
+    const chips = items.map((label) => {
+      const on = savedTokens.some((t) => normDiet(t) === normDiet(label));
+      return `<button type="button" class="diet-chip${on ? " on" : ""}" data-diet="${escapeHtml(label)}">${escapeHtml(label)}</button>`;
+    }).join("");
+    groupsHtml += `<div class="diet-group-title">${group}</div><div class="diet-chips">${chips}</div>`;
+  }
+  dietSecBody.innerHTML = `
+    <div style="font-size:11.5px;color:var(--muted);margin-bottom:8px">Touchez pour activer. Rappelé automatiquement quand vous choisissez un plat.</div>
+    ${groupsHtml}
+    <div class="diet-group-title">Autres</div>
+    <input id="dietary-custom" value="${escapeHtml(customLeftover)}" placeholder="Ex : sans piment, allergie kiwi…"
+      style="width:100%;border:1.5px solid var(--line-strong);border-radius:2px;padding:9px 12px;font-size:14px" />`;
+  dietSecBody.querySelectorAll(".diet-chip").forEach((chip) => { chip.onclick = () => chip.classList.toggle("on"); });
+  const dietSave = document.createElement("button");
+  dietSave.className = "btn btn-primary btn-full mt-8";
+  dietSave.textContent = "Enregistrer les restrictions";
+  dietSave.onclick = async () => {
+    try {
+      await api.putSettings({ dietary_notes: collectDietaryNotes(dietSecBody) });
+      showToast("Restrictions enregistrées ✓");
+    } catch (err) { showToast(err.message, "error"); }
+  };
+  dietSecBody.appendChild(dietSave);
 
   // Le freemium et l'octroi du premium se gèrent dans l'espace admin
   // (réservé au super administrateur de la plateforme).
@@ -449,7 +446,7 @@ export async function renderSettings(root) {
   };
   sec4Body.appendChild(exportBtn);
 
-  body.append(sec1, sec2, ...(sec2b ? [sec2b] : []), sec3, sec4);
+  body.append(sec1, dietSec, sec2, ...(sec2b ? [sec2b] : []), sec3, sec4);
   renderShopCategories(body);
 
   // Liens légaux en bas des réglages
