@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlmodel import Session, select, update
+from sqlmodel import Session, delete, select, update
 from app.db import get_session
-from app.models import Household, Member, PlanEntry
+from app.models import Household, Member, PlanEntry, PushSubscription
 from app.auth import (
     get_current_admin,
     get_current_household,
@@ -84,5 +84,7 @@ def delete_member(
         raise HTTPException(status_code=400, detail="Impossible de supprimer le propriétaire du foyer")
     session.exec(update(PlanEntry).where(PlanEntry.planned_by == member_id).values(planned_by=None))
     session.exec(update(PlanEntry).where(PlanEntry.cooked_by == member_id).values(cooked_by=None))
+    # Supprime ses abonnements aux notifications pour ne pas laisser d'orphelins.
+    session.exec(delete(PushSubscription).where(PushSubscription.member_id == member_id))
     session.delete(target)
     session.commit()

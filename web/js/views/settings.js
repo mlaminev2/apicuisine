@@ -186,6 +186,41 @@ export async function renderSettings(root) {
   }
   body.insertBefore(notifCard, secLogout);
 
+  // ── Allergies & restrictions du foyer (carte visible, pas repliée) ──
+  const dietCard = document.createElement("div");
+  dietCard.className = "settings-section";
+  const savedTokens = (sett.dietary_notes || "").split(",").map((t) => t.trim()).filter(Boolean);
+  const allPresets = Object.values(DIET_PRESETS).flat();
+  const isPreset = (tok) => allPresets.some((p) => normDiet(p) === normDiet(tok));
+  const customLeftover = savedTokens.filter((t) => !isPreset(t)).join(", ");
+  let groupsHtml = "";
+  for (const [group, items] of Object.entries(DIET_PRESETS)) {
+    const chips = items.map((label) => {
+      const on = savedTokens.some((t) => normDiet(t) === normDiet(label));
+      return `<button type="button" class="diet-chip${on ? " on" : ""}" data-diet="${escapeHtml(label)}">${escapeHtml(label)}</button>`;
+    }).join("");
+    groupsHtml += `<div class="diet-group-title">${group}</div><div class="diet-chips">${chips}</div>`;
+  }
+  dietCard.innerHTML = `
+    <label style="font-size:14.5px;font-weight:700;display:block;margin-bottom:2px">🥗 Allergies &amp; restrictions du foyer</label>
+    <div style="font-size:11.5px;color:var(--muted);margin-bottom:8px">Touchez pour activer. Rappelé automatiquement quand vous choisissez un plat.</div>
+    ${groupsHtml}
+    <div class="diet-group-title">Autres</div>
+    <input id="dietary-custom" value="${escapeHtml(customLeftover)}" placeholder="Ex : sans piment, allergie kiwi…"
+      style="width:100%;border:1.5px solid var(--line-strong);border-radius:2px;padding:9px 12px;font-size:14px" />`;
+  dietCard.querySelectorAll(".diet-chip").forEach((chip) => { chip.onclick = () => chip.classList.toggle("on"); });
+  const dietSave = document.createElement("button");
+  dietSave.className = "btn btn-primary btn-full mt-8";
+  dietSave.textContent = "Enregistrer les restrictions";
+  dietSave.onclick = async () => {
+    try {
+      await api.putSettings({ dietary_notes: collectDietaryNotes(dietCard) });
+      showToast("Restrictions enregistrées ✓");
+    } catch (err) { showToast(err.message, "error"); }
+  };
+  dietCard.appendChild(dietSave);
+  body.insertBefore(dietCard, secLogout);
+
   // Espace admin : réservé au super administrateur (SUPER_ADMIN_EMAIL côté serveur)
   if (access?.is_admin) {
     const adminBtn = document.createElement("button");
@@ -249,38 +284,6 @@ export async function renderSettings(root) {
     </label>`;
   sec1Body.appendChild(multiRow);
 
-  // Allergies & restrictions alimentaires du foyer (cases à cocher + champ libre)
-  const dietRow = document.createElement("div");
-  dietRow.style.cssText = "padding:12px 0 4px;border-top:1px solid var(--line);margin-top:6px";
-  // Valeurs déjà enregistrées : celles qui correspondent à un preset cochent la
-  // puce, les autres remplissent le champ « Autres ».
-  const savedTokens = (sett.dietary_notes || "").split(",").map((t) => t.trim()).filter(Boolean);
-  const allPresets = Object.values(DIET_PRESETS).flat();
-  const isPreset = (tok) => allPresets.some((p) => normDiet(p) === normDiet(tok));
-  const customLeftover = savedTokens.filter((t) => !isPreset(t)).join(", ");
-
-  let groupsHtml = "";
-  for (const [group, items] of Object.entries(DIET_PRESETS)) {
-    const chips = items.map((label) => {
-      const on = savedTokens.some((t) => normDiet(t) === normDiet(label));
-      return `<button type="button" class="diet-chip${on ? " on" : ""}" data-diet="${escapeHtml(label)}">${escapeHtml(label)}</button>`;
-    }).join("");
-    groupsHtml += `<div class="diet-group-title">${group}</div><div class="diet-chips">${chips}</div>`;
-  }
-
-  dietRow.innerHTML = `
-    <label style="font-size:14.5px;font-weight:700;display:block;margin-bottom:2px">🥗 Allergies &amp; restrictions du foyer</label>
-    <div style="font-size:11.5px;color:var(--muted);margin-bottom:8px">Touchez pour activer. Rappelé automatiquement quand vous choisissez un plat.</div>
-    ${groupsHtml}
-    <div class="diet-group-title">Autres</div>
-    <input id="dietary-custom" value="${escapeHtml(customLeftover)}" placeholder="Ex : sans piment, allergie kiwi…"
-      style="width:100%;border:1.5px solid var(--line-strong);border-radius:2px;padding:9px 12px;font-size:14px" />`;
-  // Bascule des puces au clic
-  dietRow.querySelectorAll(".diet-chip").forEach((chip) => {
-    chip.onclick = () => chip.classList.toggle("on");
-  });
-  sec1Body.appendChild(dietRow);
-
   const saveBtn = document.createElement("button");
   saveBtn.className = "btn btn-primary btn-full mt-8";
   saveBtn.textContent = "Enregistrer les réglages";
@@ -296,7 +299,6 @@ export async function renderSettings(root) {
         dessert_enabled: dessertEnabled,
         lunch_enabled: lunchEnabled,
         multi_dish_enabled: multiEnabled,
-        dietary_notes: collectDietaryNotes(dietRow),
       });
       showToast("Réglages enregistrés ✓");
     } catch (err) { showToast(err.message, "error"); }
@@ -307,25 +309,25 @@ export async function renderSettings(root) {
   // (réservé au super administrateur de la plateforme).
 
   // ── Section membres ──
-  const { sec: sec2, body: sec2Body } = makeSection("👥 Membres du foyer", "membres", { badge: String(members.length) });
+  const { sec: sec2, body: sec2Body } = makeSection("👥 Membres du foyer", "membres", { badge: String(members.length), open: true });
   for (const m of members) {
     const row = document.createElement("div");
     row.className = "settings-row";
     row.innerHTML = `<span class="member-dot" style="background:${escapeHtml(m.color)}"></span><span style="flex:1">${escapeHtml(m.name)}${!m.is_owner && m.is_premium ? ' <span title="Membre premium">💎</span>' : ""}</span>${m.is_owner ? '<span style="font-size:11px;color:#6B6353">Propriétaire</span>' : ""}`;
     if (state.isOwner && !m.is_owner) {
       const delBtn = document.createElement("button");
-      delBtn.textContent = "🗑";
-      delBtn.title = "Retirer ce membre";
-      delBtn.style.cssText = "font-size:15px;color:#A79E8A;padding:0 4px;margin-left:8px";
-      delBtn.onmouseenter = () => { delBtn.style.color = "#e74c3c"; };
-      delBtn.onmouseleave = () => { delBtn.style.color = "#A79E8A"; };
+      delBtn.className = "btn btn-danger btn-sm";
+      delBtn.textContent = "Retirer";
+      delBtn.title = `Retirer ${m.name} du foyer`;
+      delBtn.style.cssText = "margin-left:8px;flex-shrink:0";
       delBtn.onclick = async () => {
-        if (!confirm(`Retirer ${m.name} du foyer ?`)) return;
+        if (!confirm(`Retirer ${m.name} du foyer ? Son compte perdra l'accès au foyer.`)) return;
+        delBtn.disabled = true;
         try {
           await api.deleteMember(m.id);
-          showToast(`${m.name} retiré`);
+          showToast(`${m.name} retiré du foyer ✓`);
           renderSettings(root);
-        } catch (err) { showToast(err.message, "error"); }
+        } catch (err) { showToast(err.message, "error"); delBtn.disabled = false; }
       };
       row.appendChild(delBtn);
     }
