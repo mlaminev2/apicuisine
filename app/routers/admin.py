@@ -15,6 +15,7 @@ from app.models import (
     IngredientMap,
     Member,
     PlanEntry,
+    PushSubscription,
     Settings,
     ShoppingCategory,
     ShoppingList,
@@ -238,9 +239,10 @@ def admin_delete_member(
     target = session.get(Member, member_id)
     if not target:
         raise HTTPException(status_code=404, detail="Utilisateur introuvable")
-    from sqlmodel import update
+    from sqlmodel import delete, update
     session.exec(update(PlanEntry).where(PlanEntry.planned_by == member_id).values(planned_by=None))
     session.exec(update(PlanEntry).where(PlanEntry.cooked_by == member_id).values(cooked_by=None))
+    session.exec(delete(PushSubscription).where(PushSubscription.member_id == member_id))
     session.delete(target)
     session.commit()
 
@@ -257,7 +259,7 @@ def admin_delete_household(
     household = session.get(Household, household_id)
     if not household:
         raise HTTPException(status_code=404, detail="Foyer introuvable")
-    for model in (PlanEntry, ShoppingList, IngredientMap, ShoppingCategory, Dish, Member):
+    for model in (PlanEntry, ShoppingList, IngredientMap, ShoppingCategory, Dish, PushSubscription, Member):
         for row in session.exec(select(model).where(model.household_id == household_id)).all():
             session.delete(row)
     sett = session.get(Settings, household_id)
