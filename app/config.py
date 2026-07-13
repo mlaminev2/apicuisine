@@ -9,8 +9,8 @@ class Settings(BaseSettings):
     port: int = 8000
     secret_key: str = "dev-secret-key-change-in-production"
 
-    # Freemium : nombre d'imports de recettes gratuits par mois et par membre
-    import_free_limit: int = 3
+    # Freemium : nombre d'imports de recettes gratuits par semaine et par membre
+    import_free_limit: int = 5
 
     # Espace admin : si defini, seul ce compte email y a acces
     # (sinon, le proprietaire du foyer)

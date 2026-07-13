@@ -228,15 +228,16 @@ def get_current_admin(
 
 # ── Quota d'imports gratuits (freemium actif, membre non premium) ─────────────
 
-def _quota_month() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m")
+def _quota_period() -> str:
+    """Clé de la semaine ISO courante, ex. « 2026-W28 » (le quota est hebdomadaire)."""
+    return datetime.now(timezone.utc).strftime("%G-W%V")
 
 
 def import_quota_state(member: Member, session: Session) -> tuple[bool, int]:
-    """Retourne (illimité, imports restants ce mois-ci)."""
+    """Retourne (illimité, imports restants cette semaine)."""
     if member_has_premium(member, session):
         return True, -1
-    used = member.import_count if getattr(member, "import_month", None) == _quota_month() else 0
+    used = member.import_count if getattr(member, "import_month", None) == _quota_period() else 0
     return False, max(0, settings.import_free_limit - used)
 
 
@@ -249,7 +250,7 @@ def check_import_quota(
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=(
-                f"Limite mensuelle d'imports gratuits atteinte ({settings.import_free_limit}/mois) — "
+                f"Limite hebdomadaire d'imports gratuits atteinte ({settings.import_free_limit}/semaine) — "
                 "demandez l'accès premium au propriétaire du foyer"
             ),
         )
@@ -257,12 +258,12 @@ def check_import_quota(
 
 
 def consume_import_quota(member: Member, session: Session) -> None:
-    """Décompte un import du quota mensuel (sans effet pour les membres premium)."""
+    """Décompte un import du quota hebdomadaire (sans effet pour les membres premium)."""
     if member_has_premium(member, session):
         return
-    month = _quota_month()
-    if getattr(member, "import_month", None) != month:
-        member.import_month = month
+    period = _quota_period()
+    if getattr(member, "import_month", None) != period:
+        member.import_month = period
         member.import_count = 0
     member.import_count += 1
     session.add(member)

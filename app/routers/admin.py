@@ -110,7 +110,7 @@ def admin_stats(
     """Tableau de bord plateforme : tous les foyers, tous les utilisateurs."""
     today = datetime.now(timezone.utc).date()
     month_start, month_end = _month_bounds(today)
-    this_month = today.strftime("%Y-%m")
+    this_week = today.strftime("%G-W%V")  # semaine ISO (le quota d'imports est hebdomadaire)
 
     households = session.exec(select(Household).order_by(Household.id)).all()
     members = session.exec(select(Member).order_by(Member.household_id, Member.id)).all()
@@ -125,8 +125,8 @@ def admin_stats(
         PlanEntry, PlanEntry.date >= month_start, PlanEntry.date < month_end,
         PlanEntry.cooked == True,  # noqa: E712
     )
-    imports_month = sum(
-        m.import_count for m in members if getattr(m, "import_month", None) == this_month
+    imports_week = sum(
+        m.import_count for m in members if getattr(m, "import_month", None) == this_week
     )
     new_members_month = sum(1 for m in members if m.created_at and m.created_at.date() >= month_start)
 
@@ -153,7 +153,7 @@ def admin_stats(
             "dishes_total": dishes_total,
             "planned_this_month": planned_month,
             "cooked_this_month": cooked_month,
-            "imports_this_month": imports_month,
+            "imports_this_week": imports_week,
             "import_limit": app_config.import_free_limit,
         },
         "households": [
@@ -181,8 +181,8 @@ def admin_stats(
                 "is_premium": getattr(m, "is_premium", False),
                 "premium_source": getattr(m, "premium_source", None),
                 "premium_active": member_has_premium(m, session),
-                "imports_this_month": (
-                    m.import_count if getattr(m, "import_month", None) == this_month else 0
+                "imports_this_week": (
+                    m.import_count if getattr(m, "import_month", None) == this_week else 0
                 ),
                 "created_at": m.created_at,
                 "is_self": m.id == admin.id,

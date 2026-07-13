@@ -30,9 +30,9 @@ def _member_id(client, auth_headers):
 
 
 def _exhaust_quota(session: Session):
-    """Simule un quota mensuel épuisé pour le membre simple."""
+    """Simule un quota hebdomadaire épuisé pour le membre simple."""
     m = session.exec(select(Member).where(Member.email == "membre@test.local")).one()
-    m.import_month = datetime.now(timezone.utc).strftime("%Y-%m")
+    m.import_month = datetime.now(timezone.utc).strftime("%G-W%V")
     m.import_count = app_config.import_free_limit
     session.add(m)
     session.commit()
