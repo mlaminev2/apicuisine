@@ -18,12 +18,14 @@ export async function renderCalendar(root) {
   if (!currentMonday) currentMonday = _isoOf(_weekBounds(t).monday);
 
   root.innerHTML = `
-    <div class="page-header">
-      <button id="cal-prev">‹</button>
+    <div class="page-header cal-head">
       <h1 id="cal-title"></h1>
-      <button id="cal-view-toggle" class="btn-view-toggle"></button>
-      <button id="cal-today">Aujourd'hui</button>
-      <button id="cal-next">›</button>
+      <div class="cal-nav">
+        <button id="cal-prev">‹</button>
+        <button id="cal-view-toggle" class="btn-view-toggle"></button>
+        <button id="cal-today">Aujourd'hui</button>
+        <button id="cal-next">›</button>
+      </div>
     </div>
     <div id="cal-body"></div>`;
 

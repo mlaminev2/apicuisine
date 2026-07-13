@@ -134,6 +134,14 @@ a { color: inherit; text-decoration: none; }
   font-family: var(--font-display); font-weight: 800; font-size: 25px;
   letter-spacing: -0.01em; flex: 1;
 }
+/* En-tête du calendrier : titre + contrôles regroupés (empilés en mobile) */
+.cal-head { flex-wrap: wrap; }
+.cal-head h1 { min-width: 0; }   /* laisse le titre rétrécir au lieu de déborder */
+.cal-nav { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+@media (max-width: 560px) {
+  .cal-head h1 { flex: 1 1 100%; font-size: 22px; }   /* titre sur sa propre ligne */
+  .cal-nav { flex: 1 1 100%; justify-content: space-between; margin-top: 8px; }
+}
 .page-header button {
   color: var(--ink-soft); font-size: 19px; font-weight: 700;
   background: var(--cream-deep); border-radius: 13px;
