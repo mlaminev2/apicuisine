@@ -1,4 +1,4 @@
-const CACHE = "menus-v94";
+const CACHE = "menus-v95";
 const SHELL = ["/", "/css/styles.css", "/js/api.js", "/js/state.js", "/js/utils.js", "/js/router.js",
   "/js/sw-register.js", "/js/analytics.js", "/js/consent-init.js", "/js/push.js", "/js/pwa-install.js", "/js/onboarding.js",
   "/js/components/navbar.js", "/js/components/toast.js", "/js/components/modal.js",
@@ -10,7 +10,8 @@ const SHELL = ["/", "/css/styles.css", "/js/api.js", "/js/state.js", "/js/utils.
   "/fonts/archivo-400-normal.woff2", "/fonts/archivo-500-normal.woff2",
   "/fonts/archivo-600-normal.woff2", "/fonts/archivo-700-normal.woff2",
   "/fonts/courierprime-400-normal.woff2", "/fonts/courierprime-700-normal.woff2",
-  "/manifest.webmanifest", "/icons/icon-192.png", "/icons/icon-512.png"];
+  "/manifest.webmanifest", "/icons/icon-192.png", "/icons/icon-512.png",
+  "/icons/icon-maskable-512.png", "/icons/icon-badge.png"];
 
 self.addEventListener("install", (e) => {
   // Cache résilient : un fichier manquant n'empêche pas l'installation.
@@ -45,7 +46,7 @@ self.addEventListener("push", (e) => {
     self.registration.showNotification(data.title, {
       body: data.body,
       icon: "/icons/icon-192.png",
-      badge: "/icons/icon-192.png",
+      badge: "/icons/icon-badge.png",
       data: { url: data.url || "/" },
       tag: "menu-rappel",
       renotify: true,
