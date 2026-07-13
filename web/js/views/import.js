@@ -35,18 +35,18 @@ function _sourceLabel(url) {
 }
 
 export async function renderImport(root) {
-  // Freemium : import limité par semaine pour les membres gratuits, illimité en premium
+  // Freemium : import limité par mois pour les membres gratuits, illimité en premium
   let access = { premium_active: true };
   try { access = await api.getAccess(); } catch {}
   if (!access.premium_active && (access.imports_remaining ?? 1) <= 0) {
     renderPaywall(root, "Importer des recettes",
-      `Vous avez utilisé vos <strong>${access.import_limit} imports gratuits</strong> de la semaine.<br>
+      `Vous avez utilisé vos <strong>${access.import_limit} imports gratuits</strong> du mois.<br>
        L'accès premium (imports illimités) est accordé par compte,<br>
        par l'administrateur de la plateforme.`);
     return;
   }
   const quotaBanner = (!access.premium_active)
-    ? `<div class="import2-quota">💎 ${access.imports_remaining} import${access.imports_remaining > 1 ? "s" : ""} gratuit${access.imports_remaining > 1 ? "s" : ""} restant${access.imports_remaining > 1 ? "s" : ""} cette semaine — premium = illimité</div>`
+    ? `<div class="import2-quota">💎 ${access.imports_remaining} import${access.imports_remaining > 1 ? "s" : ""} gratuit${access.imports_remaining > 1 ? "s" : ""} restant${access.imports_remaining > 1 ? "s" : ""} ce mois — premium = illimité</div>`
     : "";
 
   const { year: isoYear, week: isoWeek } = isoWeekOf(new Date());

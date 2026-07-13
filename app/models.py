@@ -39,8 +39,8 @@ class Member(SQLModel, table=True):
     premium_source: Optional[str] = Field(default=None)  # "admin" | "stripe" (origine du premium)
     stripe_customer_id: Optional[str] = Field(default=None)      # id client Stripe (cus_...)
     stripe_subscription_id: Optional[str] = Field(default=None)  # abonnement en cours (sub_...)
-    import_count: int = Field(default=0)               # imports consommés sur la semaine courante
-    import_month: Optional[str] = Field(default=None)  # période du compteur (semaine ISO, ex. "2026-W28")
+    import_count: int = Field(default=0)               # imports consommés sur le mois courant
+    import_month: Optional[str] = Field(default=None)  # mois du compteur, format "YYYY-MM"
     oauth_provider: Optional[str] = Field(default=None)   # "google" | "apple"
     oauth_sub: Optional[str] = Field(default=None)        # identifiant unique chez le provider
     token_version: int = Field(default=0)  # incrémenté pour révoquer tous les tokens émis

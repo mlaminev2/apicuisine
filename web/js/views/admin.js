@@ -122,7 +122,7 @@ export async function renderAdmin(root) {
       ${_tile("+" + p.new_members_this_month, "inscrits ce mois")}
       ${_tile(p.dishes_total, "plats créés")}
       ${_tile(p.planned_this_month, "repas planifiés/mois")}
-      ${_tile(p.imports_this_week, "imports cette semaine")}
+      ${_tile(p.imports_this_month, "imports ce mois")}
     </div>
 
     <div class="shop-cat-title" style="padding:6px 4px 0">💎 Freemium plateforme</div>
@@ -131,7 +131,7 @@ export async function renderAdmin(root) {
         <div>
           <div style="font-weight:700;font-size:14.5px">${freemiumOn ? "Actif sur la plateforme" : "Désactivé"}</div>
           <div class="home-sub">${freemiumOn
-            ? `imports gratuits : ${p.import_limit}/semaine — premium accordé par vous uniquement`
+            ? `imports gratuits : ${p.import_limit}/mois — premium accordé par vous uniquement`
             : "tous les utilisateurs ont tous les accès"}</div>
         </div>
         <label class="toggle">
@@ -238,7 +238,7 @@ export async function renderAdmin(root) {
     row.dataset.search = _norm(`${m.name} ${m.email || ""} ${m.household_name}`);
     const quota = m.premium_active
       ? "imports illimités"
-      : `imports : ${m.imports_this_week}/${p.import_limit}`;
+      : `imports : ${m.imports_this_month}/${p.import_limit}`;
     const isPaid = m.premium_source === "stripe";
     const premBadge = isPaid
       ? '<span class="badge badge-tag">💳 abonné</span>'
