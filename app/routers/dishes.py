@@ -1,7 +1,10 @@
+import io
 import json
+import time
 from pathlib import Path
 from typing import Optional
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
+from PIL import Image, ImageOps
 from sqlmodel import Session, select, col
 from app.db import get_session
 from app.models import Household, Dish
@@ -115,14 +118,32 @@ async def upload_dish_image(
     if len(content) > MAX_UPLOAD_BYTES:
         raise HTTPException(status_code=413, detail="Image trop volumineuse (max 5 Mo)")
 
+    # Décodage + normalisation + compression : on redimensionne (max 1280 px),
+    # on respecte l'orientation EXIF du téléphone et on ré-encode en JPEG léger.
+    # Un cliché de plusieurs Mo tombe ainsi à ~100–300 Ko (rapide sur mobile).
+    try:
+        img = Image.open(io.BytesIO(content))
+        img = ImageOps.exif_transpose(img)
+        img = img.convert("RGB")
+        img.thumbnail((1280, 1280))  # ne fait que réduire, garde le ratio
+    except Exception:
+        raise HTTPException(status_code=415, detail="Image illisible ou corrompue")
+
     uploads_dir = Path(__file__).parent.parent.parent / "web" / "uploads"
     uploads_dir.mkdir(exist_ok=True)
 
-    filename = f"dish_{dish_id}{ext}"
-    with open(uploads_dir / filename, "wb") as f:
-        f.write(content)
+    # On ré-encode toujours en JPEG : on supprime les anciennes variantes du plat
+    # (évite les fichiers orphelins d'un précédent format).
+    for old in uploads_dir.glob(f"dish_{dish_id}.*"):
+        try:
+            old.unlink()
+        except OSError:
+            pass
+    filename = f"dish_{dish_id}.jpg"
+    img.save(uploads_dir / filename, format="JPEG", quality=82, optimize=True, progressive=True)
 
-    dish.thumbnail_url = f"/uploads/{filename}"
+    # Version dans l'URL : force le rafraîchissement du cache quand la photo change.
+    dish.thumbnail_url = f"/uploads/{filename}?v={int(time.time())}"
     session.add(dish)
     session.commit()
     return {"thumbnail_url": dish.thumbnail_url}
