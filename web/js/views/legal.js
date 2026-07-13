@@ -172,9 +172,11 @@ au fonctionnement (session) ne requièrent pas de consentement.</p>
 
 <h2>Vos droits</h2>
 <p>Conformément au RGPD, vous disposez d'un droit d'accès, de rectification,
-d'effacement, de portabilité, de limitation et d'opposition. Vous pouvez exporter
-vos données depuis les Réglages de l'application, et exercer vos droits en nous
-écrivant à <a href="mailto:${EMAIL}">${EMAIL}</a>. Vous pouvez également introduire
+d'effacement, de portabilité, de limitation et d'opposition. Vous pouvez, directement
+depuis les Réglages de l'application, <strong>exporter vos données</strong> et
+<strong>supprimer votre compte</strong> (droit à l'effacement) ; la suppression est
+définitive et efface vos données personnelles. Vous pouvez aussi exercer vos droits en
+nous écrivant à <a href="mailto:${EMAIL}">${EMAIL}</a>. Vous pouvez également introduire
 une réclamation auprès de la CNIL (<a href="https://www.cnil.fr">cnil.fr</a>).</p>
 
 <h2>Sécurité</h2>
