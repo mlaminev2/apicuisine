@@ -66,19 +66,23 @@ export async function renderCalendar(root) {
 // (défilement) et les simples taps.
 function attachSwipe(body) {
   if (!body) return;
-  let startX = 0, startY = 0, tracking = false, decided = null;
+  let startX = 0, startY = 0, tracking = false, decided = null, intercept = false;
   const SWIPE_MIN = 55;      // distance horizontale minimale pour valider
   const SLOP = 12;           // au-delà, on décide de l'axe du geste
+  const EDGE = 2;            // tolérance de détection des bords (px)
+
+  // En vue mois, la grille peut défiler horizontalement (.cal-scroll) pour voir
+  // le dimanche. L'élément animé pour le changement de période est la grille.
+  const getScroller = () => body.querySelector(".cal-scroll");
+  const getGrid = () => { const sc = getScroller(); return sc ? sc.firstElementChild : body.firstElementChild; };
 
   body.addEventListener("touchstart", (e) => {
-    // En vue mois, la grille coulisse horizontalement (défilement natif pour
-    // voir le dimanche) : on n'intercepte pas le geste pour changer de mois.
-    if (viewMode === "month") { tracking = false; return; }
     if (e.touches.length !== 1) { tracking = false; return; }
     startX = e.touches[0].clientX;
     startY = e.touches[0].clientY;
     tracking = true;
     decided = null;
+    intercept = false;
   }, { passive: true });
 
   body.addEventListener("touchmove", (e) => {
@@ -87,10 +91,24 @@ function attachSwipe(body) {
     const dy = e.touches[0].clientY - startY;
     if (decided === null && (Math.abs(dx) > SLOP || Math.abs(dy) > SLOP)) {
       decided = Math.abs(dx) > Math.abs(dy) ? "h" : "v";
+      if (decided === "h") {
+        // Changer de période OU laisser défiler la grille ? On change de période
+        // si la grille ne défile pas, ou si on est déjà au bord dans le sens du geste.
+        const sc = getScroller();
+        if (!sc) {
+          intercept = true;                       // vue semaine : aucun défilement
+        } else {
+          const max = sc.scrollWidth - sc.clientWidth;
+          if (max <= EDGE) intercept = true;                          // grille tient à l'écran
+          else if (dx < 0 && sc.scrollLeft >= max - EDGE) intercept = true;  // bord droit + swipe ←
+          else if (dx > 0 && sc.scrollLeft <= EDGE) intercept = true;        // bord gauche + swipe →
+          else intercept = false;                 // sinon : défilement natif de la grille
+        }
+      }
     }
-    if (decided === "h") {
-      e.preventDefault();  // empêche le scroll pendant un swipe horizontal
-      const grid = body.firstElementChild;
+    if (decided === "h" && intercept) {
+      e.preventDefault();  // empêche le défilement pendant un swipe de changement de période
+      const grid = getGrid();
       if (grid) { grid.style.transition = "none"; grid.style.transform = `translateX(${dx * 0.35}px)`; }
     }
   }, { passive: false });
@@ -98,7 +116,8 @@ function attachSwipe(body) {
   const end = (e) => {
     if (!tracking) return;
     tracking = false;
-    const grid = body.firstElementChild;
+    if (!intercept) return;   // le geste a servi à défiler la grille : rien à faire
+    const grid = getGrid();
     const dx = (e.changedTouches ? e.changedTouches[0].clientX : startX) - startX;
     if (decided === "h" && dx <= -SWIPE_MIN) { navigate(1); return; }      // gauche → suivant
     if (decided === "h" && dx >= SWIPE_MIN) { navigate(-1); return; }      // droite → précédent
@@ -111,7 +130,7 @@ function attachSwipe(body) {
   body.addEventListener("touchend", end);
   body.addEventListener("touchcancel", () => {
     tracking = false;
-    const grid = body.firstElementChild;
+    const grid = getGrid();
     if (grid) grid.style.transform = "";
   });
 }
