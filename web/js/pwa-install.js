@@ -42,11 +42,11 @@ function stepsHtml() {
   }
   if (isAndroid) {
     return `
-      <p class="pwa-lead">Installez « Menu en Famille » comme une vraie application, avec son icône sur votre écran d'accueil.</p>
+      <p class="pwa-lead">Installez « Menu en Famille » comme une vraie application, avec son icône sur l'écran d'accueil.</p>
       <ol class="pwa-steps">
-        <li>Ouvrez le menu <strong>⋮</strong> en haut à droite du navigateur.</li>
-        <li>Choisissez <strong>« Installer l'application »</strong> ou <strong>« Ajouter à l'écran d'accueil »</strong>.</li>
-        <li>Confirmez avec <strong>« Installer »</strong>.</li>
+        <li>Si un bouton <strong>« Installer l'application »</strong> apparaît (ci-dessous ou en bannière), touchez-le.</li>
+        <li>Sinon, ouvrez le menu <strong>⋮</strong> en haut à droite de Chrome.</li>
+        <li>Choisissez <strong>« Installer l'application »</strong> (ou « Ajouter à l'écran d'accueil »), puis confirmez.</li>
       </ol>`;
   }
   return `
