@@ -32,6 +32,53 @@ function _statusLine(label, ok, detail) {
   </div>`;
 }
 
+// Normalise pour la recherche (minuscules, sans accents).
+function _norm(s) {
+  return (s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+}
+
+// Rendu de la liste des sauvegardes avec bouton de téléchargement par ligne.
+function renderBackupsBox(box, backups) {
+  if (!backups.supported) {
+    box.innerHTML = `<div class="home-sub">Base MySQL — sauvegardes gérées côté hébergeur.</div>`;
+    return;
+  }
+  if (!backups.backups.length) {
+    box.innerHTML = `<div class="home-sub">Aucune sauvegarde pour l'instant — la première se fera cette nuit à 3h30.</div>`;
+    return;
+  }
+  box.innerHTML = "";
+  for (const b of backups.backups.slice(0, 8)) {
+    const row = document.createElement("div");
+    row.style.cssText = "display:flex;align-items:center;justify-content:space-between;gap:8px;padding:5px 0;font-size:13px;border-bottom:1px solid var(--line)";
+    row.innerHTML = `
+      <span style="font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(b.name)}</span>
+      <span style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+        <span class="home-sub">${_fmtDate(b.modified_at)} · ${_fmtSize(b.size)}</span>
+        <button class="btn btn-ghost btn-sm" data-dl style="padding:3px 9px;font-size:13px" title="Télécharger">⬇️</button>
+      </span>`;
+    row.querySelector("[data-dl]").onclick = async () => {
+      try {
+        const blob = await api.adminDownloadBackup(b.name);
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = b.name;
+        a.click();
+        URL.revokeObjectURL(a.href);
+        showToast("Sauvegarde téléchargée ✓");
+      } catch (err) { showToast(err.message, "error"); }
+    };
+    box.appendChild(row);
+  }
+  if (backups.backups.length > 8) {
+    const more = document.createElement("div");
+    more.className = "home-sub";
+    more.style.cssText = "padding-top:6px";
+    more.textContent = `+ ${backups.backups.length - 8} plus anciennes (14 jours conservés)`;
+    box.appendChild(more);
+  }
+}
+
 export async function renderAdmin(root) {
   root.innerHTML = `
     <div class="page-header">
@@ -113,14 +160,19 @@ export async function renderAdmin(root) {
       ${_statusLine("📊 Mesure d'audience", !!sys.analytics, analyticsDetail)}
     </div>
 
+    <input id="admin-search" type="search" autocomplete="off" placeholder="🔍 Rechercher un foyer ou un utilisateur…"
+      style="width:100%;border:1.5px solid var(--line-strong);border-radius:2px;padding:9px 12px;font-size:14px;margin-top:4px" />
+
     <div class="shop-cat-title" style="padding:6px 4px 0">🏠 Foyers (${stats.households.length})</div>
     <div id="admin-households" style="display:flex;flex-direction:column;gap:8px"></div>
 
     <div class="shop-cat-title" style="padding:6px 4px 0">👥 Utilisateurs (${stats.members.length})</div>
     <div id="admin-members" style="display:flex;flex-direction:column;gap:8px"></div>
+    <div id="admin-noresult" class="home-sub" style="display:none;padding:6px 4px">Aucun résultat pour cette recherche.</div>
 
-    <div class="shop-cat-title" style="padding:6px 4px 0">🗄️ Sauvegardes automatiques</div>
-    <div class="card home-card" style="cursor:default" id="admin-backups"></div>
+    <div class="shop-cat-title" style="padding:6px 4px 0">🗄️ Sauvegardes</div>
+    <button class="btn btn-ghost btn-sm btn-full" id="admin-backup-now">🗄️ Sauvegarder maintenant</button>
+    <div class="card home-card" style="cursor:default;margin-top:8px" id="admin-backups"></div>
 
     <button class="btn btn-primary btn-full" id="admin-export">⬇️ Exporter les données de mon foyer (JSON)</button>`;
 
@@ -149,6 +201,7 @@ export async function renderAdmin(root) {
     const row = document.createElement("div");
     row.className = "card home-card";
     row.style.cssText = "cursor:default;padding:12px 14px";
+    row.dataset.search = _norm(h.name);
     row.innerHTML = `
       <div style="display:flex;align-items:center;gap:10px">
         <div style="flex:1;min-width:0">
@@ -182,6 +235,7 @@ export async function renderAdmin(root) {
     const row = document.createElement("div");
     row.className = "card home-card";
     row.style.cssText = "cursor:default;padding:12px 14px";
+    row.dataset.search = _norm(`${m.name} ${m.email || ""} ${m.household_name}`);
     const quota = m.premium_active
       ? "imports illimités"
       : `imports : ${m.imports_this_month}/${p.import_limit}`;
@@ -232,21 +286,38 @@ export async function renderAdmin(root) {
     membersBox.appendChild(row);
   }
 
-  // ── Sauvegardes ──
+  // ── Recherche (filtre foyers + utilisateurs) ──
+  const searchInput = document.getElementById("admin-search");
+  const noResult = document.getElementById("admin-noresult");
+  searchInput.oninput = () => {
+    const q = _norm(searchInput.value.trim());
+    let visible = 0;
+    for (const box of [hhBox, membersBox]) {
+      for (const row of box.children) {
+        const show = !q || (row.dataset.search || "").includes(q);
+        row.style.display = show ? "" : "none";
+        if (show) visible++;
+      }
+    }
+    noResult.style.display = q && visible === 0 ? "" : "none";
+  };
+
+  // ── Sauvegardes (liste + téléchargement + sauvegarde manuelle) ──
   const bBox = document.getElementById("admin-backups");
-  if (!backups.supported) {
-    bBox.innerHTML = `<div class="home-sub">Base MySQL — sauvegardes gérées côté hébergeur.</div>`;
-  } else if (!backups.backups.length) {
-    bBox.innerHTML = `<div class="home-sub">Aucune sauvegarde pour l'instant — la première se fera cette nuit à 3h30.</div>`;
-  } else {
-    bBox.innerHTML = backups.backups.slice(0, 7).map((b) => {
-      return `<div style="display:flex;justify-content:space-between;padding:5px 0;font-size:13px;border-bottom:1px solid var(--line)">
-        <span style="font-weight:600">${escapeHtml(b.name)}</span>
-        <span class="home-sub">${_fmtDate(b.modified_at)} · ${_fmtSize(b.size)}</span>
-      </div>`;
-    }).join("") + (backups.backups.length > 7
-      ? `<div class="home-sub" style="padding-top:6px">+ ${backups.backups.length - 7} plus anciennes (14 jours conservés)</div>` : "");
-  }
+  renderBackupsBox(bBox, backups);
+  document.getElementById("admin-backup-now").onclick = async (e) => {
+    const btn = e.currentTarget;
+    btn.disabled = true;
+    const old = btn.textContent;
+    btn.textContent = "⏳ Sauvegarde en cours…";
+    try {
+      await api.adminCreateBackup();
+      const fresh = await api.adminBackups();
+      renderBackupsBox(bBox, fresh);
+      showToast("Sauvegarde créée ✓");
+    } catch (err) { showToast(err.message, "error"); }
+    finally { btn.disabled = false; btn.textContent = old; }
+  };
 
   // ── Export JSON (foyer de l'admin) ──
   document.getElementById("admin-export").onclick = async () => {

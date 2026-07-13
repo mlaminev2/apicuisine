@@ -54,6 +54,15 @@ export const api = {
   setMemberPremium: (id, is_premium) => request("PUT", `/api/members/${id}/premium`, { is_premium }),
   adminStats: () => request("GET", "/api/admin/stats"),
   adminBackups: () => request("GET", "/api/admin/backups"),
+  adminCreateBackup: () => request("POST", "/api/admin/backups"),
+  adminDownloadBackup: async (name) => {
+    const headers = {};
+    const token = getToken();
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+    const res = await fetch(`/api/admin/backups/download?name=${encodeURIComponent(name)}`, { headers });
+    if (!res.ok) throw new Error("Téléchargement impossible");
+    return res.blob();
+  },
   adminSetFreemium: (enabled) => request("PUT", "/api/admin/freemium", { enabled }),
   adminSetPremium: (id, is_premium) => request("PUT", `/api/admin/members/${id}/premium`, { is_premium }),
   adminDeleteMember: (id) => request("DELETE", `/api/admin/members/${id}`),

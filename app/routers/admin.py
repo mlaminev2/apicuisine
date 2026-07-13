@@ -1,9 +1,12 @@
 import logging
+import re
+import sqlite3
 import time
 from datetime import date, datetime, timezone
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import FileResponse
 from sqlmodel import Session, func, select
 
 from app.auth import get_current_admin, member_has_premium
@@ -269,22 +272,69 @@ def admin_delete_household(
     session.commit()
 
 
-@router.get("/backups")
-def admin_backups():
-    """Liste les sauvegardes quotidiennes de la base (SQLite uniquement)."""
+def _sqlite_paths() -> tuple[Path | None, Path | None]:
+    """(chemin de la base, dossier des sauvegardes) si SQLite, sinon (None, None)."""
     url = app_config.database_url
     if not url.startswith("sqlite:///"):
-        return {"supported": False, "backups": []}
+        return None, None
     db_path = Path(url[len("sqlite:///"):])
-    backups_dir = db_path.parent / "backups"
+    return db_path, db_path.parent / "backups"
+
+
+def _backup_info(f: Path) -> dict:
+    st = f.stat()
+    return {
+        "name": f.name,
+        "size": st.st_size,
+        "modified_at": datetime.fromtimestamp(st.st_mtime, tz=timezone.utc).isoformat(),
+    }
+
+
+# Nom de sauvegarde autorisé (anti-traversée de répertoire)
+_BACKUP_NAME_RE = re.compile(r"^menu-[0-9A-Za-z_.\-]+\.db$")
+
+
+@router.get("/backups")
+def admin_backups():
+    """Liste les sauvegardes de la base (SQLite uniquement)."""
+    db_path, backups_dir = _sqlite_paths()
+    if not backups_dir:
+        return {"supported": False, "backups": []}
     if not backups_dir.is_dir():
         return {"supported": True, "backups": []}
-    items = []
-    for f in sorted(backups_dir.glob("menu-*.db"), reverse=True):
-        st = f.stat()
-        items.append({
-            "name": f.name,
-            "size": st.st_size,
-            "modified_at": datetime.fromtimestamp(st.st_mtime, tz=timezone.utc).isoformat(),
-        })
+    items = [_backup_info(f) for f in sorted(backups_dir.glob("menu-*.db"), reverse=True)]
     return {"supported": True, "backups": items}
+
+
+@router.post("/backups")
+def admin_create_backup():
+    """Déclenche une sauvegarde immédiate (copie cohérente via l'API SQLite)."""
+    db_path, backups_dir = _sqlite_paths()
+    if not backups_dir or not db_path:
+        raise HTTPException(status_code=400, detail="Sauvegarde manuelle indisponible (base non SQLite)")
+    backups_dir.mkdir(parents=True, exist_ok=True)
+    ts = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
+    dest = backups_dir / f"menu-{ts}.db"
+    src = sqlite3.connect(str(db_path))
+    dst = sqlite3.connect(str(dest))
+    try:
+        src.backup(dst)  # API de sauvegarde en ligne : cohérente même avec le WAL
+    finally:
+        dst.close()
+        src.close()
+    logger.info("admin: sauvegarde manuelle créée (%s)", dest.name)
+    return {"supported": True, "created": _backup_info(dest)}
+
+
+@router.get("/backups/download")
+def admin_download_backup(name: str):
+    """Télécharge une sauvegarde précise (nom validé, confiné au dossier des sauvegardes)."""
+    db_path, backups_dir = _sqlite_paths()
+    if not backups_dir:
+        raise HTTPException(status_code=400, detail="Sauvegardes indisponibles")
+    if not _BACKUP_NAME_RE.match(name):
+        raise HTTPException(status_code=400, detail="Nom de sauvegarde invalide")
+    target = (backups_dir / name).resolve()
+    if not target.is_relative_to(backups_dir.resolve()) or not target.is_file():
+        raise HTTPException(status_code=404, detail="Sauvegarde introuvable")
+    return FileResponse(str(target), media_type="application/octet-stream", filename=name)
