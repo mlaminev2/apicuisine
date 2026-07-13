@@ -16,7 +16,8 @@ router = APIRouter(prefix="/api", tags=["dishes"])
 VALID_CATEGORIES = frozenset({
     "pomme_de_terre", "riz", "pates", "entree", "autre", "sucree", "africain", "apero", "sauce",
 })
-MAX_UPLOAD_BYTES = 5 * 1024 * 1024  # 5 Mo
+MAX_UPLOAD_BYTES = 25 * 1024 * 1024  # 25 Mo (photos de smartphones récents) — l'image est
+# ensuite redimensionnée et compressée, la sortie reste légère (~100-300 Ko).
 ALLOWED_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
 ALLOWED_IMAGE_CONTENT_TYPES = {"image/jpeg", "image/png", "image/webp"}
 
@@ -116,7 +117,7 @@ async def upload_dish_image(
 
     content = await file.read(MAX_UPLOAD_BYTES + 1)
     if len(content) > MAX_UPLOAD_BYTES:
-        raise HTTPException(status_code=413, detail="Image trop volumineuse (max 5 Mo)")
+        raise HTTPException(status_code=413, detail="Image trop volumineuse (max 25 Mo)")
 
     # Décodage + normalisation + compression : on redimensionne (max 1280 px),
     # on respecte l'orientation EXIF du téléphone et on ré-encode en JPEG léger.
