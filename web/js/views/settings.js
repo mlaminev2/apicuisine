@@ -184,7 +184,7 @@ export async function renderSettings(root) {
     installRow.appendChild(installBtn);
     notifCard.appendChild(installRow);
   }
-  body.insertBefore(notifCard, secLogout);
+  // « Rappel du dîner » et « Se déconnecter » sont placés tout en bas (voir fin de fonction).
 
   // Espace admin : réservé au super administrateur (SUPER_ADMIN_EMAIL côté serveur)
   if (access?.is_admin) {
@@ -448,6 +448,11 @@ export async function renderSettings(root) {
 
   body.append(sec1, dietSec, sec2, ...(sec2b ? [sec2b] : []), sec3, sec4);
   renderShopCategories(body);
+
+  // Rappel du dîner puis déconnexion, tout en bas des réglages.
+  // (appendChild déplace secLogout, déjà présent depuis le rendu initial.)
+  body.appendChild(notifCard);
+  body.appendChild(secLogout);
 
   // Liens légaux en bas des réglages
   const legalFooter = document.createElement("div");
