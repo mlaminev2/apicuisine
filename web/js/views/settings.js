@@ -507,7 +507,7 @@ async function renderShopCategories(body) {
 
   let cats = [], ingrMap = [];
   try { [cats, ingrMap] = await Promise.all([api.getShopCategories(), api.getIngredientMap()]); }
-  catch (err) { catBody.querySelector("#shop-cats-list").innerHTML = `<div class="text-muted">${err.message}</div>`; return; }
+  catch (err) { catBody.querySelector("#shop-cats-list").innerHTML = `<div class="text-muted">${escapeHtml(err.message)}</div>`; return; }
 
   renderCatList(cats, catBody.querySelector("#shop-cats-list"));
   renderIngrMap(ingrMap, cats, ingrBody.querySelector("#ingr-map-list"));

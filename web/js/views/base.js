@@ -89,7 +89,7 @@ async function loadDishes() {
     renderCatTabs();
     renderDishList(container);
   } catch (err) {
-    container.innerHTML = `<div class="text-muted p-16">${err.message}</div>`;
+    container.innerHTML = `<div class="text-muted p-16">${escapeHtml(err.message)}</div>`;
   }
 }
 
@@ -498,7 +498,7 @@ function renderEditShell(dish, suggestions) {
       <textarea id="edit-instructions" rows="7"
         style="width:100%;border:1.5px solid #C9C2B4;border-radius:10px;padding:10px 12px;font-size:13px;resize:vertical;line-height:1.6"
         placeholder="Ex :&#10;Préchauffer le four à 180°C&#10;Mélanger la farine et les œufs&#10;Enfourner 25 minutes"
-      >${dish.instructions.join("\n")}</textarea>
+      >${escapeHtml(dish.instructions.join("\n"))}</textarea>
     </div>`;
 }
 

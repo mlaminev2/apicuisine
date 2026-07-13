@@ -1,5 +1,6 @@
 import { api } from "../api.js";
 import { showToast } from "../components/toast.js";
+import { escapeHtml } from "../utils.js";
 
 const INTERVAL_FR = { month: "mois", year: "an" };
 
@@ -28,7 +29,7 @@ export async function renderPremium(root, params = {}) {
   try {
     [access, config] = await Promise.all([api.getAccess(), api.billingConfig()]);
   } catch (err) {
-    body.innerHTML = `<div class="text-muted" style="padding:12px">${err.message}</div>`;
+    body.innerHTML = `<div class="text-muted" style="padding:12px">${escapeHtml(err.message)}</div>`;
     return;
   }
 

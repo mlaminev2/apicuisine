@@ -270,7 +270,7 @@ async function loadShopping() {
     items = data.items || [];
     renderItems();
   } catch (err) {
-    container.innerHTML = `<div class="text-muted p-16">${err.message}</div>`;
+    container.innerHTML = `<div class="text-muted p-16">${escapeHtml(err.message)}</div>`;
   }
 }
 
@@ -444,7 +444,7 @@ async function loadAll() {
     allWeeksData = await api.getShoppingAll();
     renderAllItems();
   } catch (err) {
-    container.innerHTML = `<div class="text-muted p-16">${err.message}</div>`;
+    container.innerHTML = `<div class="text-muted p-16">${escapeHtml(err.message)}</div>`;
   }
 }
 
