@@ -1,7 +1,17 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, delete, select, update
 from app.db import get_session
-from app.models import Household, Member, PlanEntry, PushSubscription
+from app.models import (
+    Dish,
+    Household,
+    IngredientMap,
+    Member,
+    PlanEntry,
+    PushSubscription,
+    Settings,
+    ShoppingCategory,
+    ShoppingList,
+)
 from app.auth import (
     get_current_admin,
     get_current_household,
@@ -10,9 +20,10 @@ from app.auth import (
     import_quota_state,
     is_super_admin,
     member_has_premium,
+    verify_password,
 )
 from app.config import settings as app_config
-from app.schemas import AccessRead, MemberPremiumUpdate, MemberRead
+from app.schemas import AccessRead, AccountDeleteRequest, MemberPremiumUpdate, MemberRead
 
 router = APIRouter(prefix="/api", tags=["members"])
 
@@ -87,4 +98,54 @@ def delete_member(
     # Supprime ses abonnements aux notifications pour ne pas laisser d'orphelins.
     session.exec(delete(PushSubscription).where(PushSubscription.member_id == member_id))
     session.delete(target)
+    session.commit()
+
+
+@router.post("/me/delete", status_code=204)
+def delete_my_account(
+    body: AccountDeleteRequest,
+    member: Member = Depends(get_current_member),
+    session: Session = Depends(get_session),
+):
+    """Suppression de compte en libre-service (RGPD).
+
+    - Membre simple : quitte le foyer (son compte est supprimé).
+    - Propriétaire avec d'autres membres : la propriété est transférée au plus
+      ancien membre restant, puis le compte est supprimé.
+    - Propriétaire seul : le foyer et TOUTES ses données sont supprimés.
+    """
+    if is_super_admin(member):
+        raise HTTPException(status_code=403, detail="Le compte administrateur ne peut pas être supprimé ici.")
+    # Vérification du mot de passe pour les comptes email (les comptes Google
+    # n'en ont pas : la session authentifiée suffit).
+    if member.password_hash and not verify_password(body.password, member.password_hash):
+        raise HTTPException(status_code=400, detail="Mot de passe incorrect.")
+
+    hh_id = member.household_id
+    others = session.exec(
+        select(Member).where(Member.household_id == hh_id, Member.id != member.id)
+    ).all()
+
+    # Détache ses références et supprime ses abonnements aux notifications.
+    session.exec(update(PlanEntry).where(PlanEntry.planned_by == member.id).values(planned_by=None))
+    session.exec(update(PlanEntry).where(PlanEntry.cooked_by == member.id).values(cooked_by=None))
+    session.exec(delete(PushSubscription).where(PushSubscription.member_id == member.id))
+
+    if member.is_owner and not others:
+        # Dernier membre du foyer → on supprime le foyer et toutes ses données.
+        for model in (PlanEntry, ShoppingList, IngredientMap, ShoppingCategory, Dish, PushSubscription, Member):
+            session.exec(delete(model).where(model.household_id == hh_id))
+        sett = session.get(Settings, hh_id)
+        if sett:
+            session.delete(sett)
+        household = session.get(Household, hh_id)
+        if household:
+            session.delete(household)
+    else:
+        if member.is_owner:
+            # Transfert de la propriété au membre le plus ancien restant.
+            heir = min(others, key=lambda m: m.id)
+            heir.is_owner = True
+            session.add(heir)
+        session.delete(member)
     session.commit()

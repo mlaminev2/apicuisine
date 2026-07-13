@@ -4,6 +4,7 @@ import { showToast } from "../components/toast.js";
 import { CAT_LABELS, DAYS_FULL_FR, escapeHtml } from "../utils.js";
 import { enablePush, disablePush, pushSupported } from "../push.js";
 import { openInstallPrompt } from "../pwa-install.js";
+import { openModal } from "../components/modal.js";
 
 const CATEGORIES = ["pomme_de_terre", "riz", "pates", "entree", "autre", "sucree", "africain", "apero", "sauce"];
 
@@ -67,6 +68,43 @@ function makeSection(title, key, { open = false, badge = "" } = {}) {
   head.onclick = () => setOpen(!sec.classList.contains("open"));
 
   return { sec, body };
+}
+
+// Confirmation de suppression de compte (mot de passe + avertissement adapté).
+function openDeleteAccountModal(root, soleOwner) {
+  openModal("Supprimer mon compte", (body) => {
+    body.innerHTML = `
+      <p style="font-size:13.5px;color:var(--ink);line-height:1.55;margin-bottom:12px">
+        ${soleOwner
+          ? "Vous êtes le seul membre du foyer. <strong>Toutes vos données</strong> (plats, recettes, planning, courses) seront <strong>définitivement supprimées</strong>."
+          : "Votre compte sera supprimé et vous quitterez le foyer. Cette action est <strong>définitive et irréversible</strong>."}
+      </p>
+      <input type="password" id="del-acc-pwd" placeholder="Votre mot de passe" autocomplete="current-password"
+        style="width:100%;border:1.5px solid var(--line-strong);border-radius:2px;padding:9px 12px;font-size:14px" />
+      <div style="font-size:11px;color:var(--muted);margin-top:5px">Laissez vide si vous vous connectez avec Google.</div>`;
+  }, (footer, close) => {
+    const cancel = document.createElement("button");
+    cancel.className = "btn btn-ghost btn-sm";
+    cancel.textContent = "Annuler";
+    cancel.onclick = close;
+    const confirmBtn = document.createElement("button");
+    confirmBtn.className = "btn btn-danger btn-sm";
+    confirmBtn.textContent = "Supprimer définitivement";
+    confirmBtn.onclick = async () => {
+      confirmBtn.disabled = true;
+      try {
+        await api.deleteAccount(document.getElementById("del-acc-pwd").value);
+        close();
+        state.clearAuth();
+        showToast("Compte supprimé.");
+        location.hash = "#/login";
+      } catch (err) {
+        showToast(err.message, "error");
+        confirmBtn.disabled = false;
+      }
+    };
+    footer.append(cancel, confirmBtn);
+  });
 }
 
 export async function renderSettings(root) {
@@ -448,6 +486,14 @@ export async function renderSettings(root) {
 
   body.append(sec1, dietSec, sec2, ...(sec2b ? [sec2b] : []), sec3, sec4);
   renderShopCategories(body);
+
+  // Suppression de compte (RGPD) : action rare et destructive, sous la déconnexion.
+  const soleOwner = state.isOwner && members.length === 1;
+  const delAccBtn = document.createElement("button");
+  delAccBtn.textContent = "Supprimer mon compte";
+  delAccBtn.style.cssText = "display:block;margin:12px auto 2px;background:none;color:#A15A45;font-size:12.5px;text-decoration:underline;padding:6px";
+  delAccBtn.onclick = () => openDeleteAccountModal(root, soleOwner);
+  secLogout.appendChild(delAccBtn);
 
   // Rappel du dîner puis déconnexion, tout en bas des réglages.
   // (appendChild déplace secLogout, déjà présent depuis le rendu initial.)

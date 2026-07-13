@@ -49,6 +49,7 @@ export const api = {
   forgotPassword: (email) => request("POST", "/api/password/forgot", { email }),
   resetPassword: (token, new_password) => request("POST", "/api/password/reset", { token, new_password }),
   getMembers: () => request("GET", "/api/members"),
+  deleteAccount: (password) => request("POST", "/api/me/delete", { password: password || "" }),
   deleteMember: (id) => request("DELETE", `/api/members/${id}`),
   getAccess: () => request("GET", "/api/access"),
   setMemberPremium: (id, is_premium) => request("PUT", `/api/members/${id}/premium`, { is_premium }),

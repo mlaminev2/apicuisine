@@ -54,6 +54,10 @@ class MemberPremiumUpdate(BaseModel):
     is_premium: bool
 
 
+class AccountDeleteRequest(BaseModel):
+    password: str = Field(default="", max_length=128)
+
+
 class AccessRead(BaseModel):
     freemium_enabled: bool
     is_owner: bool
