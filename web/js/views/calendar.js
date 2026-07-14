@@ -67,8 +67,9 @@ export async function renderCalendar(root) {
 function attachSwipe(body) {
   if (!body) return;
   let startX = 0, startY = 0, tracking = false, decided = null, intercept = false;
-  const SWIPE_MIN = 55;      // distance horizontale minimale pour valider
-  const SLOP = 12;           // au-delà, on décide de l'axe du geste
+  const SWIPE_MIN = 95;      // distance horizontale minimale pour changer de période
+  const SLOP = 16;           // au-delà, on décide de l'axe du geste
+  const H_RATIO = 1.4;       // le geste doit être nettement horizontal (dx > dy × 1.4)
   const EDGE = 2;            // tolérance de détection des bords (px)
 
   // En vue mois, la grille peut défiler horizontalement (.cal-scroll) pour voir
@@ -90,7 +91,8 @@ function attachSwipe(body) {
     const dx = e.touches[0].clientX - startX;
     const dy = e.touches[0].clientY - startY;
     if (decided === null && (Math.abs(dx) > SLOP || Math.abs(dy) > SLOP)) {
-      decided = Math.abs(dx) > Math.abs(dy) ? "h" : "v";
+      // « h » seulement si le geste est nettement horizontal, sinon « v » (défilement).
+      decided = Math.abs(dx) > Math.abs(dy) * H_RATIO ? "h" : "v";
       if (decided === "h") {
         // Changer de période OU laisser défiler la grille ? On change de période
         // si la grille ne défile pas, ou si on est déjà au bord dans le sens du geste.
