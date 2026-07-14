@@ -1,14 +1,18 @@
-// Mini-guide affiché une seule fois, à la première connexion, pour présenter l'app.
+// Mini-tuto affiché à la première connexion : un écran par onglet, pour
+// expliquer le contenu et ce qu'on peut y faire. Rejouable depuis les Réglages.
 import { maybeShowInstallPrompt } from "./pwa-install.js";
 
 const STEPS = [
-  { icon: "👋", title: "Bienvenue !", body: "Menu en Famille réunit les repas de toute la famille au même endroit — fini les « on mange quoi ce soir ? »." },
-  { icon: "📅", title: "Planifiez la semaine", body: "Choisissez un plat pour chaque jour, en un tap. Vue par semaine ou par mois, comme vous préférez." },
-  { icon: "🍲", title: "Vos recettes réunies", body: "Importez une recette depuis un lien ou une photo, ou ajoutez les vôtres à la main." },
-  { icon: "🛒", title: "Courses & famille", body: "La liste de courses se crée toute seule à partir de vos plats. Et vous pouvez inviter votre famille depuis les Réglages." },
+  { icon: "👋", title: "Bienvenue !", body: "Voici un petit tour de l'app. En bas de l'écran, 5 onglets : passez de l'un à l'autre d'un simple tap." },
+  { icon: "🏠", title: "Accueil", body: "Votre tableau de bord : le repas prévu aujourd'hui, un aperçu de la semaine, et le bouton « Remplir la semaine » qui propose un menu automatiquement. L'icône ⚙ en haut ouvre les Réglages." },
+  { icon: "📅", title: "Calendrier", body: "Planifiez vos repas. Touchez un jour pour choisir un plat (vue semaine ou mois, glissez pour changer de période). Un plat pas encore dans votre base ? Il s'ajoute tout seul." },
+  { icon: "🍽️", title: "Plats", body: "Votre base de recettes. Ajoutez vos plats, classez-les par catégorie, mettez-les en favori ★ et notez régimes/allergènes. Touchez un plat pour voir sa fiche et sa photo." },
+  { icon: "📥", title: "Importer", body: "Ajoutez une recette en un instant : depuis un lien (YouTube, Instagram, sites), une photo (livre, magazine), ou à la main." },
+  { icon: "🛒", title: "Courses", body: "Votre liste de courses se génère automatiquement à partir des plats planifiés. Cochez les articles au fur et à mesure, regroupés par rayon." },
+  { icon: "⚙️", title: "Réglages", body: "Via l'icône ⚙ en haut de l'Accueil : roulement de la semaine, vos catégories, membres du foyer, allergies, notifications, et déconnexion." },
 ];
 
-function buildOnboarding() {
+function buildOnboarding(onClose) {
   const overlay = document.createElement("div");
   overlay.className = "onb-overlay";
   const card = document.createElement("div");
@@ -19,11 +23,9 @@ function buildOnboarding() {
   overlay.appendChild(card);
 
   let i = 0;
-  // À la fin du guide, on enchaîne sur l'explication « ajouter à l'écran
-  // d'accueil » (adaptée iOS / Android / bureau), dès la première visite.
   const close = () => {
     overlay.remove();
-    maybeShowInstallPrompt();
+    if (onClose) onClose();
   };
 
   const render = () => {
@@ -51,18 +53,23 @@ function buildOnboarding() {
   return overlay;
 }
 
-// Affiche le guide une seule fois. Retourne true tant qu'il n'a pas été vu (pour
-// ne pas enchaîner avec l'invitation à installer l'app la même visite).
+// Affiche le tuto une seule fois (première connexion), puis enchaîne sur
+// l'invitation à installer l'app. Retourne true tant qu'il n'a pas été vu.
 export function maybeShowOnboarding() {
   if (localStorage.getItem("onboarding_seen") === "1") return false;
   // On ne marque « vu » qu'à l'affichage réel : au 1er lancement, le service
-  // worker s'active et recharge la page, ce qui annulerait ce différé — sinon
-  // le guide serait perdu pour toujours.
+  // worker s'active et recharge la page, ce qui annulerait ce différé.
   setTimeout(() => {
     if (localStorage.getItem("onboarding_seen") === "1") return;
     if (document.querySelector(".onb-card")) return;
     localStorage.setItem("onboarding_seen", "1");
-    document.body.appendChild(buildOnboarding());
+    document.body.appendChild(buildOnboarding(maybeShowInstallPrompt));
   }, 900);
   return true;
+}
+
+// Rejoue le tuto à la demande (bouton « Revoir le guide » des Réglages).
+export function showOnboardingNow() {
+  if (document.querySelector(".onb-card")) return;
+  document.body.appendChild(buildOnboarding(null));
 }

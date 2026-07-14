@@ -5,6 +5,7 @@ import { CAT_LABELS, DAYS_FULL_FR, escapeHtml, mealCategories, mealCategoryKeys,
 import { enablePush, disablePush, pushSupported } from "../push.js";
 import { openInstallPrompt } from "../pwa-install.js";
 import { openModal } from "../components/modal.js";
+import { showOnboardingNow } from "../onboarding.js";
 
 // Restrictions courantes proposées en cases à cocher dans les réglages.
 const DIET_PRESETS = {
@@ -234,6 +235,16 @@ export async function renderSettings(root) {
   const goPremium = premiumCard.querySelector("#go-premium");
   if (goPremium) goPremium.onclick = () => { location.hash = "#/premium"; };
   body.insertBefore(premiumCard, secLogout);
+
+  // Revoir le guide de démarrage (tuto par onglet)
+  const guideCard = document.createElement("div");
+  guideCard.className = "settings-section";
+  const guideBtn = document.createElement("button");
+  guideBtn.className = "btn btn-ghost btn-sm btn-full";
+  guideBtn.textContent = "🧭 Revoir le guide de démarrage";
+  guideBtn.onclick = () => showOnboardingNow();
+  guideCard.appendChild(guideBtn);
+  body.insertBefore(guideCard, secLogout);
 
   // ── Notifications / rappel du dîner ──
   const notifCard = document.createElement("div");
