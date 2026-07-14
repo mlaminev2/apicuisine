@@ -1,6 +1,6 @@
 import { api } from "../api.js";
 import { state } from "../state.js";
-import { escapeHtml } from "../utils.js";
+import { escapeHtml, isInAppBrowser } from "../utils.js";
 
 export async function renderRegister(root) {
   const params = Object.fromEntries(new URLSearchParams(location.hash.split("?")[1] || ""));
@@ -37,6 +37,8 @@ export async function renderRegister(root) {
       </form>
 
       <div class="oauth-divider"><span>ou continuer avec</span></div>
+
+      ${isInAppBrowser() ? `<div class="oauth-inapp-note">📱 Vous êtes dans un navigateur intégré (Instagram, Facebook…). « Continuer avec Google » y est <strong>bloqué par Google</strong>. Créez votre compte par email ci-dessus, ou ouvrez le site dans Safari/Chrome (menu <strong>⋯</strong> → « Ouvrir dans le navigateur »).</div>` : ""}
 
       <div class="oauth-buttons" id="oauth-btns">
         <a class="btn-oauth btn-oauth-google" id="google-oauth-btn">

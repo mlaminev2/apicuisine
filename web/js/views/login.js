@@ -1,5 +1,6 @@
 import { api } from "../api.js";
 import { state } from "../state.js";
+import { isInAppBrowser } from "../utils.js";
 
 const OAUTH_ERRORS = {
   cancelled:       "Connexion annulée.",
@@ -55,6 +56,8 @@ export async function renderLogin(root) {
       </form>
 
       <div class="oauth-divider"><span>ou</span></div>
+
+      ${isInAppBrowser() ? `<div class="oauth-inapp-note">📱 Vous êtes dans un navigateur intégré (Instagram, Facebook…). « Continuer avec Google » y est <strong>bloqué par Google</strong>. Connectez-vous par email ci-dessus, ou ouvrez le site dans Safari/Chrome (menu <strong>⋯</strong> → « Ouvrir dans le navigateur »).</div>` : ""}
 
       <div class="oauth-buttons">
         <a href="/api/auth/google" class="btn-oauth btn-oauth-google">

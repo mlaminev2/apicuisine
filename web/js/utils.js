@@ -44,6 +44,13 @@ export function setMealCategories(list) {
 export function mealCategories() { return _mealCats.map((c) => ({ ...c })); }
 export function mealCategoryKeys() { return _mealCats.map((c) => c.key); }
 
+// Détecte les navigateurs INTÉGRÉS (in-app) d'Instagram, Facebook, TikTok, etc.
+// Google y bloque « Se connecter avec Google » (erreur disallowed_useragent).
+export function isInAppBrowser() {
+  const ua = navigator.userAgent || "";
+  return /FBAN|FBAV|FB_IAB|Instagram|MicroMessenger|Line\/|Twitter|Snapchat|LinkedInApp|musical_ly|Bytedance|TikTok|Pinterest|OKHttp/i.test(ua);
+}
+
 export function isoWeekOf(d) {
   const tmp = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
   const dayNum = tmp.getUTCDay() || 7;
