@@ -868,21 +868,21 @@ html.no-ads iframe[src*="adtrafficquality"] { display: none !important; height: 
   border-radius: 2px !important; border-color: var(--line-strong) !important;
 }
 
-/* Navbar éditoriale : capitales, onglet actif souligné, sans icônes.
+/* Navbar éditoriale : icône + libellé sur chaque onglet, actif en terracotta.
    5 onglets tenant sur une seule ligne, même sur petit mobile. */
 #navbar { background: var(--cream); backdrop-filter: none; -webkit-backdrop-filter: none; border-top: 1px solid var(--line-strong); }
 .nav-tab {
-  font-size: 10.5px; font-weight: 600; gap: 0; padding: 9px 1px; min-width: 0;
+  font-size: 9.5px; font-weight: 600; gap: 3px; padding: 6px 1px; min-width: 0;
   letter-spacing: 0; color: var(--muted-2);
 }
-.nav-tab .icon { display: none; }
+.nav-tab .icon { display: flex; align-items: center; justify-content: center; }
+.nav-tab .icon svg { width: 23px; height: 23px; }
 .nav-tab > span:last-child {
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   max-width: 100%; display: block;
 }
-.nav-tab.active { color: var(--ink); font-weight: 700; }
-.nav-tab.active > span:last-child { border-bottom: 2px solid var(--ink); padding-bottom: 4px; }
-.nav-tab.active .icon { transform: none; }
+.nav-tab.active { color: var(--terra); font-weight: 700; }
+.nav-tab.active .icon { transform: translateY(-1px); }
 /* Déconnexion : icône seule, compacte, en bout de barre */
 .nav-tab.nav-logout { flex: 0 0 32px; }
 .nav-tab.nav-logout .icon { display: flex; align-items: center; justify-content: center; color: var(--muted-2); }
