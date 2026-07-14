@@ -13,17 +13,16 @@ from app.schemas import DishCreate, DishUpdate, DishRead
 
 router = APIRouter(prefix="/api", tags=["dishes"])
 
-VALID_CATEGORIES = frozenset({
-    "pomme_de_terre", "riz", "pates", "entree", "autre", "sucree", "africain", "apero", "sauce",
-})
 MAX_UPLOAD_BYTES = 25 * 1024 * 1024  # 25 Mo (photos de smartphones récents) — l'image est
 # ensuite redimensionnée et compressée, la sortie reste légère (~100-300 Ko).
 ALLOWED_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
 ALLOWED_IMAGE_CONTENT_TYPES = {"image/jpeg", "image/png", "image/webp"}
 
 
-def _assert_valid_category(category: str) -> None:
-    if category not in VALID_CATEGORIES:
+def _assert_valid_category(session: Session, household_id: int, category: str) -> None:
+    from app.mealcats import foyer_category_keys
+    from app.models import Settings
+    if category not in foyer_category_keys(session.get(Settings, household_id)):
         raise HTTPException(status_code=422, detail="Catégorie invalide")
 
 
@@ -54,7 +53,7 @@ def create_dish(
     household: Household = Depends(get_current_household),
     session: Session = Depends(get_session),
 ):
-    _assert_valid_category(body.category)
+    _assert_valid_category(session, household.id, body.category)
     dish = Dish(household_id=household.id, name=body.name, category=body.category)
     session.add(dish)
     session.commit()
@@ -75,7 +74,7 @@ def update_dish(
     if body.name is not None:
         dish.name = body.name
     if body.category is not None:
-        _assert_valid_category(body.category)
+        _assert_valid_category(session, household.id, body.category)
         dish.category = body.category
     if body.active is not None:
         dish.active = body.active

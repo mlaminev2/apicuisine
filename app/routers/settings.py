@@ -1,7 +1,7 @@
 import json
 from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException
-from sqlmodel import Session, select
+from sqlmodel import Session, select, update
 from app.db import get_session
 from app.models import (
     Dish,
@@ -14,7 +14,8 @@ from app.models import (
     ShoppingList,
 )
 from app.auth import get_current_household, get_current_member
-from app.schemas import SettingsRead, SettingsUpdate
+from app.mealcats import foyer_categories, normalize_categories
+from app.schemas import MealCategoriesUpdate, SettingsRead, SettingsUpdate
 
 router = APIRouter(prefix="/api", tags=["settings"])
 
@@ -42,6 +43,63 @@ def get_settings(
         session.commit()
         session.refresh(sett)
     return _to_read(sett)
+
+
+@router.get("/meal-categories")
+def get_meal_categories(
+    household: Household = Depends(get_current_household),
+    session: Session = Depends(get_session),
+):
+    """Catégories de plats du foyer (défauts si non personnalisées)."""
+    return foyer_categories(session.get(Settings, household.id))
+
+
+@router.put("/meal-categories")
+def update_meal_categories(
+    body: MealCategoriesUpdate,
+    household: Household = Depends(get_current_household),
+    session: Session = Depends(get_session),
+):
+    """Remplace la liste des catégories du foyer.
+
+    Les plats d'une catégorie supprimée sont réaffectés à une catégorie de repli,
+    et le roulement de la semaine est mis à jour en conséquence.
+    """
+    new_cats = normalize_categories([c.model_dump() for c in body.categories])
+    if not new_cats:
+        raise HTTPException(status_code=400, detail="Au moins une catégorie est requise")
+
+    sett = session.get(Settings, household.id)
+    if not sett:
+        sett = Settings(household_id=household.id)
+
+    old_keys = {c["key"] for c in foyer_categories(sett)}
+    new_keys = {c["key"] for c in new_cats}
+    removed = old_keys - new_keys
+    fallback = "autre" if "autre" in new_keys else new_cats[0]["key"]
+
+    if removed:
+        # Réaffecte les plats des catégories supprimées.
+        session.exec(
+            update(Dish)
+            .where(Dish.household_id == household.id, Dish.category.in_(removed))
+            .values(category=fallback)
+        )
+        # Corrige le roulement (weekday_category_map).
+        try:
+            wmap = json.loads(sett.weekday_category_map)
+        except (ValueError, TypeError):
+            wmap = {}
+        for k, v in list(wmap.items()):
+            if v in removed:
+                wmap[k] = fallback
+        sett.weekday_category_map = json.dumps(wmap)
+
+    sett.meal_categories = json.dumps(new_cats, ensure_ascii=False)
+    sett.updated_at = datetime.now(timezone.utc)
+    session.add(sett)
+    session.commit()
+    return new_cats
 
 
 def _rows(session: Session, model, household_id: int, exclude: set[str] = frozenset()) -> list[dict]:

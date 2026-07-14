@@ -1,12 +1,10 @@
 import { api } from "../api.js";
 import { state } from "../state.js";
 import { showToast } from "../components/toast.js";
-import { CAT_LABELS, DAYS_FULL_FR, escapeHtml } from "../utils.js";
+import { CAT_LABELS, DAYS_FULL_FR, escapeHtml, mealCategories, mealCategoryKeys, setMealCategories } from "../utils.js";
 import { enablePush, disablePush, pushSupported } from "../push.js";
 import { openInstallPrompt } from "../pwa-install.js";
 import { openModal } from "../components/modal.js";
-
-const CATEGORIES = ["pomme_de_terre", "riz", "pates", "entree", "autre", "sucree", "africain", "apero", "sauce"];
 
 // Restrictions courantes proposées en cases à cocher dans les réglages.
 const DIET_PRESETS = {
@@ -105,6 +103,73 @@ function openDeleteAccountModal(root, soleOwner) {
     };
     footer.append(cancel, confirmBtn);
   });
+}
+
+// Gestionnaire des catégories de plats (ajouter / renommer / retirer par foyer).
+function buildMealCatManager(root) {
+  const PALETTE = ["cat-pdt", "cat-riz", "cat-pates", "cat-entree", "cat-autre", "cat-sucree", "cat-africain", "cat-apero", "cat-sauce"];
+  let cats = mealCategories(); // copie de travail [{key,label,color}]
+
+  const wrap = document.createElement("div");
+  wrap.style.cssText = "border:1px solid var(--line);padding:11px 12px;margin-bottom:12px;background:var(--card)";
+  wrap.innerHTML = `
+    <div style="font-size:13.5px;font-weight:700;margin-bottom:2px">🍽️ Catégories de plats</div>
+    <div style="font-size:11.5px;color:var(--muted);margin-bottom:8px">Ajoutez, renommez ou retirez des catégories (ex : Poisson). Elles servent au roulement ci-dessous et au classement des plats.</div>
+    <div id="mealcat-rows" style="display:flex;flex-direction:column;gap:6px"></div>
+    <button type="button" class="btn btn-ghost btn-sm mt-8" id="mealcat-add">+ Ajouter une catégorie</button>
+    <button type="button" class="btn btn-primary btn-sm btn-full mt-8" id="mealcat-save">Enregistrer les catégories</button>`;
+  const rowsBox = wrap.querySelector("#mealcat-rows");
+
+  const renderRows = () => {
+    rowsBox.innerHTML = "";
+    cats.forEach((c, idx) => {
+      const row = document.createElement("div");
+      row.style.cssText = "display:flex;align-items:center;gap:8px";
+      const input = document.createElement("input");
+      input.value = c.label;
+      input.placeholder = "Nom de la catégorie";
+      input.style.cssText = "flex:1;border:1.5px solid var(--line-strong);border-radius:2px;padding:6px 9px;font-size:13px";
+      input.oninput = () => { c.label = input.value; };
+      const del = document.createElement("button");
+      del.textContent = "✕";
+      del.title = "Retirer cette catégorie";
+      del.style.cssText = "color:#A15A45;font-size:15px;padding:0 6px;flex-shrink:0";
+      del.onclick = () => {
+        if (cats.length <= 1) { showToast("Gardez au moins une catégorie", "error"); return; }
+        cats.splice(idx, 1);
+        renderRows();
+      };
+      row.append(input, del);
+      rowsBox.appendChild(row);
+    });
+  };
+  renderRows();
+
+  wrap.querySelector("#mealcat-add").onclick = () => {
+    cats.push({ key: "", label: "", color: PALETTE[cats.length % PALETTE.length] });
+    renderRows();
+    const inputs = rowsBox.querySelectorAll("input");
+    if (inputs.length) inputs[inputs.length - 1].focus();
+  };
+
+  wrap.querySelector("#mealcat-save").onclick = async (e) => {
+    const payload = cats
+      .filter((c) => (c.label || "").trim())
+      .map((c) => ({ key: c.key || undefined, label: c.label.trim(), color: c.color }));
+    if (!payload.length) { showToast("Au moins une catégorie est requise", "error"); return; }
+    // Prévient si des catégories existantes disparaissent (les plats seront déplacés).
+    const removed = mealCategories().filter((o) => !cats.some((c) => c.key && c.key === o.key)).map((o) => o.label);
+    if (removed.length && !confirm(`Retirer : ${removed.join(", ")} ?\nLes plats de ces catégories seront déplacés vers « Autre ».`)) return;
+    const btn = e.currentTarget;
+    btn.disabled = true;
+    try {
+      const saved = await api.putMealCategories(payload);
+      setMealCategories(saved);
+      showToast("Catégories enregistrées ✓");
+      renderSettings(root); // rafraîchit le roulement et le reste
+    } catch (err) { showToast(err.message, "error"); btn.disabled = false; }
+  };
+  return wrap;
 }
 
 export async function renderSettings(root) {
@@ -236,6 +301,7 @@ export async function renderSettings(root) {
 
   // ── Section roulement ──
   const { sec: sec1, body: sec1Body } = makeSection("📅 Roulement de la semaine", "roulement", { open: true });
+  sec1Body.appendChild(buildMealCatManager(root));
   for (let i = 0; i < 7; i++) {
     const row = document.createElement("div");
     row.className = "settings-row";
@@ -243,7 +309,7 @@ export async function renderSettings(root) {
     lbl.textContent = DAYS_FULL_FR[i];
     const sel = document.createElement("select");
     sel.dataset.dow = i;
-    for (const cat of CATEGORIES) {
+    for (const cat of mealCategoryKeys()) {
       const opt = document.createElement("option");
       opt.value = cat;
       opt.textContent = CAT_LABELS[cat];

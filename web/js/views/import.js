@@ -1,9 +1,8 @@
 import { api } from "../api.js";
 import { showToast } from "../components/toast.js";
 import { openDishModal } from "./base.js";
-import { CAT_LABELS, isoWeekOf, escapeHtml, renderPaywall } from "../utils.js";
+import { CAT_LABELS, isoWeekOf, escapeHtml, renderPaywall, mealCategoryKeys } from "../utils.js";
 
-const CATEGORIES = ["pomme_de_terre", "riz", "pates", "entree", "autre", "sucree", "africain", "apero", "sauce"];
 
 // Capacités d'import mises en avant sur l'écran
 const CAPS = [
@@ -103,7 +102,7 @@ export async function renderImport(root) {
           <input id="import-name" type="text" placeholder="Nom du plat…"
             style="width:100%;border:1.5px solid #ddd0bd;border-radius:12px;padding:11px 13px;font-size:14px;margin-bottom:10px" />
           <select id="import-category" style="width:100%;border:1.5px solid #ddd0bd;border-radius:12px;padding:11px 13px;font-size:14px">
-            ${CATEGORIES.map((c) => `<option value="${c}">${CAT_LABELS[c]}</option>`).join("")}
+            ${mealCategoryKeys().map((c) => `<option value="${c}">${CAT_LABELS[c]}</option>`).join("")}
           </select>
         </div>
 

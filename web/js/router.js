@@ -18,6 +18,16 @@ import { renderPremium } from "./views/premium.js";
 import { renderLegal } from "./views/legal.js";
 import { maybeShowInstallPrompt } from "./pwa-install.js";
 import { maybeShowOnboarding } from "./onboarding.js";
+import { setMealCategories } from "./utils.js";
+
+// Charge une fois les catégories de plats du foyer (personnalisables) avant
+// d'afficher les vues, pour que les libellés/couleurs soient à jour partout.
+let _mealCatsLoaded = false;
+async function ensureMealCategories() {
+  if (_mealCatsLoaded) return;
+  try { setMealCategories(await api.getMealCategories()); } catch (_) { /* défauts */ }
+  _mealCatsLoaded = true;
+}
 
 const root = document.getElementById("view-root");
 
@@ -43,6 +53,7 @@ async function route() {
     location.hash = "#/login";
     return;
   }
+  if (state.isLoggedIn()) await ensureMealCategories();
 
   const [path, queryStr] = hash.slice(1).split("?");
   const params = Object.fromEntries(new URLSearchParams(queryStr || ""));

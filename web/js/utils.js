@@ -26,6 +26,24 @@ export const CAT_CSS = {
   sauce: "cat-sauce",
 };
 
+// ── Catégories de plats du foyer (personnalisables) ──────────────────────────
+// CAT_LABELS / CAT_CSS ci-dessus servent de défauts ET de cache runtime : on les
+// MUTE en place au chargement des réglages du foyer, si bien que tous les imports
+// existants (`CAT_LABELS[x]`) reflètent automatiquement la liste personnalisée.
+const _DEFAULT_MEALCATS = Object.keys(CAT_LABELS).map((k) => ({ key: k, label: CAT_LABELS[k], color: CAT_CSS[k] }));
+let _mealCats = _DEFAULT_MEALCATS.slice();
+
+export function setMealCategories(list) {
+  if (!Array.isArray(list) || !list.length) return;
+  _mealCats = list.map((c) => ({ key: c.key, label: c.label, color: c.color || "cat-autre" }));
+  for (const k of Object.keys(CAT_LABELS)) delete CAT_LABELS[k];
+  for (const k of Object.keys(CAT_CSS)) delete CAT_CSS[k];
+  for (const c of _mealCats) { CAT_LABELS[c.key] = c.label; CAT_CSS[c.key] = c.color; }
+}
+
+export function mealCategories() { return _mealCats.map((c) => ({ ...c })); }
+export function mealCategoryKeys() { return _mealCats.map((c) => c.key); }
+
 export function isoWeekOf(d) {
   const tmp = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
   const dayNum = tmp.getUTCDay() || 7;

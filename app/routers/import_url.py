@@ -120,9 +120,6 @@ _YOUTUBE_HOSTS = {"youtube.com", "www.youtube.com", "m.youtube.com", "youtu.be"}
 _INSTAGRAM_HOSTS = {"instagram.com", "www.instagram.com"}
 _TIKTOK_HOSTS = {"tiktok.com", "www.tiktok.com", "vm.tiktok.com", "m.tiktok.com"}
 
-_VALID_CATEGORIES = frozenset({
-    "pomme_de_terre", "riz", "pates", "entree", "autre", "sucree", "africain", "apero", "sauce",
-})
 _MAX_EXTRACT_TEXT_LEN = 50_000
 
 
@@ -1022,7 +1019,9 @@ def save_import(
     member: Member = Depends(get_current_member),
     session: Session = Depends(get_session),
 ):
-    if body.category not in _VALID_CATEGORIES:
+    from app.mealcats import foyer_category_keys
+    from app.models import Settings
+    if body.category not in foyer_category_keys(session.get(Settings, household.id)):
         raise HTTPException(status_code=422, detail="Catégorie invalide")
     dish = Dish(
         household_id=household.id,

@@ -81,6 +81,16 @@ class PushSubscribeRequest(BaseModel):
     keys: PushKeys
 
 
+class MealCategory(BaseModel):
+    key: Optional[str] = Field(default=None, max_length=40)
+    label: str = Field(min_length=1, max_length=40)
+    color: Optional[str] = Field(default=None, max_length=20)
+
+
+class MealCategoriesUpdate(BaseModel):
+    categories: list[MealCategory] = Field(min_length=1, max_length=30)
+
+
 class InviteRead(BaseModel):
     invite_code: Optional[str]
     invite_code_created_at: Optional[datetime]

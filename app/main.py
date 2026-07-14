@@ -148,6 +148,7 @@ def _migrate():
             ("multi_dish_enabled", "BOOLEAN NOT NULL DEFAULT 0"),
             ("freemium_enabled", "BOOLEAN NOT NULL DEFAULT 0"),
             ("dietary_notes", "TEXT"),
+            ("meal_categories", "TEXT"),
         ]:
             try:
                 conn.execute(text(f"ALTER TABLE settings ADD COLUMN {col} {definition}"))

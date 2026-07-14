@@ -1,8 +1,7 @@
 import { api } from "../api.js";
 import { showToast } from "../components/toast.js";
-import { CAT_LABELS, CAT_CSS, isoWeekOf, mergeShoppingItems, escapeHtml } from "../utils.js";
+import { CAT_LABELS, CAT_CSS, isoWeekOf, mergeShoppingItems, escapeHtml, mealCategoryKeys } from "../utils.js";
 
-const CATEGORIES = ["pomme_de_terre", "riz", "pates", "entree", "autre", "sucree", "africain", "apero", "sauce"];
 let activeCategory = "pomme_de_terre";
 
 function _safeUrl(url) {
@@ -47,7 +46,7 @@ function renderCatTabs() {
   const tabs = document.getElementById("rec-cat-tabs");
   if (!tabs) return;
   tabs.innerHTML = "";
-  for (const cat of CATEGORIES) {
+  for (const cat of mealCategoryKeys()) {
     const btn = document.createElement("button");
     btn.className = `cat-tab ${CAT_CSS[cat]}` + (cat === activeCategory ? " active" : "");
     btn.textContent = CAT_LABELS[cat];

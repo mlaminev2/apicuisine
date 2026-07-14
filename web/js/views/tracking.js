@@ -1,12 +1,11 @@
 import { api } from "../api.js";
-import { CAT_LABELS, escapeHtml } from "../utils.js";
+import { CAT_LABELS, escapeHtml, mealCategoryKeys } from "../utils.js";
 
 let sortKey = "count";
 let sortAsc = true;
 let filterCat = "";
 let data = [];
 
-const CATEGORIES = ["", "pomme_de_terre", "riz", "pates", "entree", "autre", "sucree", "africain", "apero", "sauce"];
 
 export async function renderTracking(root) {
   root.innerHTML = `
@@ -14,7 +13,7 @@ export async function renderTracking(root) {
     <div style="padding:10px 16px;background:white;border-bottom:1px solid #E3DED0;display:flex;gap:8px;align-items:center">
       <label style="font-size:13px;font-weight:600">Catégorie :</label>
       <select id="tracking-cat-filter" style="border:1.5px solid #C9C2B4;border-radius:8px;padding:4px 8px;font-size:13px">
-        ${CATEGORIES.map((c) => `<option value="${c}">${c ? CAT_LABELS[c] : "Toutes"}</option>`).join("")}
+        ${["", ...mealCategoryKeys()].map((c) => `<option value="${c}">${c ? CAT_LABELS[c] : "Toutes"}</option>`).join("")}
       </select>
     </div>
     <div style="overflow-x:auto">

@@ -1,8 +1,7 @@
 import { api } from "../api.js";
 import { showToast } from "../components/toast.js";
-import { CAT_LABELS, CAT_CSS, isoWeekOf, mergeShoppingItems, escapeHtml } from "../utils.js";
+import { CAT_LABELS, CAT_CSS, isoWeekOf, mergeShoppingItems, escapeHtml, mealCategoryKeys } from "../utils.js";
 
-const CATEGORIES = ["pomme_de_terre", "riz", "pates", "entree", "autre", "sucree", "africain", "apero", "sauce"];
 let activeCategory = "tous";
 let searchQuery = "";
 let allDishes = [];
@@ -66,7 +65,7 @@ function renderCatTabs() {
   favBtn.textContent = favCount ? `★ Favoris · ${favCount}` : "★ Favoris";
   favBtn.onclick = () => { activeCategory = "favoris"; renderCatTabs(); renderDishList(document.getElementById("dish-list-container")); };
   tabs.appendChild(favBtn);
-  for (const cat of CATEGORIES) {
+  for (const cat of mealCategoryKeys()) {
     const btn = document.createElement("button");
     btn.className = `cat-tab ${CAT_CSS[cat]}` + (cat === activeCategory ? " active" : "");
     btn.textContent = CAT_LABELS[cat];
@@ -414,7 +413,7 @@ function showDishForm(dish) {
       </div>
       <div class="form-group"><label>Catégorie</label>
         <select id="dish-cat-select">
-          ${CATEGORIES.map((c) => `<option value="${c}"${(dish ? dish.category : activeCategory) === c ? " selected" : ""}>${CAT_LABELS[c]}</option>`).join("")}
+          ${mealCategoryKeys().map((c) => `<option value="${c}"${(dish ? dish.category : activeCategory) === c ? " selected" : ""}>${CAT_LABELS[c]}</option>`).join("")}
         </select>
       </div>
     </div>
@@ -459,7 +458,7 @@ function renderEditShell(dish, suggestions) {
       <div class="form-group" style="flex:1;margin:0">
         <label style="font-size:12px;font-weight:700;color:#555">Catégorie</label>
         <select id="edit-dish-cat">
-          ${CATEGORIES.map((c) => `<option value="${c}"${dish.category === c ? " selected" : ""}>${CAT_LABELS[c]}</option>`).join("")}
+          ${mealCategoryKeys().map((c) => `<option value="${c}"${dish.category === c ? " selected" : ""}>${CAT_LABELS[c]}</option>`).join("")}
         </select>
       </div>
     </div>

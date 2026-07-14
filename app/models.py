@@ -142,4 +142,5 @@ class Settings(SQLModel, table=True):
     multi_dish_enabled: bool = Field(default=False)
     freemium_enabled: bool = Field(default=False)
     dietary_notes: Optional[str] = Field(default=None)       # allergies & restrictions du foyer
+    meal_categories: Optional[str] = Field(default=None, sa_type=Text)  # catégories de plats du foyer (JSON), null = défauts
     updated_at: datetime = Field(default_factory=_utcnow)
