@@ -11,14 +11,14 @@ const ICONS = {
   logout: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 20H6a1.6 1.6 0 0 1-1.6-1.6V5.6A1.6 1.6 0 0 1 6 4h3"/><path d="M15 16l4-4-4-4M19 12H9"/></svg>`,
 };
 
-// Navbar éditoriale. « Se déconnecter » reste accessible depuis les Réglages.
+// Navbar éditoriale à 5 onglets. « Réglages » (avec la déconnexion) est
+// accessible via l'icône ⚙ en haut de l'écran d'accueil.
 const TABS = [
   { hash: "#/accueil", icon: ICONS.home, label: "Accueil" },
   { hash: "#/calendrier", icon: ICONS.calendar, label: "Calendrier" },
   { hash: "#/base", icon: ICONS.plate, label: "Plats" },
   { hash: "#/importer", icon: ICONS.download, label: "Importer" },
   { hash: "#/courses", icon: ICONS.cart, label: "Courses" },
-  { hash: "#/reglages", icon: ICONS.sliders, label: "Réglages" },
 ];
 
 export function renderNavbar() {
@@ -39,13 +39,4 @@ export function renderNavbar() {
     btn.onclick = () => { location.hash = tab.hash; };
     nav.appendChild(btn);
   }
-
-  // Déconnexion : icône seule (pas de libellé) pour tenir dans la barre mobile.
-  const logoutBtn = document.createElement("button");
-  logoutBtn.className = "nav-tab nav-logout";
-  logoutBtn.title = "Se déconnecter";
-  logoutBtn.setAttribute("aria-label", "Se déconnecter");
-  logoutBtn.innerHTML = `<span class="icon" aria-hidden="true">${ICONS.logout}</span>`;
-  logoutBtn.onclick = () => { state.clearAuth(); location.hash = "#/login"; };
-  nav.appendChild(logoutBtn);
 }
