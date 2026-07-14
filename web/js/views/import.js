@@ -45,7 +45,7 @@ export async function renderImport(root) {
     return;
   }
   const quotaBanner = (!access.premium_active)
-    ? `<div class="import2-quota">💎 ${access.imports_remaining} import${access.imports_remaining > 1 ? "s" : ""} gratuit${access.imports_remaining > 1 ? "s" : ""} restant${access.imports_remaining > 1 ? "s" : ""} ce mois — premium = illimité</div>`
+    ? `<div class="import2-quota">💎 ${access.imports_remaining} import${access.imports_remaining > 1 ? "s" : ""} gratuit${access.imports_remaining > 1 ? "s" : ""} restant${access.imports_remaining > 1 ? "s" : ""} ce mois · premium = illimité</div>`
     : "";
 
   const { year: isoYear, week: isoWeek } = isoWeekOf(new Date());
@@ -80,7 +80,7 @@ export async function renderImport(root) {
       <!-- Autres méthodes -->
       <button class="import2-method" id="method-photo">
         <div class="import2-method-icon"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="3"/><circle cx="9" cy="10" r="1.8"/><path d="M4 17l5-4 4 3 3-2 4 3"/></svg></div>
-        <div class="import2-method-txt"><div class="import2-method-name">Prendre une photo</div><div class="import2-method-sub">Recette papier, livre, magazine — plusieurs pages possibles</div></div>
+        <div class="import2-method-txt"><div class="import2-method-name">Prendre une photo</div><div class="import2-method-sub">Recette papier, livre, magazine · plusieurs pages possibles</div></div>
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#c4b3a3" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>
       </button>
       <input type="file" id="import-photo-input" accept="image/*" multiple style="display:none" />

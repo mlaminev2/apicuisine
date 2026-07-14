@@ -131,7 +131,7 @@ export async function renderAdmin(root) {
         <div>
           <div style="font-weight:700;font-size:14.5px">${freemiumOn ? "Actif sur la plateforme" : "Désactivé"}</div>
           <div class="home-sub">${freemiumOn
-            ? `imports gratuits : ${p.import_limit}/mois — premium accordé par vous uniquement`
+            ? `imports gratuits : ${p.import_limit}/mois · premium accordé par vous uniquement`
             : "tous les utilisateurs ont tous les accès"}</div>
         </div>
         <label class="toggle">
