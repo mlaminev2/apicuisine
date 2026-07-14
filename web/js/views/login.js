@@ -57,9 +57,9 @@ export async function renderLogin(root) {
 
       <div class="oauth-divider"><span>ou</span></div>
 
-      ${isInAppBrowser() ? `<div class="oauth-inapp-note">📱 Vous êtes dans un navigateur intégré (Instagram, Facebook…). « Continuer avec Google » y est <strong>bloqué par Google</strong>. Connectez-vous par email ci-dessus, ou ouvrez le site dans Safari/Chrome (menu <strong>⋯</strong> → « Ouvrir dans le navigateur »).</div>` : ""}
-
-      <div class="oauth-buttons">
+      ${isInAppBrowser()
+        ? `<div class="oauth-inapp-note">📱 Vous ouvrez le site depuis une autre app (Instagram, Facebook, TikTok…). La <strong>connexion Google n'y est pas disponible</strong> (règle de sécurité de Google). <strong>Connectez-vous avec votre email ci-dessus</strong>, ou ouvrez <strong>menuenfamille.fr</strong> dans Safari/Chrome (menu <strong>⋯</strong> → « Ouvrir dans le navigateur »).</div>`
+        : `<div class="oauth-buttons">
         <a href="/api/auth/google" class="btn-oauth btn-oauth-google">
           <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
             <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
@@ -69,7 +69,7 @@ export async function renderLogin(root) {
           </svg>
           Continuer avec Google
         </a>
-      </div>
+      </div>`}
 
       <div class="legal-links">
         <a href="/conseils/">Conseils</a>

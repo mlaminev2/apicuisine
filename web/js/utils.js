@@ -48,7 +48,15 @@ export function mealCategoryKeys() { return _mealCats.map((c) => c.key); }
 // Google y bloque « Se connecter avec Google » (erreur disallowed_useragent).
 export function isInAppBrowser() {
   const ua = navigator.userAgent || "";
-  return /FBAN|FBAV|FB_IAB|Instagram|MicroMessenger|Line\/|Twitter|Snapchat|LinkedInApp|musical_ly|Bytedance|TikTok|Pinterest|OKHttp/i.test(ua);
+  // Marqueurs explicites des principales apps.
+  if (/FBAN|FBAV|FB_IAB|FBIOS|Instagram|MicroMessenger|Line\/|Snapchat|LinkedInApp|musical_ly|Bytedance|TikTok|Pinterest|WhatsApp|GSA\/|OKHttp|Twitter/i.test(ua)) return true;
+  // Android : WebView intégrée (« ; wv »).
+  if (/Android/.test(ua) && /; wv\)/.test(ua)) return true;
+  // iOS : un vrai navigateur contient « Safari/ » (ou CriOS/FxiOS/EdgiOS pour
+  // Chrome/Firefox/Edge). Sinon c'est une WebView intégrée (app tierce).
+  const iOS = /iPhone|iPod|iPad/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  if (iOS && !/Safari\//.test(ua) && !/CriOS|FxiOS|EdgiOS/.test(ua)) return true;
+  return false;
 }
 
 export function isoWeekOf(d) {

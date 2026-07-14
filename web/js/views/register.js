@@ -38,9 +38,9 @@ export async function renderRegister(root) {
 
       <div class="oauth-divider"><span>ou continuer avec</span></div>
 
-      ${isInAppBrowser() ? `<div class="oauth-inapp-note">📱 Vous êtes dans un navigateur intégré (Instagram, Facebook…). « Continuer avec Google » y est <strong>bloqué par Google</strong>. Créez votre compte par email ci-dessus, ou ouvrez le site dans Safari/Chrome (menu <strong>⋯</strong> → « Ouvrir dans le navigateur »).</div>` : ""}
-
-      <div class="oauth-buttons" id="oauth-btns">
+      ${isInAppBrowser()
+        ? `<div class="oauth-inapp-note">📱 Vous ouvrez le site depuis une autre app (Instagram, Facebook, TikTok…). La <strong>connexion Google n'y est pas disponible</strong> (règle de sécurité de Google). <strong>Créez votre compte avec votre email ci-dessus</strong>, ou ouvrez <strong>menuenfamille.fr</strong> dans Safari/Chrome (menu <strong>⋯</strong> → « Ouvrir dans le navigateur »).</div>`
+        : `<div class="oauth-buttons" id="oauth-btns">
         <a class="btn-oauth btn-oauth-google" id="google-oauth-btn">
           <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
             <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
@@ -50,14 +50,16 @@ export async function renderRegister(root) {
           </svg>
           Google
         </a>
-      </div>
+      </div>`}
     </div>`;
 
   const form = document.getElementById("register-form");
   const errorEl = document.getElementById("reg-error");
 
-  // OAuth buttons read invite_code from the form at click time
-  document.getElementById("google-oauth-btn").addEventListener("click", () => {
+  // OAuth buttons read invite_code from the form at click time (absent dans les
+  // navigateurs intégrés où Google est indisponible).
+  const googleBtn = document.getElementById("google-oauth-btn");
+  if (googleBtn) googleBtn.addEventListener("click", () => {
     const code = document.getElementById("reg-invite").value.trim();
     location.href = "/api/auth/google" + (code ? "?invite_code=" + encodeURIComponent(code) : "");
   });
