@@ -2,7 +2,7 @@ import { api } from "../api.js";
 import { state } from "../state.js";
 import { openModal } from "../components/modal.js";
 import { showToast } from "../components/toast.js";
-import { CAT_LABELS, DAYS_FULL_FR, isoWeekOf, mergeShoppingItems, escapeHtml } from "../utils.js";
+import { CAT_LABELS, DAYS_FULL_FR, isoWeekOf, mergeShoppingItems, escapeHtml, mealCategoryKeys } from "../utils.js";
 
 // Raccourcis « plat libre » qui ne doivent PAS créer un plat dans la base.
 const QUICK_TEXTS = new Set(["🍲 Restes", "🍽️ Resto / extérieur", "🥪 Sandwich"]);
@@ -494,12 +494,30 @@ export async function renderLunchPicker(dateStr, currentEntry, onSave) {
     saveBtn.textContent = "Enregistrer";
     saveBtn.onclick = async () => {
       try {
+        // Plat libre saisi (hors raccourcis) sans plat sélectionné → création auto
+        // dans la base (catégorie « Autre » par défaut, ou 1re catégorie du foyer).
+        let lunchId = selectedLunchId;
+        const lt = (lunchText || "").trim();
+        let createdNew = false;
+        if (!lunchId && lt && !QUICK_TEXTS.has(lt)) {
+          const existing = dishes.find((d) => d.name.trim().toLowerCase() === lt.toLowerCase());
+          if (existing) {
+            lunchId = existing.id;
+          } else {
+            const keys = mealCategoryKeys();
+            const cat = keys.includes("autre") ? "autre" : keys[0];
+            const created = await api.createDish(lt, cat);
+            lunchId = created.id;
+            createdNew = true;
+          }
+          lunchText = "";
+        }
         await api.putPlan(dateStr, {
-          lunch_dish_id: selectedLunchId || null,
+          lunch_dish_id: lunchId || null,
           lunch_free_text: lunchText || null,
           planned_by: state.memberId,
         });
-        showToast("Menu du midi enregistré ✓");
+        showToast(createdNew ? `Menu du midi enregistré ✓ « ${lt} » ajouté à vos plats` : "Menu du midi enregistré ✓");
         close();
         onSave && onSave();
       } catch (err) { showToast(err.message, "error"); }
