@@ -4,6 +4,9 @@ import { openModal } from "../components/modal.js";
 import { showToast } from "../components/toast.js";
 import { CAT_LABELS, DAYS_FULL_FR, isoWeekOf, mergeShoppingItems, escapeHtml } from "../utils.js";
 
+// Raccourcis « plat libre » qui ne doivent PAS créer un plat dans la base.
+const QUICK_TEXTS = new Set(["🍲 Restes", "🍽️ Resto / extérieur", "🥪 Sandwich"]);
+
 export async function renderPicker(dateStr, category, currentEntry, dessertEnabled, onSave, lunchEnabled = false, multiEnabled = false, dietaryNotes = "") {
   const d = new Date(dateStr + "T00:00:00");
   const dayName = DAYS_FULL_FR[(d.getDay() + 6) % 7];
@@ -50,8 +53,25 @@ export async function renderPicker(dateStr, category, currentEntry, dessertEnabl
     saveBtn.textContent = "Enregistrer";
     saveBtn.onclick = async () => {
       try {
+        // Plat « libre » saisi (hors raccourcis Restes/Resto) et aucun plat de la
+        // base sélectionné → on le crée automatiquement dans la base (catégorie du
+        // jour) et on le rattache comme vrai plat, pour qu'il apparaisse dans « Plats ».
+        let mainId = selectedMainId;
+        const ft = (freeText || "").trim();
+        let createdNew = false;
+        if (!mainId && ft && !QUICK_TEXTS.has(ft)) {
+          const existing = priorityList.find((p) => p.dish.name.trim().toLowerCase() === ft.toLowerCase());
+          if (existing) {
+            mainId = existing.dish.id;
+          } else {
+            const created = await api.createDish(ft, category);
+            mainId = created.id;
+            createdNew = true;
+          }
+          freeText = "";
+        }
         const payload = {
-          main_dish_id: selectedMainId || null,
+          main_dish_id: mainId || null,
           dessert_dish_id: selectedDessertId || null,
           entree_dish_id: selectedEntreeId || null,
           apero_dish_id: selectedAperoId || null,
@@ -63,7 +83,7 @@ export async function renderPicker(dateStr, category, currentEntry, dessertEnabl
         // pour ne pas effacer des données existantes quand elle est coupée.
         if (multiEnabled) payload.extra_dish_ids = [...selectedExtraIds];
         await api.putPlan(dateStr, payload);
-        showToast("Menu enregistré ✓");
+        showToast(createdNew ? `Menu enregistré ✓ « ${ft} » ajouté à vos plats` : "Menu enregistré ✓");
         close();
         onSave && onSave();
       } catch (err) { showToast(err.message, "error"); }
