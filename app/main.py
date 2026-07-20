@@ -1,7 +1,7 @@
 import logging
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from pathlib import Path
 from sqlalchemy import text
 from app.db import create_db_and_tables, engine
@@ -224,20 +224,44 @@ if web_dir.exists():
     def serve_root():
         return FileResponse(str(web_dir / "index.html"))
 
+    def _canonical_html_redirect(full_path: str, candidate: Path) -> str | None:
+        """URL canonique pour un fichier .html demandé explicitement, sinon None.
+
+        Évite le contenu dupliqué signalé par la Search Console : `.html` et
+        `index.html` renvoient une seule URL propre (301) au lieu d'un 200.
+        """
+        if candidate.suffix != ".html":
+            return None
+        if full_path.endswith("/index.html"):
+            return "/" + full_path[: -len("index.html")]  # garde le slash du dossier
+        if full_path == "index.html":
+            return "/"
+        return "/" + full_path[: -len(".html")]
+
     @app.get("/{full_path:path}")
     def serve_spa(full_path: str):
         candidate = (web_dir / full_path).resolve()
         if candidate.is_relative_to(web_dir_resolved):
             # Fichier existant (assets, pages statiques)
             if candidate.is_file():
+                # Normalisation SEO : une seule URL canonique par page HTML.
+                target = _canonical_html_redirect(full_path, candidate)
+                if target is not None and target != "/" + full_path:
+                    return RedirectResponse(target, status_code=301)
                 return FileResponse(str(candidate))
             # Dossier avec index.html (ex: /conseils/ -> conseils/index.html)
             index = candidate / "index.html"
             if candidate.is_dir() and index.is_file():
+                # Un dossier doit avoir un slash final (URL canonique).
+                if full_path and not full_path.endswith("/"):
+                    return RedirectResponse("/" + full_path + "/", status_code=301)
                 return FileResponse(str(index))
             # URL propre sans extension (ex: /conseils/batch-cooking -> .html)
             html = candidate.with_suffix(".html")
             if html.is_relative_to(web_dir_resolved) and html.is_file():
+                # Une page-fichier ne doit pas avoir de slash final (URL canonique).
+                if full_path.endswith("/"):
+                    return RedirectResponse("/" + full_path.rstrip("/"), status_code=301)
                 return FileResponse(str(html))
         # Sinon : on sert la SPA (routage géré côté client par le hash)
         return FileResponse(str(web_dir / "index.html"))
