@@ -17,6 +17,10 @@ import pytest
         ("/conseils/index.html", "/conseils/"),
         ("/conseils/batch-cooking.html", "/conseils/batch-cooking"),
         ("/conseils/batch-cooking/", "/conseils/batch-cooking"),
+        ("/confidentialite.html", "/confidentialite"),
+        ("/mentions-legales.html", "/mentions-legales"),
+        ("/cgv.html", "/cgv"),
+        ("/confidentialite/", "/confidentialite"),
     ],
 )
 def test_variantes_redirigent_en_301(client, requested, canonical):
@@ -33,6 +37,9 @@ def test_variantes_redirigent_en_301(client, requested, canonical):
         "/conseils/",
         "/conseils/batch-cooking",
         "/conseils/planifier-ses-repas",
+        "/confidentialite",
+        "/mentions-legales",
+        "/cgv",
     ],
 )
 def test_urls_canoniques_repondent_200(client, url):

@@ -11,6 +11,21 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://menuenfamille.fr/mentions-legales</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+  <url>
+    <loc>https://menuenfamille.fr/confidentialite</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+  <url>
+    <loc>https://menuenfamille.fr/cgv</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+  <url>
     <loc>https://menuenfamille.fr/conseils/</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
