@@ -2,7 +2,7 @@ import { api } from "../api.js";
 import { state } from "../state.js";
 import { openModal } from "../components/modal.js";
 import { showToast } from "../components/toast.js";
-import { CAT_LABELS, DAYS_FULL_FR, isoWeekOf, mergeShoppingItems, escapeHtml, mealCategoryKeys, mealCategories } from "../utils.js";
+import { CAT_LABELS, DAYS_FULL_FR, isoWeekOf, mergeShoppingItems, escapeHtml, mealCategoryKeys, mealCategories, catDisplayLabel } from "../utils.js";
 
 // Raccourcis « plat libre » qui ne doivent PAS créer un plat dans la base.
 const QUICK_TEXTS = new Set(["🍲 Restes", "🍽️ Resto / extérieur", "🥪 Sandwich"]);
@@ -11,7 +11,7 @@ export async function renderPicker(dateStr, category, currentEntry, dessertEnabl
   const d = new Date(dateStr + "T00:00:00");
   const dayName = DAYS_FULL_FR[(d.getDay() + 6) % 7];
   const dateLabel = `${dayName} ${d.getDate().toString().padStart(2, "0")}/${(d.getMonth() + 1).toString().padStart(2, "0")}`;
-  const catLabel = CAT_LABELS[category] || category;
+  const catLabel = catDisplayLabel(category);
   const title = `${dateLabel} — ${catLabel}`;
 
   // Catégorie effective du jour : modifiable ici (override), le défaut venant des
@@ -176,7 +176,7 @@ export async function renderPicker(dateStr, category, currentEntry, dessertEnabl
     // Vue spéciale « tous mes plats » en tête de liste.
     const optAll = document.createElement("option");
     optAll.value = ALL_CAT;
-    optAll.textContent = "⭐ Tous mes plats";
+    optAll.textContent = "⭐ Tous mes plats" + (defaultCategory === ALL_CAT ? " (défaut)" : "");
     if (currentCategory === ALL_CAT) optAll.selected = true;
     catSel.appendChild(optAll);
     for (const c of catKeys) {

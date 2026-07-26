@@ -3,7 +3,7 @@ import { state } from "../state.js";
 import { showToast } from "../components/toast.js";
 import { renderPicker, renderLunchPicker } from "./picker.js";
 import { openRecipeModal } from "./recette.js";
-import { DAYS_FR, MONTHS_FR, CAT_LABELS, monthGrid, toIsoDate, today, isoWeekOf, mergeShoppingItems, escapeHtml } from "../utils.js";
+import { DAYS_FR, MONTHS_FR, CAT_LABELS, catDisplayLabel, monthGrid, toIsoDate, today, isoWeekOf, mergeShoppingItems, escapeHtml } from "../utils.js";
 
 const DEFAULT_CATS = ["pomme_de_terre","riz","pates","pomme_de_terre","riz","autre","africain"];
 
@@ -181,7 +181,7 @@ function buildHeaderRow(grid, catMap) {
     const cell = document.createElement("div");
     cell.className = "cal-header-cell" + (i >= 5 ? " weekend" : "");
     const cat = catMap[String(i)] || DEFAULT_CATS[i];
-    cell.innerHTML = `${DAYS_FR[i]}<span class="cat-label">${CAT_LABELS[cat] || cat}</span>`;
+    cell.innerHTML = `${DAYS_FR[i]}<span class="cat-label">${catDisplayLabel(cat)}</span>`;
     grid.appendChild(cell);
   }
 }
@@ -305,7 +305,7 @@ function buildWeekDayRow(dateStr, date, dow, planMap, todayStr, settings) {
   head.innerHTML = `
     <span class="week-day-name">${DAYS_FR[dow]}</span>
     <span class="week-day-num">${date.getDate()}</span>
-    <span class="week-day-cat">${CAT_LABELS[cat] || cat}</span>`;
+    <span class="week-day-cat">${catDisplayLabel(cat)}</span>`;
   row.appendChild(head);
 
   const content = document.createElement("div");

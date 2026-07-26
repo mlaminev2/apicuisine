@@ -1,5 +1,6 @@
 """Catégorie du jour : override par date, le défaut restant dans les réglages."""
 
+from datetime import date as _date
 from app.models import Dish
 
 
@@ -72,3 +73,20 @@ def test_priority_all_dishes(client, household, auth_headers, session):
     res = client.get("/api/priority?date=2026-08-08&category=__all__", headers=auth_headers)
     names = {p["dish"]["name"] for p in res.json()}
     assert names == {"Riz sauté", "Pâtes carbo", "Poulet yassa"}
+
+
+def test_priority_weekday_default_all(client, household, auth_headers, session):
+    """Un jour réglé sur « tous mes plats » dans le roulement (réglages)
+    affiche tous les plats, sans filtre."""
+    make_dish(session, household.id, "Riz sauté", "riz")
+    make_dish(session, household.id, "Pâtes carbo", "pates")
+    day = "2026-08-10"
+    dow = _date.fromisoformat(day).weekday()
+    client.put(
+        "/api/settings",
+        json={"weekday_category_map": {str(dow): "__all__"}},
+        headers=auth_headers,
+    )
+    res = client.get(f"/api/priority?date={day}", headers=auth_headers)
+    names = {p["dish"]["name"] for p in res.json()}
+    assert names == {"Riz sauté", "Pâtes carbo"}

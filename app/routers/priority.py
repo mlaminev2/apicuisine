@@ -38,7 +38,9 @@ def get_priority(
             sett = session.get(Settings, household.id)
             mapping = json.loads(sett.weekday_category_map) if sett else {}
             category = category_for_date(d, mapping)
-        effective = category
+        # Un défaut de jour (réglages) ou un override réglé sur « tous mes plats »
+        # signifie aussi : aucun filtre de catégorie.
+        effective = None if category == "__all__" else category
 
     dishes = session.exec(
         select(Dish).where(Dish.household_id == household.id, Dish.active)

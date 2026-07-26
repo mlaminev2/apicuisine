@@ -44,6 +44,14 @@ export function setMealCategories(list) {
 export function mealCategories() { return _mealCats.map((c) => ({ ...c })); }
 export function mealCategoryKeys() { return _mealCats.map((c) => c.key); }
 
+// Catégorie spéciale « tous mes plats » (aucun filtre) : sentinelle partagée
+// entre le picker, le calendrier et les réglages.
+export const ALL_CAT_KEY = "__all__";
+export function catDisplayLabel(key) {
+  if (key === ALL_CAT_KEY) return "Tous mes plats";
+  return CAT_LABELS[key] || key;
+}
+
 // Détecte les navigateurs INTÉGRÉS (in-app) d'Instagram, Facebook, TikTok, etc.
 // Google y bloque « Se connecter avec Google » (erreur disallowed_useragent).
 export function isInAppBrowser() {

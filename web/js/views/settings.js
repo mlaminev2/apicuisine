@@ -1,7 +1,7 @@
 import { api } from "../api.js";
 import { state } from "../state.js";
 import { showToast } from "../components/toast.js";
-import { CAT_LABELS, DAYS_FULL_FR, escapeHtml, mealCategories, mealCategoryKeys, setMealCategories } from "../utils.js";
+import { CAT_LABELS, DAYS_FULL_FR, escapeHtml, mealCategories, mealCategoryKeys, setMealCategories, ALL_CAT_KEY } from "../utils.js";
 import { enablePush, disablePush, pushSupported } from "../push.js";
 import { openInstallPrompt } from "../pwa-install.js";
 import { openModal } from "../components/modal.js";
@@ -320,11 +320,18 @@ export async function renderSettings(root) {
     lbl.textContent = DAYS_FULL_FR[i];
     const sel = document.createElement("select");
     sel.dataset.dow = i;
+    const dayVal = sett.weekday_category_map[String(i)];
+    // Vue spéciale « tous mes plats » (aucun filtre de catégorie ce jour-là).
+    const optAll = document.createElement("option");
+    optAll.value = ALL_CAT_KEY;
+    optAll.textContent = "⭐ Tous mes plats";
+    if (dayVal === ALL_CAT_KEY) optAll.selected = true;
+    sel.appendChild(optAll);
     for (const cat of mealCategoryKeys()) {
       const opt = document.createElement("option");
       opt.value = cat;
       opt.textContent = CAT_LABELS[cat];
-      if (sett.weekday_category_map[String(i)] === cat) opt.selected = true;
+      if (dayVal === cat) opt.selected = true;
       sel.appendChild(opt);
     }
     row.append(lbl, sel);
