@@ -21,25 +21,30 @@ def get_priority(
     session: Session = Depends(get_session),
 ):
     d = date.fromisoformat(date_str)
-    # Catégorie effective : override explicite du paramètre (aperçu live dans le
-    # picker) > catégorie enregistrée pour ce jour > défaut des réglages.
-    if not category:
-        entry = session.exec(
-            select(PlanEntry).where(
-                PlanEntry.household_id == household.id, PlanEntry.date == d
-            )
-        ).first()
-        category = getattr(entry, "category", None) if entry else None
-    if not category:
-        sett = session.get(Settings, household.id)
-        mapping = json.loads(sett.weekday_category_map) if sett else {}
-        category = category_for_date(d, mapping)
+    # « __all__ » = afficher tous les plats (aucun filtre de catégorie).
+    if category == "__all__":
+        effective = None
+    else:
+        # Catégorie effective : override explicite du paramètre (aperçu live dans
+        # le picker) > catégorie enregistrée pour ce jour > défaut des réglages.
+        if not category:
+            entry = session.exec(
+                select(PlanEntry).where(
+                    PlanEntry.household_id == household.id, PlanEntry.date == d
+                )
+            ).first()
+            category = getattr(entry, "category", None) if entry else None
+        if not category:
+            sett = session.get(Settings, household.id)
+            mapping = json.loads(sett.weekday_category_map) if sett else {}
+            category = category_for_date(d, mapping)
+        effective = category
 
     dishes = session.exec(
         select(Dish).where(Dish.household_id == household.id, Dish.active)
     ).all()
     counts = cook_counts(session, household.id)
-    ordered = priority_order(dishes, counts, category)
+    ordered = priority_order(dishes, counts, effective)
 
     return [
         PriorityDishRead(

@@ -16,6 +16,9 @@ export async function renderPicker(dateStr, category, currentEntry, dessertEnabl
 
   // Catégorie effective du jour : modifiable ici (override), le défaut venant des
   // réglages. La liste de plats proposés suit la catégorie sélectionnée.
+  // « __all__ » est une vue spéciale (tous les plats) qui ne fige pas la
+  // catégorie du jour.
+  const ALL_CAT = "__all__";
   let currentCategory = category;
 
   let priorityList = [];
@@ -68,7 +71,10 @@ export async function renderPicker(dateStr, category, currentEntry, dessertEnabl
           if (existing) {
             mainId = existing.dish.id;
           } else {
-            const created = await api.createDish(ft, currentCategory);
+            // En vue « tous mes plats », créer le nouveau plat dans une vraie
+            // catégorie (le défaut du jour), jamais la sentinelle.
+            const catForNew = currentCategory === ALL_CAT ? defaultCategory : currentCategory;
+            const created = await api.createDish(ft, catForNew);
             mainId = created.id;
             createdNew = true;
           }
@@ -82,10 +88,13 @@ export async function renderPicker(dateStr, category, currentEntry, dessertEnabl
           sauce_dish_id: selectedSauceId || null,
           free_text: freeText || null,
           planned_by: state.memberId,
-          // Override de catégorie seulement s'il diffère du défaut des réglages
-          // (null = suivre le défaut, pour ne pas figer le jour).
-          category: currentCategory !== defaultCategory ? currentCategory : null,
         };
+        // La catégorie du jour n'est modifiée que si une vraie catégorie est
+        // choisie : « tous mes plats » est une simple vue et ne fige rien.
+        // Override stocké seulement s'il diffère du défaut (null = suivre le défaut).
+        if (currentCategory !== ALL_CAT) {
+          payload.category = currentCategory !== defaultCategory ? currentCategory : null;
+        }
         // N'envoyer les plats supplémentaires que si l'option est active,
         // pour ne pas effacer des données existantes quand elle est coupée.
         if (multiEnabled) payload.extra_dish_ids = [...selectedExtraIds];
@@ -161,9 +170,15 @@ export async function renderPicker(dateStr, category, currentEntry, dessertEnabl
     const catSel = document.createElement("select");
     catSel.className = "picker-select";
     const catKeys = mealCategories();
-    if (!catKeys.some((c) => c.key === currentCategory) && currentCategory) {
+    if (currentCategory && currentCategory !== ALL_CAT && !catKeys.some((c) => c.key === currentCategory)) {
       catKeys.unshift({ key: currentCategory, label: CAT_LABELS[currentCategory] || currentCategory });
     }
+    // Vue spéciale « tous mes plats » en tête de liste.
+    const optAll = document.createElement("option");
+    optAll.value = ALL_CAT;
+    optAll.textContent = "⭐ Tous mes plats";
+    if (currentCategory === ALL_CAT) optAll.selected = true;
+    catSel.appendChild(optAll);
     for (const c of catKeys) {
       const opt = document.createElement("option");
       opt.value = c.key;

@@ -62,3 +62,13 @@ def test_priority_uses_stored_day_category(client, household, auth_headers, sess
     client.put("/api/plan/2026-08-07", json={"category": "pates"}, headers=auth_headers)
     res = client.get("/api/priority?date=2026-08-07", headers=auth_headers)
     assert [p["dish"]["name"] for p in res.json()] == ["Pâtes carbo"]
+
+
+def test_priority_all_dishes(client, household, auth_headers, session):
+    """« __all__ » affiche tous les plats, sans filtre de catégorie."""
+    make_dish(session, household.id, "Riz sauté", "riz")
+    make_dish(session, household.id, "Pâtes carbo", "pates")
+    make_dish(session, household.id, "Poulet yassa", "africain")
+    res = client.get("/api/priority?date=2026-08-08&category=__all__", headers=auth_headers)
+    names = {p["dish"]["name"] for p in res.json()}
+    assert names == {"Riz sauté", "Pâtes carbo", "Poulet yassa"}
