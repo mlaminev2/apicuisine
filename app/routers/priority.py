@@ -1,8 +1,9 @@
 from datetime import date
 from fastapi import APIRouter, Depends, Query
 from sqlmodel import Session, select
+from typing import Optional
 from app.db import get_session
-from app.models import Household, Dish, Settings
+from app.models import Household, Dish, Settings, PlanEntry
 from app.auth import get_current_household
 from app.schemas import PriorityDishRead, DishRead
 from app.services.priority import cook_counts, priority_order
@@ -15,13 +16,24 @@ router = APIRouter(prefix="/api", tags=["priority"])
 @router.get("/priority", response_model=list[PriorityDishRead])
 def get_priority(
     date_str: str = Query(alias="date"),
+    category: Optional[str] = Query(default=None),
     household: Household = Depends(get_current_household),
     session: Session = Depends(get_session),
 ):
     d = date.fromisoformat(date_str)
-    sett = session.get(Settings, household.id)
-    mapping = json.loads(sett.weekday_category_map) if sett else {}
-    category = category_for_date(d, mapping)
+    # Catégorie effective : override explicite du paramètre (aperçu live dans le
+    # picker) > catégorie enregistrée pour ce jour > défaut des réglages.
+    if not category:
+        entry = session.exec(
+            select(PlanEntry).where(
+                PlanEntry.household_id == household.id, PlanEntry.date == d
+            )
+        ).first()
+        category = getattr(entry, "category", None) if entry else None
+    if not category:
+        sett = session.get(Settings, household.id)
+        mapping = json.loads(sett.weekday_category_map) if sett else {}
+        category = category_for_date(d, mapping)
 
     dishes = session.exec(
         select(Dish).where(Dish.household_id == household.id, Dish.active)

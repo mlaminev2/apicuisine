@@ -49,6 +49,8 @@ def list_shopping_weeks(
     ).all()
     result = []
     for sl in sorted(lists, key=lambda x: (x.iso_year, x.iso_week), reverse=True):
+        if sl.iso_week == 0:
+            continue  # panier « sans semaine » (0/0), exclu des semaines réelles
         items = json.loads(sl.items)
         if items:
             result.append(ShoppingWeekSummary(

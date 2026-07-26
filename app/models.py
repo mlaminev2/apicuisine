@@ -103,6 +103,7 @@ class PlanEntry(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     household_id: int = Field(foreign_key="household.id")
     date: date
+    category: Optional[str] = Field(default=None)  # catégorie du jour ; null = défaut des réglages (weekday_category_map)
     main_dish_id: Optional[int] = Field(default=None, foreign_key="dish.id")
     dessert_dish_id: Optional[int] = Field(default=None, foreign_key="dish.id")
     entree_dish_id: Optional[int] = Field(default=None, foreign_key="dish.id")

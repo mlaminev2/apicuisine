@@ -71,6 +71,7 @@ def _enrich(entry: PlanEntry, session: Session, dish_map: dict | None = None) ->
         id=entry.id,
         household_id=entry.household_id,
         date=entry.date,
+        category=getattr(entry, "category", None),
         main_dish_id=entry.main_dish_id,
         dessert_dish_id=entry.dessert_dish_id,
         entree_dish_id=getattr(entry, "entree_dish_id", None),
@@ -135,6 +136,10 @@ def upsert_plan(
     ).first()
     if not entry:
         entry = PlanEntry(household_id=household.id, date=d)
+    # Catégorie du jour : override explicite (null = revenir au défaut des réglages).
+    sent_cat = body.model_dump(exclude_unset=True)
+    if "category" in sent_cat:
+        entry.category = body.category
     if body.main_dish_id is not None:
         entry.main_dish_id = body.main_dish_id
     if body.dessert_dish_id is not None:

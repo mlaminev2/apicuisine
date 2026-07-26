@@ -87,7 +87,7 @@ export const api = {
   updateDish: (id, data) => request("PUT", `/api/dishes/${id}`, data),
   deleteDish: (id) => request("DELETE", `/api/dishes/${id}`),
 
-  getPriority: (date) => request("GET", `/api/priority?date=${date}`),
+  getPriority: (date, category) => request("GET", `/api/priority?date=${date}${category ? "&category=" + encodeURIComponent(category) : ""}`),
 
   getPlan: (from, to) => request("GET", `/api/plan?from=${from}&to=${to}`),
   putPlan: (date, data) => request("PUT", `/api/plan/${date}`, data),

@@ -2,17 +2,21 @@ import { api } from "../api.js";
 import { state } from "../state.js";
 import { openModal } from "../components/modal.js";
 import { showToast } from "../components/toast.js";
-import { CAT_LABELS, DAYS_FULL_FR, isoWeekOf, mergeShoppingItems, escapeHtml, mealCategoryKeys } from "../utils.js";
+import { CAT_LABELS, DAYS_FULL_FR, isoWeekOf, mergeShoppingItems, escapeHtml, mealCategoryKeys, mealCategories } from "../utils.js";
 
 // Raccourcis « plat libre » qui ne doivent PAS créer un plat dans la base.
 const QUICK_TEXTS = new Set(["🍲 Restes", "🍽️ Resto / extérieur", "🥪 Sandwich"]);
 
-export async function renderPicker(dateStr, category, currentEntry, dessertEnabled, onSave, lunchEnabled = false, multiEnabled = false, dietaryNotes = "") {
+export async function renderPicker(dateStr, category, currentEntry, dessertEnabled, onSave, lunchEnabled = false, multiEnabled = false, dietaryNotes = "", defaultCategory = category) {
   const d = new Date(dateStr + "T00:00:00");
   const dayName = DAYS_FULL_FR[(d.getDay() + 6) % 7];
   const dateLabel = `${dayName} ${d.getDate().toString().padStart(2, "0")}/${(d.getMonth() + 1).toString().padStart(2, "0")}`;
   const catLabel = CAT_LABELS[category] || category;
   const title = `${dateLabel} — ${catLabel}`;
+
+  // Catégorie effective du jour : modifiable ici (override), le défaut venant des
+  // réglages. La liste de plats proposés suit la catégorie sélectionnée.
+  let currentCategory = category;
 
   let priorityList = [];
   let dessertList = [];
@@ -20,7 +24,7 @@ export async function renderPicker(dateStr, category, currentEntry, dessertEnabl
   let aperoList = [];
   let sauceList = [];
   try {
-    priorityList = await api.getPriority(dateStr);
+    priorityList = await api.getPriority(dateStr, currentCategory);
   } catch {}
   if (dessertEnabled) {
     try {
@@ -64,7 +68,7 @@ export async function renderPicker(dateStr, category, currentEntry, dessertEnabl
           if (existing) {
             mainId = existing.dish.id;
           } else {
-            const created = await api.createDish(ft, category);
+            const created = await api.createDish(ft, currentCategory);
             mainId = created.id;
             createdNew = true;
           }
@@ -78,6 +82,9 @@ export async function renderPicker(dateStr, category, currentEntry, dessertEnabl
           sauce_dish_id: selectedSauceId || null,
           free_text: freeText || null,
           planned_by: state.memberId,
+          // Override de catégorie seulement s'il diffère du défaut des réglages
+          // (null = suivre le défaut, pour ne pas figer le jour).
+          category: currentCategory !== defaultCategory ? currentCategory : null,
         };
         // N'envoyer les plats supplémentaires que si l'option est active,
         // pour ne pas effacer des données existantes quand elle est coupée.
@@ -143,6 +150,34 @@ export async function renderPicker(dateStr, category, currentEntry, dessertEnabl
       };
       body.appendChild(lunchBtn);
     }
+
+    // Catégorie du jour (modifiable ici ; défaut = réglages). Change la liste
+    // de plats proposés en direct.
+    const catRow = document.createElement("div");
+    catRow.className = "picker-opt-row";
+    const catLab = document.createElement("span");
+    catLab.className = "picker-opt-label";
+    catLab.textContent = "📂 Catégorie du jour";
+    const catSel = document.createElement("select");
+    catSel.className = "picker-select";
+    const catKeys = mealCategories();
+    if (!catKeys.some((c) => c.key === currentCategory) && currentCategory) {
+      catKeys.unshift({ key: currentCategory, label: CAT_LABELS[currentCategory] || currentCategory });
+    }
+    for (const c of catKeys) {
+      const opt = document.createElement("option");
+      opt.value = c.key;
+      opt.textContent = c.label + (c.key === defaultCategory ? " (défaut)" : "");
+      if (c.key === currentCategory) opt.selected = true;
+      catSel.appendChild(opt);
+    }
+    catSel.onchange = async () => {
+      currentCategory = catSel.value;
+      try { priorityList = await api.getPriority(dateStr, currentCategory); } catch {}
+      renderList();
+    };
+    catRow.append(catLab, catSel);
+    body.appendChild(catRow);
 
     // Search
     const searchInput = document.createElement("input");

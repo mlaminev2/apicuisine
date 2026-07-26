@@ -61,6 +61,20 @@ def test_ingredient_key_ignores_emojis(client, household, auth_headers):
     assert r.json()["items"][0]["category_id"] == boulangerie
 
 
+def test_general_bucket_excluded_from_weeks(client, household, auth_headers):
+    """Le panier « sans semaine » (0/0) n'apparaît pas parmi les semaines
+    réelles, mais figure bien dans la vue « toutes les courses »."""
+    client.put("/api/shopping/0/0", json={"items": [{"text": "Sopalin", "checked": False}]}, headers=auth_headers)
+    client.put("/api/shopping/2026/45", json={"items": [{"text": "Lait", "checked": False}]}, headers=auth_headers)
+
+    weeks = client.get("/api/shopping", headers=auth_headers).json()
+    assert all(w["iso_week"] != 0 for w in weeks)
+    assert any(w["iso_year"] == 2026 and w["iso_week"] == 45 for w in weeks)
+
+    allw = client.get("/api/shopping/all", headers=auth_headers).json()
+    assert any(w["iso_year"] == 0 and w["iso_week"] == 0 for w in allw)
+
+
 def test_read_realigns_stale_categories(client, household, auth_headers, session):
     """Une liste déjà stockée avec de vieilles catégories est réalignée
     dès la lecture sur les assignations de l'utilisateur."""

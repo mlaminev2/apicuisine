@@ -111,7 +111,7 @@ function syncViewMode() {
   if (viewAll) {
     toggleBtn.style.cssText = "width:auto;padding:0 12px;font-size:12px;background:var(--terra);color:#fff";
     toggleBtn.textContent = "📅 Semaine";
-    addRow.style.display = "none";
+    addRow.style.display = "";   // ajout possible en vue Tout (article sans semaine)
     prevBtn.style.visibility = "hidden";
     nextBtn.style.visibility = "hidden";
     uncheckBtn.style.display = "none";
@@ -369,6 +369,22 @@ async function addItem() {
   const qty = qtyInput?.value?.trim();
   if (!name) return;
   const text = qty ? `${name} — ${qty}` : name;
+
+  // Vue « Tout » : l'article n'est rattaché à aucune semaine → panier réservé 0/0.
+  if (viewAll) {
+    const gen = allWeeksData.find((w) => w.iso_year === 0 && w.iso_week === 0);
+    const merged = mergeShoppingItems(gen ? gen.items : [], [{ text, checked: false, category_id: null }]);
+    nameInput.value = "";
+    if (qtyInput) qtyInput.value = "";
+    nameInput.focus();
+    _lastLocalEdit = Date.now();
+    try {
+      await api.putShopping(0, 0, merged);
+      await loadAll();
+    } catch (err) { showToast(err.message, "error"); }
+    return;
+  }
+
   items = mergeShoppingItems(items, [{ text, checked: false, category_id: null }]);
   nameInput.value = "";
   if (qtyInput) qtyInput.value = "";
@@ -453,46 +469,50 @@ function renderAllItems() {
   if (!container) return;
   container.innerHTML = "";
 
-  if (!allWeeksData.length) {
-    container.innerHTML = `<div class="text-muted p-16" style="text-align:center;padding:32px">Aucune liste.</div>`;
+  // Une seule liste plate de toutes les courses (toutes semaines confondues +
+  // panier sans semaine). Chaque ligne garde son origine pour l'écriture.
+  const flat = [];
+  for (const wk of allWeeksData) {
+    wk.items.forEach((item, idx) => flat.push({ item, year: wk.iso_year, week: wk.iso_week, idx }));
+  }
+
+  if (!flat.length) {
+    container.innerHTML = `<div class="text-muted p-16" style="text-align:center;padding:32px">Aucune course.</div>`;
     return;
   }
 
-  for (const week of allWeeksData) {
-    const done = week.items.filter((i) => i.checked).length;
-    const wh = document.createElement("div");
-    wh.style.cssText = `background:var(--ink);color:white;padding:9px 16px;font-weight:700;font-size:13px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:1;border-radius:12px;margin:10px 16px 8px`;
-    wh.innerHTML = `<span>📅 Semaine ${week.iso_week} · ${week.iso_year}</span><span style="opacity:.8;font-size:12px;font-weight:400">${done}/${week.items.length}</span>`;
-    container.appendChild(wh);
+  const rowFor = (o) => makeItemRow(
+    o.item, o.idx,
+    () => toggleAllItem(o.year, o.week, o.idx),
+    () => removeAllItem(o.year, o.week, o.idx),
+    (_i, newCatId) => changeAllCategoryItem(o.year, o.week, o.idx, newCatId),
+  );
 
-    if (!categoriesEnabled()) {
-      for (let i = 0; i < week.items.length; i++) {
-        container.appendChild(makeItemRow(
-          week.items[i], i,
-          (idx) => toggleAllItem(week.iso_year, week.iso_week, idx),
-          (idx) => removeAllItem(week.iso_year, week.iso_week, idx),
-          (idx, newCatId) => changeAllCategoryItem(week.iso_year, week.iso_week, idx, newCatId),
-        ));
-      }
-    } else {
-      const groups = groupByCategory(week.items);
-      for (const { cat, items: groupItems } of groups) {
-        const header = document.createElement("div");
-        header.className = "shop-cat-title";
-        header.style.cssText = "display:flex;align-items:center;gap:8px;padding-top:6px";
-        header.innerHTML = `<span style="width:8px;height:8px;border-radius:50%;background:${escapeHtml(cat.color)};flex-shrink:0;display:inline-block"></span><span>${escapeHtml(cat.name)}</span>`;
-        container.appendChild(header);
+  if (!categoriesEnabled()) {
+    for (const o of flat) container.appendChild(rowFor(o));
+    return;
+  }
 
-        for (const { item, originalIdx } of groupItems) {
-          container.appendChild(makeItemRow(
-            item, originalIdx,
-            (i) => toggleAllItem(week.iso_year, week.iso_week, i),
-            (i) => removeAllItem(week.iso_year, week.iso_week, i),
-            (i, newCatId) => changeAllCategoryItem(week.iso_year, week.iso_week, i, newCatId),
-          ));
-        }
-      }
-    }
+  // Regroupement par catégorie de courses (pas par semaine).
+  const groups = new Map();
+  for (const cat of [...categories].sort((a, b) => a.sort_order - b.sort_order)) {
+    groups.set(cat.id, { cat, entries: [] });
+  }
+  groups.set(null, { cat: { id: null, name: "📦 Autres", color: "#6B6353" }, entries: [] });
+  for (const o of flat) {
+    const key = o.item.category_id != null ? o.item.category_id : null;
+    (groups.get(key) || groups.get(null)).entries.push(o);
+  }
+
+  for (const { cat, entries } of groups.values()) {
+    if (!entries.length) continue;
+    const header = document.createElement("div");
+    header.className = "shop-cat-title";
+    header.style.cssText = "display:flex;align-items:center;gap:8px;padding-top:10px";
+    const done = entries.filter((e) => e.item.checked).length;
+    header.innerHTML = `<span style="width:9px;height:9px;border-radius:50%;background:${escapeHtml(cat.color)};flex-shrink:0;display:inline-block"></span><span>${escapeHtml(cat.name)}</span><span style="font-size:11px;color:#c4b3a3;margin-left:auto">${done}/${entries.length}</span>`;
+    container.appendChild(header);
+    for (const o of entries) container.appendChild(rowFor(o));
   }
 }
 

@@ -131,6 +131,11 @@ def _migrate():
             conn.commit()
         except Exception:
             pass
+        try:
+            conn.execute(text("ALTER TABLE plan_entry ADD COLUMN category TEXT"))
+            conn.commit()
+        except Exception:
+            pass
         for col, definition in [
             ("lunch_dish_id", "INTEGER REFERENCES dish(id)"),
             ("lunch_free_text", "TEXT"),

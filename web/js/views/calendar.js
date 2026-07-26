@@ -297,7 +297,8 @@ function buildWeekDayRow(dateStr, date, dow, planMap, todayStr, settings) {
   row.dataset.date = dateStr;
 
   const catMap = settings.weekday_category_map || {};
-  const cat = catMap[String(dow)] || DEFAULT_CATS[dow];
+  // Catégorie du jour : override enregistré sur le plan, sinon défaut des réglages.
+  const cat = entry?.category || catMap[String(dow)] || DEFAULT_CATS[dow];
 
   const head = document.createElement("div");
   head.className = "week-day-head";
@@ -597,8 +598,10 @@ async function openDayPicker(dateStr, entry, settings, onSave) {
   const d = new Date(dateStr);
   const dow = (d.getDay() + 6) % 7;
   const catMap = settings.weekday_category_map;
-  const category = catMap[String(dow)] || DEFAULT_CATS[dow];
-  await renderPicker(dateStr, category, entry, settings.dessert_enabled, onSave, settings.lunch_enabled, settings.multi_dish_enabled, settings.dietary_notes || "");
+  const defaultCategory = catMap[String(dow)] || DEFAULT_CATS[dow];
+  // Catégorie du jour : override enregistré sur le plan, sinon défaut des réglages.
+  const category = entry?.category || defaultCategory;
+  await renderPicker(dateStr, category, entry, settings.dessert_enabled, onSave, settings.lunch_enabled, settings.multi_dish_enabled, settings.dietary_notes || "", defaultCategory);
 }
 
 function openDaySummary(dateStr, entry, settings, onSave) {

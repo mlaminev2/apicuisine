@@ -147,6 +147,7 @@ class PriorityDishRead(BaseModel):
 
 
 class PlanEntryUpdate(BaseModel):
+    category: Optional[str] = Field(default=None, max_length=40)
     main_dish_id: Optional[int] = None
     dessert_dish_id: Optional[int] = None
     entree_dish_id: Optional[int] = None
@@ -168,6 +169,7 @@ class PlanEntryRead(BaseModel):
     id: int
     household_id: int
     date: date
+    category: Optional[str] = None
     main_dish_id: Optional[int]
     dessert_dish_id: Optional[int]
     entree_dish_id: Optional[int] = None
