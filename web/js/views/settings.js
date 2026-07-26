@@ -106,6 +106,68 @@ function openDeleteAccountModal(root, soleOwner) {
   });
 }
 
+// Guide complet des fonctionnalités (référence toujours accessible dans les
+// réglages). Contient aussi le bouton pour revoir le tuto de démarrage.
+function buildHelpSection() {
+  const { sec, body } = makeSection("❓ Guide & astuces", "aide");
+  const block = (emoji, title, points) => `
+    <div style="margin-bottom:14px">
+      <div style="font-size:13.5px;font-weight:700;margin-bottom:4px">${emoji} ${title}</div>
+      <ul style="margin:0;padding-left:18px;font-size:12.5px;color:var(--ink);line-height:1.6">
+        ${points.map((p) => `<li>${p}</li>`).join("")}
+      </ul>
+    </div>`;
+  body.innerHTML =
+    `<div style="font-size:12px;color:var(--muted);margin-bottom:12px">Tout ce que vous pouvez faire dans l'app, en bref.</div>` +
+    block("🏠", "Accueil", [
+      "Le repas prévu aujourd'hui et un aperçu de votre semaine.",
+      "Bouton <strong>« Remplir la semaine »</strong> : propose un menu automatiquement (vos plats les moins cuisinés).",
+      "Icône <strong>⚙</strong> en haut : ouvre les Réglages.",
+    ]) +
+    block("📅", "Calendrier", [
+      "Touchez un jour pour choisir un plat de votre liste, ou <strong>écrivez un plat libre</strong> (ajouté tout seul à votre base).",
+      "Dans la fenêtre d'un jour, changez sa <strong>catégorie</strong> ; « ⭐ Tous mes plats » affiche l'ensemble de vos plats.",
+      "Basculez entre la vue <strong>semaine</strong> et <strong>mois</strong>, et glissez l'écran pour changer de période.",
+      "Boutons de la semaine : <strong>✨ Remplir</strong> / <strong>🗑 Vider</strong>, <strong>🧺 + Ingrédients</strong> (envoie les ingrédients aux courses), <strong>🛒 Courses sem.</strong>",
+      "Cochez <strong>✅</strong> un repas une fois cuisiné.",
+      "Options activables (Réglages) : entrée, apéro, sauce, dessert, plusieurs plats par jour, menu du midi.",
+    ]) +
+    block("🍽️", "Plats", [
+      "Votre base de recettes : ajoutez, classez par catégorie, mettez en favori <strong>★</strong>, notez régimes/allergènes.",
+      "Touchez un plat pour voir sa fiche, ses ingrédients et sa photo.",
+    ]) +
+    block("📥", "Importer", [
+      "Ajoutez une recette depuis un <strong>lien</strong> (YouTube, Instagram, sites), une <strong>photo</strong> (livre, magazine), ou <strong>à la main</strong>.",
+    ]) +
+    block("🛒", "Courses", [
+      "La liste se génère à partir des plats planifiés.",
+      "Cochez les articles ; ils sont regroupés par <strong>rayon</strong>.",
+      "Touchez la <strong>pastille de couleur</strong> d'un article pour changer son rayon.",
+      "Naviguez entre les semaines ; la vue <strong>« 🗂 Tout »</strong> réunit toutes vos courses et permet d'ajouter un article sans semaine.",
+      "La liste se <strong>synchronise</strong> entre tous les appareils du foyer.",
+    ]) +
+    block("⚙️", "Réglages", [
+      "<strong>Roulement de la semaine</strong> : catégorie par défaut de chaque jour (dont « Tous mes plats »).",
+      "Vos <strong>catégories de plats</strong>, et les options dessert / midi / plusieurs plats.",
+      "<strong>Allergies & restrictions</strong> du foyer (rappelées au choix d'un plat).",
+      "<strong>Membres du foyer</strong> et partage d'accès par code d'invitation.",
+      "<strong>Notifications</strong> : rappel du dîner chaque soir.",
+      "<strong>Catégories de courses</strong> et ingrédients connus.",
+      "<strong>Sauvegarde</strong> : export de toutes vos données.",
+    ]) +
+    block("💡", "Bon à savoir", [
+      "Installez l'app sur l'écran d'accueil pour un accès rapide et hors-ligne.",
+      "<strong>Premium</strong> : imports illimités et navigation sans publicité.",
+    ]);
+
+  const replay = document.createElement("button");
+  replay.className = "btn btn-ghost btn-sm btn-full mt-8";
+  replay.textContent = "🧭 Revoir le guide de démarrage";
+  replay.onclick = () => showOnboardingNow();
+  body.appendChild(replay);
+  return sec;
+}
+
 // Gestionnaire des catégories de plats (ajouter / renommer / retirer par foyer).
 function buildMealCatManager(root) {
   const PALETTE = ["cat-pdt", "cat-riz", "cat-pates", "cat-entree", "cat-autre", "cat-sucree", "cat-africain", "cat-apero", "cat-sauce"];
@@ -236,15 +298,8 @@ export async function renderSettings(root) {
   if (goPremium) goPremium.onclick = () => { location.hash = "#/premium"; };
   body.insertBefore(premiumCard, secLogout);
 
-  // Revoir le guide de démarrage (tuto par onglet)
-  const guideCard = document.createElement("div");
-  guideCard.className = "settings-section";
-  const guideBtn = document.createElement("button");
-  guideBtn.className = "btn btn-ghost btn-sm btn-full";
-  guideBtn.textContent = "🧭 Revoir le guide de démarrage";
-  guideBtn.onclick = () => showOnboardingNow();
-  guideCard.appendChild(guideBtn);
-  body.insertBefore(guideCard, secLogout);
+  // Guide complet des fonctionnalités (référence + bouton pour revoir le tuto).
+  body.insertBefore(buildHelpSection(), secLogout);
 
   // ── Notifications / rappel du dîner ──
   const notifCard = document.createElement("div");

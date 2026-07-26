@@ -5,11 +5,12 @@ import { maybeShowInstallPrompt } from "./pwa-install.js";
 const STEPS = [
   { icon: "👋", title: "Bienvenue !", body: "Voici un petit tour de l'app. En bas de l'écran, 5 onglets : passez de l'un à l'autre d'un simple tap." },
   { icon: "🏠", title: "Accueil", body: "Votre tableau de bord : le repas prévu aujourd'hui, un aperçu de la semaine, et le bouton « Remplir la semaine » qui propose un menu automatiquement. L'icône ⚙ en haut ouvre les Réglages." },
-  { icon: "📅", title: "Calendrier", body: "Planifiez vos repas en un clin d'œil !<br>Touchez un jour pour y ajouter un plat de votre liste.<br>Une envie de dernière minute qui n'est pas encore enregistrée ? Écrivez-la directement, elle s'ajoutera toute seule à votre base !<br><br><strong>Astuce :</strong> Basculez entre la vue semaine ou mois, et glissez simplement l'écran pour changer de période." },
+  { icon: "📅", title: "Calendrier", body: "Planifiez vos repas en un clin d'œil !<br>Touchez un jour pour y ajouter un plat de votre liste.<br>Une envie de dernière minute qui n'est pas encore enregistrée ? Écrivez-la directement, elle s'ajoutera toute seule à votre base !<br>Vous pouvez aussi changer la catégorie d'un jour (ou choisir « Tous mes plats »).<br><br><strong>Astuce :</strong> Basculez entre la vue semaine ou mois, et glissez simplement l'écran pour changer de période." },
   { icon: "🍽️", title: "Plats", body: "Votre base de recettes. Ajoutez vos plats, classez-les par catégorie, mettez-les en favori ★ et notez régimes/allergènes. Touchez un plat pour voir sa fiche et sa photo." },
   { icon: "📥", title: "Importer", body: "Ajoutez une recette en un instant : depuis un lien (YouTube, Instagram, sites), une photo (livre, magazine), ou à la main." },
-  { icon: "🛒", title: "Courses", body: "Votre liste de courses se génère automatiquement à partir des plats planifiés. Cochez les articles au fur et à mesure, regroupés par rayon." },
+  { icon: "🛒", title: "Courses", body: "Votre liste de courses se génère automatiquement à partir des plats planifiés. Cochez les articles au fur et à mesure, regroupés par rayon. La vue « 🗂 Tout » réunit toutes vos courses au même endroit." },
   { icon: "⚙️", title: "Réglages", body: "Via l'icône ⚙ en haut de l'Accueil : roulement de la semaine, vos catégories, membres du foyer, allergies, notifications, et déconnexion." },
+  { icon: "❓", title: "Besoin d'aide ?", body: "Retrouvez à tout moment le détail de <strong>toutes les fonctionnalités</strong> dans <strong>Réglages → « ❓ Guide &amp; astuces »</strong>. Vous pourrez aussi y revoir ce guide." },
 ];
 
 function buildOnboarding(onClose) {
