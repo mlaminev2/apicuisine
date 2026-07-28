@@ -463,6 +463,11 @@ html.no-ads iframe[src*="adtrafficquality"] { display: none !important; height: 
 .dish-item { display: flex; align-items: center; gap: 8px; padding: 9px 11px; border-radius: 12px; cursor: pointer; background: #fff; border: 1px solid var(--line); transition: background .12s, transform var(--t-fast) var(--ease-out); }
 .dish-item:hover { background: #fbf1e6; }
 .dish-item.selected { background: var(--terra-soft); border-color: rgba(196,99,60,.4); }
+/* La DA « éditorial papier » force .dish-item en !important : on restaure ici,
+   avec une spécificité supérieure, le survol et surtout le surlignage de
+   sélection — sinon choisir un plat ne change plus visiblement le fond. */
+.dish-item:hover { background: #fbf1e6 !important; }
+.dish-item.selected { background: var(--terra-soft) !important; border-color: var(--terra) !important; }
 .dish-item:active { transform: scale(.98); }
 .dish-item .dish-name { flex: 1; font-size: 14px; font-weight: 600; }
 .badge { font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 20px; }
