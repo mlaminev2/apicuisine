@@ -35,7 +35,7 @@ export function enableAddCategory(selectEl) {
   if (!selectEl.querySelector(`option[value="${NEW}"]`)) {
     const opt = document.createElement("option");
     opt.value = NEW;
-    opt.textContent = "➕ Nouvelle catégorie…";
+    opt.textContent = "Nouvelle catégorie…";
     selectEl.appendChild(opt);
   }
   let lastValue = selectEl.value;
@@ -49,7 +49,7 @@ export function enableAddCategory(selectEl) {
       // Reconstruit la liste (nouvelle catégorie incluse et sélectionnée).
       selectEl.innerHTML = mealCategoryKeys()
         .map((c) => `<option value="${c}"${c === key ? " selected" : ""}>${escapeHtml(CAT_LABELS[c])}</option>`)
-        .join("") + `<option value="${NEW}">➕ Nouvelle catégorie…</option>`;
+        .join("") + `<option value="${NEW}">Nouvelle catégorie…</option>`;
       lastValue = key;
       showToast("Catégorie ajoutée ✓");
     } catch (err) {
