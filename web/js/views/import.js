@@ -1,6 +1,6 @@
 import { api } from "../api.js";
 import { showToast } from "../components/toast.js";
-import { openDishModal } from "./base.js";
+import { openDishModal, enableAddCategory } from "./base.js";
 import { CAT_LABELS, isoWeekOf, escapeHtml, renderPaywall, mealCategoryKeys } from "../utils.js";
 
 
@@ -166,6 +166,8 @@ export async function renderImport(root) {
     </div>`;
 
   let detectedSource = "unknown", fetchedUrl = "", fetchedThumbnail = null, fetchedAuthor = null, rawDescription = "";
+
+  enableAddCategory(document.getElementById("import-category"));
 
   const flow = document.getElementById("import-flow");
   const showFlow = () => { flow.style.display = "flex"; };

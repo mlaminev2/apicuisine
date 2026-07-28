@@ -1,9 +1,63 @@
 import { api } from "../api.js";
 import { showToast } from "../components/toast.js";
-import { CAT_LABELS, CAT_CSS, isoWeekOf, mergeShoppingItems, escapeHtml, mealCategoryKeys } from "../utils.js";
+import { CAT_LABELS, CAT_CSS, isoWeekOf, mergeShoppingItems, escapeHtml, mealCategoryKeys, mealCategories, setMealCategories } from "../utils.js";
 
 let activeCategory = "tous";
 let searchQuery = "";
+
+// Compare deux libellés en ignorant casse et accents (anti-doublon).
+function _normLabel(s) {
+  return (s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").trim();
+}
+
+// Crée une catégorie de plat « à la volée ». Réutilise l'enregistrement des
+// catégories du foyer (qui normalise et dédoublonne). Retourne la clé de la
+// catégorie (nouvelle, ou existante si le nom est déjà pris).
+async function createMealCategoryInline(label) {
+  const name = (label || "").trim();
+  if (!name) return null;
+  const existing = mealCategories();
+  const dupe = existing.find((c) => _normLabel(c.label) === _normLabel(name));
+  if (dupe) return dupe.key;
+  const payload = existing.map((c) => ({ key: c.key, label: c.label, color: c.color }));
+  payload.push({ label: name });
+  const saved = await api.putMealCategories(payload);
+  setMealCategories(saved);
+  const created = saved.find((c) => _normLabel(c.label) === _normLabel(name));
+  return created ? created.key : null;
+}
+
+// Branche l'option « ➕ Nouvelle catégorie… » sur un <select> de catégorie de
+// plat : la choisir demande un nom, crée la catégorie et la sélectionne.
+export function enableAddCategory(selectEl) {
+  if (!selectEl) return;
+  const NEW = "__newcat__";
+  if (!selectEl.querySelector(`option[value="${NEW}"]`)) {
+    const opt = document.createElement("option");
+    opt.value = NEW;
+    opt.textContent = "➕ Nouvelle catégorie…";
+    selectEl.appendChild(opt);
+  }
+  let lastValue = selectEl.value;
+  selectEl.addEventListener("change", async () => {
+    if (selectEl.value !== NEW) { lastValue = selectEl.value; return; }
+    const name = prompt("Nom de la nouvelle catégorie :");
+    if (!name || !name.trim()) { selectEl.value = lastValue; return; }
+    try {
+      const key = await createMealCategoryInline(name.trim());
+      if (!key) { selectEl.value = lastValue; return; }
+      // Reconstruit la liste (nouvelle catégorie incluse et sélectionnée).
+      selectEl.innerHTML = mealCategoryKeys()
+        .map((c) => `<option value="${c}"${c === key ? " selected" : ""}>${escapeHtml(CAT_LABELS[c])}</option>`)
+        .join("") + `<option value="${NEW}">➕ Nouvelle catégorie…</option>`;
+      lastValue = key;
+      showToast("Catégorie ajoutée ✓");
+    } catch (err) {
+      showToast(err.message, "error");
+      selectEl.value = lastValue;
+    }
+  });
+}
 let allDishes = [];
 let trackingData = [];
 
@@ -276,6 +330,7 @@ export function openDishModal(dish) {
     const body = overlay.querySelector("#dish-modal-body");
     body.innerHTML = renderEditShell(dish, suggestions);
     initIngrRows(body, dish.ingredients);
+    enableAddCategory(body.querySelector("#edit-dish-cat"));
 
     overlay.querySelector(".modal-footer").innerHTML = `
       <button class="btn btn-ghost flex-1" id="btn-cancel-edit">Annuler</button>
@@ -425,6 +480,7 @@ function showDishForm(dish) {
   root.appendChild(overlay);
   box.querySelector(".btn-close").onclick = () => overlay.remove();
   overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+  enableAddCategory(box.querySelector("#dish-cat-select"));
 
   box.querySelector("#dish-save-btn").onclick = async () => {
     const name = box.querySelector("#dish-name-input").value.trim();
